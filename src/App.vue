@@ -11,9 +11,8 @@ import HelloWorld from './components/HelloWorld.vue'
       <HelloWorld msg="RoboRally Online!" />
 
       <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-        <RouterLink to="/settings">Settings</RouterLink>
+        <RouterLink to="/host">Host</RouterLink>
+        <RouterLink to="/join">Join</RouterLink>
       </nav>
     </div>
   </header>
