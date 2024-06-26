@@ -8,15 +8,41 @@ It is a Node+Express server in Typescript
 
 The server exposes the following endpoints:
 
-`/join`
-`/games`
+ * `/join`
+ * `/games`
 
-GET /games: get the list of games
-POST /games: creates a new game
-DELETE /games: deletes the game
+### `/games`
 
-POST /join: join a game (return connection details for the game)
-Requires:
+This endpoint accepts the GET, POST, and DELETE methods.
+
+#### GET
+
+Get the list of games
+
+Return structure:
+```json
+{
+  "games": [{
+    // stuff
+  }]
+}
+```
+
+#### POST
+
+Creates a new game
+
+#### DELETE
+
+Deletes the game
+
+### `/join`
+
+#### POST
+
+Join a game (return connection details for the game)
+
+Request structure:
 ```json
 {
     "player_name": "<some name>",
@@ -25,7 +51,7 @@ Requires:
 }
 ```
 
-Returns:
+Return structure:
 ```json
 {
     "host": "<an IP address or domain name where the game server can be reached>",
@@ -36,4 +62,4 @@ Returns:
 
 ## TCP Protocol
 
-Once a game is joined, 
+Once a game is joined, the client is expected to establish a TCP connection with the game server so that the client and server can have effective bidirectional communication without a need for polling.

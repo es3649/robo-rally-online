@@ -9,18 +9,17 @@ dotenv.config();
 const app: Express = express();
 const port = process.env.PORT || 3000;
 
-app.get('/', (req: Request, res: Response): void => {
-  res.send('Express + TypeScript Server');
-});
-
 // define the endpoints
 // this is pretty simple thanks to express
-app.get('/games', games_get_handler)
-app.post('/games', games_post_handler)
-app.delete('/games', games_delete_handler)
-app.post('/join', join_post_handler)
+app.get('/API/games', games_get_handler)
+app.post('/API/games', games_post_handler)
+app.delete('/API/games', games_delete_handler)
+app.post('/API/join', join_post_handler)
+
+// add a file handler at the root
+app.use('/', express.static('public'))
 
 // listen and serve
-app.listen(80, () => {
+app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
