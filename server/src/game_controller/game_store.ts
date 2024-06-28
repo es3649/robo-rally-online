@@ -1,13 +1,12 @@
 import { Game } from "./game";
 import { GameServer } from "./game_server";
+import { Player } from "./player";
 
 declare type GameStore = Map<string,Game>
 
 const store: GameStore = new Map<string,Game>()
 
 const LETTERS: string = 'BCDFGHJKLNPQRTVWXZ'
-// const ll = LETTERS.length
-// const MAX_GAMES: number = ll * (ll-1) * (ll-2) * (ll-3) / 3
 const MAX_GAMES = 100
 
 function make_game_code(): string {
@@ -71,11 +70,12 @@ export function add_game(host_code:string, game_type: string): Game | string {
     // construct the game
     const game: Game = {
         room_code: game_code,
-        players: [],
+        players: new Map<string,Player>(),
         host: undefined,
         host_code: host_code,
         lobby_open: true,
-        game_server: game_server
+        game_server: game_server,
+        time_created: new Date(),
     }
 
     store.set(game_code, game)

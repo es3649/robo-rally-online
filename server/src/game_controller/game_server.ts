@@ -17,6 +17,6 @@ export declare interface ConnectionDetails {
  */
 export declare interface GameServer {
     do_move(player:Player, move: GameAction): boolean
-    add_player(player: Player): ConnectionDetails | string
+    add_player(player_name: string): ConnectionDetails | string
     stop(): void
 }

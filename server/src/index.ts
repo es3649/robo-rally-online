@@ -1,8 +1,8 @@
-import express, {Express, Request, Response} from 'express'
+import express, { Express, Request, Response } from 'express'
 import dotenv from "dotenv";
 
-import {games_get_handler, games_post_handler, games_delete_handler} from './handlers/game_handlers'
-import {join_post_handler} from './handlers/join_handlers'
+import { games_post_handler, games_delete_handler } from './handlers/game_handlers'
+import { join_post_handler } from './handlers/join_handlers'
 
 dotenv.config();
 
@@ -11,8 +11,7 @@ const port = process.env.PORT || 3000;
 
 // define the endpoints
 // this is pretty simple thanks to express
-app.get('/API/games', games_get_handler)
-app.post('/API/games', games_post_handler)
+app.post('/API/]games', games_post_handler)
 app.delete('/API/games', games_delete_handler)
 app.post('/API/join', join_post_handler)
 

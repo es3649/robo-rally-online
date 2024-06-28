@@ -6,37 +6,42 @@ It is a Node+Express server in Typescript
 
 ## API Documentation
 
-The server exposes the following endpoints:
+The server exposes the following API endpoints:
 
- * `/join`
- * `/games`
+ * `/API/join`
+ * `/API/games`
 
-### `/games`
+### `/API/games`
 
-This endpoint accepts the GET, POST, and DELETE methods.
-
-#### GET
-
-Get the list of games
-
-Return structure:
-```json
-{
-  "games": [{
-    // stuff
-  }]
-}
-```
+This endpoint accepts the POST, and DELETE methods.
 
 #### POST
 
 Creates a new game
 
+Request Structure:
+
+```json
+{
+  "game_type": "<the type of game: live|virtual>",
+  "player_name": "<the name of the player creating the game>"
+}
+```
+
+Response Structure:
+
+```json
+{
+  "room_code": "<a 4-digit room code to identify the lobby>",
+  "host_code": "<A UUID assigned to the host to validate their hostliness when they join the game>",
+}
+```
+
 #### DELETE
 
 Deletes the game
 
-### `/join`
+### `/API/join`
 
 #### POST
 
@@ -46,8 +51,8 @@ Request structure:
 ```json
 {
     "player_name": "<some name>",
-    "game_code": "<some code, as returned from GET/CREATE /game>",
-    "host_key": "<optional: host key, as returned from CREATE /game>"
+    "game_code": "<some code, as returned from POST /API/game>",
+    "host_key": "<optional: host key, as returned from POST /API/game>"
 }
 ```
 
