@@ -1,4 +1,4 @@
-import { Character } from './player'
+import { Character } from './models/player'
 
 export namespace Robots {
     const Twonky: Character = {

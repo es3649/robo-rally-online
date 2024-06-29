@@ -1,6 +1,6 @@
 import { Game } from "./game";
 import { GameServer } from "./game_server";
-import { Player } from "./player";
+import { Player } from "../models/player";
 
 declare type GameStore = Map<string,Game>
 

@@ -1,4 +1,3 @@
-
 export declare interface games_POST_req {
     game_type: string,
     player_name: string

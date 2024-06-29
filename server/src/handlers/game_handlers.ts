@@ -1,7 +1,6 @@
 import { Request, Response } from 'express'
 import { add_game, get_all_games } from '../game_controller/game_store'
-import { Game } from '../game_controller/game'
-import { games_POST_req, games_POST_res } from './api_models'
+import { games_POST_req, games_POST_res } from '../models/api_models'
 import { StatusCodes as http } from 'http-status-codes'
 
 /**

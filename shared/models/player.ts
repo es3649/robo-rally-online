@@ -1,4 +1,4 @@
-import { ConnectionDetails } from "./game_server"
+import { ConnectionDetails } from "./connection"
 
 export declare type Character = {
     name: string,

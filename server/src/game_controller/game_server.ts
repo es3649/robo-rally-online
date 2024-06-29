@@ -1,12 +1,9 @@
-import { Player } from "./player"
+import { Player } from "../models/player"
+import { ConnectionDetails } from '../models/connection'
 
 export declare type GameAction = {}
 
-export declare interface ConnectionDetails {
-    host: string,
-    port: number,
-    AES: any // TODO get the correct type for this
-}
+
 
 /**
  * the GameServer interface allows a game server to be implemented in any number

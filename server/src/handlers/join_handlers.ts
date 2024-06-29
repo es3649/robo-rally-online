@@ -1,10 +1,10 @@
 import {Request, Response} from 'express'
 import { StatusCodes as http } from 'http-status-codes'
-import { join_POST_req, join_POST_res } from './api_models'
+import { join_POST_req, join_POST_res } from '../models/api_models'
 import { get_game } from '../game_controller/game_store'
-import { Player } from '../game_controller/player'
+import { Player } from '../models/player'
 import { MAX_PLAYERS } from '../game_controller/game'
-import { ConnectionDetails } from '../game_controller/game_server'
+import { ConnectionDetails } from '../models/connection'
 
 export function join_post_handler(req: Request, res: Response): void {
     // validate the request body by typecasting it to the expected type

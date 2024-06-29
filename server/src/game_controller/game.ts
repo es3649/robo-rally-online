@@ -1,4 +1,4 @@
-import { Player } from './player'
+import { Player } from '../models/player'
 import { GameServer } from './game_server'
 
 // the maximum number of players allowed in a game
