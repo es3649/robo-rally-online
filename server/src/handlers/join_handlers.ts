@@ -11,6 +11,7 @@ export function join_post_handler(req: Request, res: Response): void {
     let body: join_POST_req
     try {
         body = req.body as join_POST_req
+        console.log(body)
     } catch (error) {
         res.status(http.BAD_REQUEST)
         res.send(error)
@@ -19,10 +20,12 @@ export function join_post_handler(req: Request, res: Response): void {
 
     // get the game
     const game = get_game(body.room_code)
+    console.log(game)
 
     // if there isn't one, there isn't one
     if (game == undefined) {
         res.status(http.NOT_FOUND)
+        res.send("Invalid room code")
         return
     }
 
@@ -43,6 +46,7 @@ export function join_post_handler(req: Request, res: Response): void {
         // typecast is safe because we just determined player is not undefined
         const same_player: join_POST_res = player.conn_details as ConnectionDetails
         res.send(same_player)
+        return
     }
 
     // request a new connection for the player from the game server

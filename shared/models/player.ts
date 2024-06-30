@@ -1,4 +1,4 @@
-import { ConnectionDetails } from "./connection"
+import type { ConnectionDetails } from "./connection"
 
 export declare type Character = {
     name: string,

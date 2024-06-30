@@ -1,28 +1,53 @@
 <script setup lang="ts">
 // import JoinGame from '../components/JoinGame.vue'
+import router from '@/router';
+import { useConnectionStore } from '@/stores/connection';
 import { ref } from 'vue';
+import type { Ref } from 'vue';
+
+const connectionStore = useConnectionStore()
 
 // define component data
-const room_code = ref("")
-const player_name = ref("")
-const joined = ref(false)
+const room_code: Ref<string> = ref("")
+const player_name: Ref<string> = ref("")
+const loading: Ref<boolean> = ref(false)
+const failed: Ref<boolean> = ref(false)
+const error_msg: Ref<string> = ref('')
+const joined: Ref<boolean> = ref(false)
 
-function join() : undefined {
-  // make the server request
-  alert(`Joined lobby ${room_code.value}`)
-  room_code.value = ""
+/**
+ * invoke the join method on the connection store
+ */
+async function join() {
+  loading.value = true
+  const result: string|undefined = await connectionStore.join(player_name.value, room_code.value)
+  if (result != undefined) {
+    error_msg.value = result,
+    failed.value = true
+  } else {
+    joined.value = true
+    // router.push('/lobby')
+    console.log('goto lobby :D')
+  }
+  loading.value = false
 }
 </script>
 
 <template>
   <main>
     <h2>Join Game</h2>
-    <form @submit.prevent="join()">
+    <div v-if="failed" class="error banner">
+      <p>{{ error_msg }}</p>
+    </div>
+    <form v-if="!joined && !loading" @submit.prevent="join()">
       <label for="room_code">Room Code</label>
       <input name="room_code" type="text" placeholder="code" v-model="room_code"> <br/>
       <label for="player_name">Player Name</label>
       <input name="player_name" type="text" placeholder="name" v-model="player_name"> <br/>
       <input type="submit">
     </form>
+    <div v-if="loading">
+
+    </div>
   </main>
 </template>
