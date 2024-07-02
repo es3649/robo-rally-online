@@ -8,13 +8,13 @@ export const useConnectionStore = defineStore({
     id: 'connection',
     state() {
         return {
-            conn: undefined,
+            sock: undefined,
             req_ok: ref(false)
         }
     },
     actions: {
         connect(details: ConnectionDetails): void {
-            // do socket stuff
+            
         },
         /**
          * join a room and switch to a tcp connection

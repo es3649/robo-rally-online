@@ -1,6 +1,7 @@
 import { Game } from "./game";
 import { GameServer } from "./game_server";
 import { Player } from "../models/player";
+import { randomUUID } from "crypto";
 
 declare type GameStore = Map<string,Game>
 
@@ -9,6 +10,10 @@ const store: GameStore = new Map<string,Game>()
 const LETTERS: string = 'BCDFGHJKLNPQRTVWXZ'
 const MAX_GAMES = 100
 
+/**
+ * creates a 4-digit room code
+ * @returns a randomly generated 4-letter code
+ */
 function make_game_code(): string {
 
     let parts: string[] = []
@@ -31,8 +36,10 @@ export function get_game(game_code:string): Game|undefined {
  * @param game_type the type of game to be hosted
  * @returns the game object created
  */
-export function add_game(host_code:string, game_type: string): Game | string {
+export function add_game(host_name:string, game_type: string): Game | string {
+    console.log("Adding game")
     if (store.size >= MAX_GAMES) {
+        console.log("Max game count exceeded")
         return "Max game count exceeded"
     }
     // create a variable to hold the new game
@@ -55,7 +62,11 @@ export function add_game(host_code:string, game_type: string): Game | string {
                 return true
             },
             add_player(player) {
-                return ""
+                return {
+                    host: 'localhost',
+                    port: 12345,
+                    AES: ""
+                }
             },
             stop() {}
         }
@@ -65,14 +76,14 @@ export function add_game(host_code:string, game_type: string): Game | string {
 
     do {
         game_code = make_game_code()
-    } while (!store.has(game_code))
+    } while (store.has(game_code))
 
     // construct the game
     const game: Game = {
         room_code: game_code,
         players: new Map<string,Player>(),
-        host: undefined,
-        host_code: host_code,
+        host: host_name,
+        host_code: randomUUID(),
         lobby_open: true,
         game_server: game_server,
         time_created: new Date(),

@@ -14,7 +14,7 @@ export declare type Game = {
     room_code: string
     players: Map<string,Player>,
     host_code: string,
-    host: Player|undefined,
+    host: string,
     lobby_open: boolean,
     game_server: GameServer,
     time_created: Date,

@@ -71,7 +71,7 @@ export function join_post_handler(req: Request, res: Response): void {
     //  did the player provide a valid host code and in all other respects appear to be the host
     if (body.host_key != undefined && body.host_key == game.host_code) {
         // make them host
-        game.host = player
+        game.host = player.name
     }
 
     // we good

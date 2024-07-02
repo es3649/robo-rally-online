@@ -26,8 +26,8 @@ async function join() {
     failed.value = true
   } else {
     joined.value = true
-    // router.push('/lobby')
-    console.log('goto lobby :D')
+    router.push('/lobby')
+    router.forward()
   }
   loading.value = false
 }
@@ -41,9 +41,9 @@ async function join() {
     </div>
     <form v-if="!joined && !loading" @submit.prevent="join()">
       <label for="room_code">Room Code</label>
-      <input name="room_code" type="text" placeholder="code" v-model="room_code"> <br/>
+      <input id="room_code" type="text" placeholder="code" v-model="room_code" required> <br/>
       <label for="player_name">Player Name</label>
-      <input name="player_name" type="text" placeholder="name" v-model="player_name"> <br/>
+      <input id="player_name" type="text" placeholder="name" v-model="player_name" required> <br/>
       <input type="submit">
     </form>
     <div v-if="loading">

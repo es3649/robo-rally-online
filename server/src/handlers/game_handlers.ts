@@ -14,8 +14,10 @@ export function games_post_handler(req: Request, res: Response): void {
     try {
         // typecast
         body = req.body as games_POST_req
+        console.log(body)
     } catch (error) {
         // typecast failed, sent error
+        console.log("Failed to parse request body")
         res.status(http.BAD_REQUEST)
         res.send(error)
         return
@@ -26,6 +28,7 @@ export function games_post_handler(req: Request, res: Response): void {
 
     // check if the game was created
     if (typeof game == 'string') {
+        console.log("Unable to create game")
         res.status(http.SERVICE_UNAVAILABLE)
         res.send(game)
         return
@@ -38,6 +41,7 @@ export function games_post_handler(req: Request, res: Response): void {
         host_code: game.host_code
     }
     res.send(resp)
+    console.log("Game created")
 }
 
 /**
@@ -46,6 +50,7 @@ export function games_post_handler(req: Request, res: Response): void {
  * @param res The response object
  */
 export function games_delete_handler(req: Request, res: Response): void {
-    res.send(http.NOT_IMPLEMENTED)
+    res.status(http.NOT_IMPLEMENTED)
+    res.send()
     return
 }
