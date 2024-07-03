@@ -3,18 +3,42 @@ import { acceptHMRUpdate, defineStore } from "pinia";
 import axios, { AxiosError, type AxiosResponse, type AxiosStatic } from "axios";
 import type { join_POST_req } from "@/models/api_models";
 import type { ConnectionDetails } from "@/models/connection";
+import { io } from "socket.io-client"
+
+export declare interface EventHandler {
+    game_start_handler(): void,
+    game_end_handler(): void,
+    begin_programming_handler(): void,
+
+}
 
 export const useConnectionStore = defineStore({
     id: 'connection',
     state() {
         return {
-            sock: undefined,
-            req_ok: ref(false)
+            sock: io(),
+            sock_connected: false,
+            req_ok: ref(false),
+            handlers: {}
         }
     },
     actions: {
+        game_start_handler() {},
         connect(details: ConnectionDetails): void {
-            
+            this.sock= io(`https://${details.host}:${details.port}`)
+
+            // connection handler
+            this.sock.on("connect", () => {
+                this.sock_connected = true
+            })
+
+            // disconnect handler
+            this.sock.on("disconnect", () => {
+                this.sock_connected = false
+            })
+
+            // 
+            this.sock.on("game_start", this.game_start_handler)
         },
         /**
          * join a room and switch to a tcp connection

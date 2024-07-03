@@ -17,5 +17,4 @@ export declare interface join_POST_req {
 export declare interface join_POST_res {
     host: string,
     port: number,
-    AES: string
 }

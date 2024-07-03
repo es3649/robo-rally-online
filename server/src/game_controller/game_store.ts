@@ -1,5 +1,5 @@
 import { Game } from "./game";
-import { GameServer } from "./game_server";
+import { GameServer } from "../game_server/server";
 import { Player } from "../models/player";
 import { randomUUID } from "crypto";
 
@@ -65,7 +65,6 @@ export function add_game(host_name:string, game_type: string): Game | string {
                 return {
                     host: 'localhost',
                     port: 12345,
-                    AES: ""
                 }
             },
             stop() {}

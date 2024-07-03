@@ -1,5 +1,5 @@
 import { Player } from '../models/player'
-import { GameServer } from './game_server'
+import { GameServer } from '../game_server/server'
 
 // the maximum number of players allowed in a game
 export const MAX_PLAYERS: number = 6

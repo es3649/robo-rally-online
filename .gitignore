@@ -32,3 +32,6 @@ out
 
 test-results/
 playwright-report/
+
+# vector graphic design files
+logoist/

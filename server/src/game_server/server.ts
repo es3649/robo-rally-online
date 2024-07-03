@@ -1,9 +1,6 @@
 import { Player } from "../models/player"
 import { ConnectionDetails } from '../models/connection'
-
-export declare type GameAction = {}
-
-
+import { GameAction } from '../models/game_data'
 
 /**
  * the GameServer interface allows a game server to be implemented in any number
