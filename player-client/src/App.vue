@@ -1,23 +1,32 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useGameStateStore } from './stores/game_state';
+import { GamePhase } from './models/game_data';
 import HelloWorld from './components/HelloWorld.vue'
+
+const game_state = useGameStateStore()
 </script>
 
 <template>
-  <header>
-    <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
+  <div v-if="game_state.phase == GamePhase.Lobby">
+    <header>
+      <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
+      <div class="wrapper">
+        <HelloWorld msg="RoboRally Online!" />
+        
+        <nav>
+          <RouterLink to="/host">Host</RouterLink>
+          <RouterLink to="/join">Join</RouterLink>
+        </nav>
+      </div>
+    </header>
+    
+    <RouterView />
+  </div>
+  <div v-else>
+    <RouterView />
+  </div>
 
-    <div class="wrapper">
-      <HelloWorld msg="RoboRally Online!" />
-
-      <nav>
-        <RouterLink to="/host">Host</RouterLink>
-        <RouterLink to="/join">Join</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
 </template>
 
 <style scoped>

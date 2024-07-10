@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps(['fill_color', 'border_color', 'value'])
 </script>
 

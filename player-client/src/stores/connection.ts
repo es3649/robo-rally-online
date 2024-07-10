@@ -16,6 +16,7 @@ export const useConnectionStore = defineStore({
     id: 'connection',
     state() {
         return {
+            // could we change this to a plyer object and let it hold the connection, or will that just create different issues?
             sock: io(),
             sock_connected: false,
             req_ok: ref(false),
@@ -23,9 +24,10 @@ export const useConnectionStore = defineStore({
         }
     },
     actions: {
-        game_start_handler() {},
+        game_start_handler () {},
+        begin_programming_handler() {},
         connect(details: ConnectionDetails): void {
-            this.sock= io(`https://${details.host}:${details.port}`)
+            this.sock = io(`https://${details.host}:${details.port}`)
 
             // connection handler
             this.sock.on("connect", () => {
@@ -39,6 +41,7 @@ export const useConnectionStore = defineStore({
 
             // 
             this.sock.on("game_start", this.game_start_handler)
+            this.sock.on("programming_phase", this.begin_programming_handler)
         },
         /**
          * join a room and switch to a tcp connection

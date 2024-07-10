@@ -1,4 +1,9 @@
-export declare type GameAction = {}
+import type { Player } from "./player"
+
+export declare type GameAction = {
+    action: ProgrammingCard,
+    actor: Player
+}
 
 export enum GamePhase {
     Lobby = -1,
