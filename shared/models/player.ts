@@ -33,3 +33,11 @@ export declare type Player = {
     conn_details?: ConnectionDetails,
     colors?: Color.Set
 }
+
+export declare type PlayerState = {
+    name: string,
+    energy: number,
+    checkpoints: number,
+    active: boolean,
+    priority: number,
+}

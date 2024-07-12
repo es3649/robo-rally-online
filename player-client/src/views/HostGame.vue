@@ -91,7 +91,12 @@ async function host() {
           <option disabled value="">select</option>
           <option value="virtual">Virtual</option>
           <option value="live">Live</option>
-        </select> <br/>
+        </select><br/>
+        <label for="respawn_behavior">Respawn Behavior</label>
+        <select id="respawn_behavior" required>
+          <option value="nearest" default>Nearest</option>
+          <option value="checkpoint">Checkpoint</option>
+        </select><br/>
         <input type="submit">
       </form>
     </div>

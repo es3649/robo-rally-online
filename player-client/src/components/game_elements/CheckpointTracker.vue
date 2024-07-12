@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useGameStateStore } from '@/stores/game_state'
 
 const game_state = useGameStateStore()

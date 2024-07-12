@@ -33,11 +33,11 @@ export namespace ProgrammingCard {
         const h = card as Haywire
         return h.id != undefined && h.text != undefined
     }
-    export function get_text(card: ProgrammingCard): string {
-        if (is_haywire(card)) {
-            return card.text
+    export function get_text(action: CardAction): string {
+        if (is_haywire(action)) {
+            return action.text
         }
-        switch (card) {
+        switch (action) {
             case left:
                 return "Turn Left"
             case right:
@@ -61,6 +61,11 @@ export namespace ProgrammingCard {
         }
     }
 }
+export declare type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
+export declare type ProgrammingCard = {
+    id: number,
+    action: CardAction
+}
 
 export declare interface UpgradeCard {
     name: string,
@@ -72,7 +77,90 @@ export declare interface UpgradeCard {
     effect: (game_state:any) => void
 }
 
-export declare type ProgrammingCard = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
-
-export declare type RegisterArray = [ProgrammingCard|undefined, ProgrammingCard|undefined, ProgrammingCard|undefined, ProgrammingCard|undefined, ProgrammingCard|undefined]
+// This is annoying, but here's the data for a standard deck
+export const STANDARD_DECK: ProgrammingCard[] = [
+    {
+        action: 'left', 
+        id: 0
+    },{
+        action: 'left', 
+        id: 1
+    },{
+        action: 'left', 
+        id: 2
+    },{
+        action: 'left',
+        id: 3
+    },{
+        action: 'right', 
+        id: 4
+    },{
+        action: 'right', 
+        id: 5
+    },{
+        action: 'right', 
+        id: 6
+    },{
+        action: 'right',
+        id: 7
+    },{
+        action: 'forward1', 
+        id: 8
+    },{
+        action: 'forward1',
+        id: 9
+    },{
+        action: 'forward1',
+        id: 10
+    },{
+        action: 'forward1',
+        id: 11
+    },{
+        action: 'forward2', 
+        id: 12
+    },{
+        action: 'forward2',
+        id: 13
+    },{
+        action: 'forward2',
+        id: 14
+    },{
+        action: 'forward3',
+        id: 15
+    },{
+        action: 'back',
+        id: 16
+    },{
+        action: 'u_turn',
+        id: 17
+    },{
+        action: 'again',
+        id: 18
+    },{
+        action: 'power_up',
+        id: 19
+    }
+]
 export declare type ProgrammingHand = ProgrammingCard[]
+export declare type ProgrammingCardSlot = ProgrammingCard|undefined
+export declare type RegisterArray = [ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot]
+
+/**
+ * Check whether a RegisterArray contains any empty slots
+ * @param arr an array of ProgrammingCardSlots to check
+ * @returns true if any element is undefined
+ */
+export function anyRegisterEmpty(arr:RegisterArray): boolean {
+    /**
+     * reduces an array to determine if any element is undefined
+     * @param prev the value after the previous iteration
+     * @param cur the current array element
+     * @param idx the current index
+     * @param arr the parent array
+     * @returns true if the prev is true or if the current value is undefined
+     */
+    const anyUndefinedReducer = (prev:boolean, cur:ProgrammingCardSlot, idx:number, arr:ProgrammingCardSlot[]): boolean => {
+        return prev || cur === undefined
+    }
+    return arr.reduce<boolean>(anyUndefinedReducer, false)
+}

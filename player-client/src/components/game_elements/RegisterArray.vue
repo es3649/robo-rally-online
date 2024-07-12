@@ -9,7 +9,27 @@ const selected: Ref<number|undefined> = ref(undefined)
 </script>
 
 <template>
-    <div class="card" v-for="register in game_state.registers">
-        <ProgrammingCard v-if="register != undefined" fill_color="" border_color="" :value="register" @click="selected= (selected === undefined? 0 : undefined)"></ProgrammingCard>
+    <div class="card-holder">
+        <div class="card" v-for="register in game_state.registers">
+            <ProgrammingCard v-if="register != undefined" fill_color="" border_color="" :value="register" @click="selected= (selected === undefined? 0 : undefined)"></ProgrammingCard>
+            <div v-else class="empty-slot">
+                <p>Program smth here</p>
+            </div>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.card-holder {
+    display: flex;
+}
+.empty-slot {
+    width: 100px;
+    height: 100px;
+    background-color: #808080;
+    border-color: #353535;
+    border-style: solid;
+    border-width: 3px;
+    border-radius: 10px;
+}
+</style>
