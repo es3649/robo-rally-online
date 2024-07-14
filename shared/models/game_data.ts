@@ -29,7 +29,7 @@ export namespace ProgrammingCard {
         // to implement this guy, we may need access to a lot of data
         effect: (game_state:any) => void
     }
-    export function is_haywire(card:string | Haywire): card is Haywire {
+    export function is_haywire(card:string|undefined|Haywire): card is Haywire {
         const h = card as Haywire
         return h.id != undefined && h.text != undefined
     }
@@ -78,72 +78,81 @@ export declare interface UpgradeCard {
 }
 
 // This is annoying, but here's the data for a standard deck
-export const STANDARD_DECK: ProgrammingCard[] = [
-    {
-        action: 'left', 
-        id: 0
-    },{
-        action: 'left', 
-        id: 1
-    },{
-        action: 'left', 
-        id: 2
-    },{
-        action: 'left',
-        id: 3
-    },{
-        action: 'right', 
-        id: 4
-    },{
-        action: 'right', 
-        id: 5
-    },{
-        action: 'right', 
-        id: 6
-    },{
-        action: 'right',
-        id: 7
-    },{
-        action: 'forward1', 
-        id: 8
-    },{
-        action: 'forward1',
-        id: 9
-    },{
-        action: 'forward1',
-        id: 10
-    },{
-        action: 'forward1',
-        id: 11
-    },{
-        action: 'forward2', 
-        id: 12
-    },{
-        action: 'forward2',
-        id: 13
-    },{
-        action: 'forward2',
-        id: 14
-    },{
-        action: 'forward3',
-        id: 15
-    },{
-        action: 'back',
-        id: 16
-    },{
-        action: 'u_turn',
-        id: 17
-    },{
-        action: 'again',
-        id: 18
-    },{
-        action: 'power_up',
-        id: 19
-    }
-]
+export function newStandardDeck(): ProgrammingCard[] {
+    return [
+        {
+            action: 'left', 
+            id: 0
+        },{
+            action: 'left', 
+            id: 1
+        },{
+            action: 'left', 
+            id: 2
+        },{
+            action: 'left',
+            id: 3
+        },{
+            action: 'right', 
+            id: 4
+        },{
+            action: 'right', 
+            id: 5
+        },{
+            action: 'right', 
+            id: 6
+        },{
+            action: 'right',
+            id: 7
+        },{
+            action: 'forward1', 
+            id: 8
+        },{
+            action: 'forward1',
+            id: 9
+        },{
+            action: 'forward1',
+            id: 10
+        },{
+            action: 'forward1',
+            id: 11
+        },{
+            action: 'forward2', 
+            id: 12
+        },{
+            action: 'forward2',
+            id: 13
+        },{
+            action: 'forward2',
+            id: 14
+        },{
+            action: 'forward3',
+            id: 15
+        },{
+            action: 'back',
+            id: 16
+        },{
+            action: 'u_turn',
+            id: 17
+        },{
+            action: 'again',
+            id: 18
+        },{
+            action: 'power_up',
+            id: 19
+        }
+    ]
+}
+
 export declare type ProgrammingHand = ProgrammingCard[]
 export declare type ProgrammingCardSlot = ProgrammingCard|undefined
-export declare type RegisterArray = [ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot]
+// export declare type RegisterArray = [ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot]
+export declare type RegisterArray = [ProgrammingCard[], ProgrammingCard[], ProgrammingCard[], ProgrammingCard[], ProgrammingCard[]]
+
+export function newRegisterArray(): RegisterArray {
+    return [[], [], [], [], []]
+}
+
 
 /**
  * Check whether a RegisterArray contains any empty slots
@@ -159,8 +168,9 @@ export function anyRegisterEmpty(arr:RegisterArray): boolean {
      * @param arr the parent array
      * @returns true if the prev is true or if the current value is undefined
      */
-    const anyUndefinedReducer = (prev:boolean, cur:ProgrammingCardSlot, idx:number, arr:ProgrammingCardSlot[]): boolean => {
-        return prev || cur === undefined
+    const anyUndefinedReducer = (prev:boolean, cur:ProgrammingCard[], idx:number, arr:ProgrammingCard[][]): boolean => {
+        // return prev || cur === undefined
+        return prev || cur.length === 0
     }
     return arr.reduce<boolean>(anyUndefinedReducer, false)
 }

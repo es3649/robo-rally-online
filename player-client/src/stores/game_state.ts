@@ -1,9 +1,8 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
-import { GamePhase, ProgrammingCard, STANDARD_DECK } from "@/models/game_data";
+import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray } from "@/models/game_data";
 import type { RegisterArray, UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
 import type { PlayerState } from "@/models/player";
 
-const EMPTY_REGISTERS: RegisterArray = [undefined, undefined, undefined, undefined, undefined]
 const PROGRAMMING_HAND_SIZE: number = 9
 
 export const useGameStateStore = defineStore({
@@ -12,13 +11,13 @@ export const useGameStateStore = defineStore({
         return {
             // the programming cards in our hand
             programming_hand: [] as ProgrammingCardSlot[],
-            programming_deck: STANDARD_DECK as ProgrammingCard[],
+            programming_deck: newStandardDeck(),
             programming_discard: [] as ProgrammingCard[],
             in_play: [] as ProgrammingCardSlot[],
 
             // the cards we have programmed
-            registers: EMPTY_REGISTERS,
-            next_registers: EMPTY_REGISTERS,
+            registers: newRegisterArray(),
+            next_registers: newRegisterArray(),
             // the energy we have
             energy: 3,
             // the checkpoints we have
@@ -81,26 +80,26 @@ export const useGameStateStore = defineStore({
          * @param register the register in which the gard is being programmed
          * @returns true if the card was able to be programmed (i.e. can't program over Haywire)
          */
-        program(idx:number, register:number):boolean {
-            // the register is currently empty
-            const cur = this.registers[register]
-            if (cur == undefined) {
-                // program the card
-                this.registers[register] = this.programming_hand[idx]
-                // remove the card from the hand
-                this.programming_hand[idx]
-                return true
-            }
-            if (ProgrammingCard.is_haywire(cur.action)) {
-                // we can't program over a haywire
-                return false
-            }
+        // program(idx:number, register:number):boolean {
+        //     // the register is currently empty
+        //     const cur = this.registers[register][0]
+        //     if (cur == undefined) {
+        //         // program the card
+        //         this.registers[register] = [this.programming_hand[idx]]
+        //         // remove the card from the hand
+        //         this.programming_hand[idx]
+        //         return true
+        //     }
+        //     if (ProgrammingCard.is_haywire(cur.action)) {
+        //         // we can't program over a haywire
+        //         return false
+        //     }
 
-            // there is already a card in that slot, swap them
-            this.registers[register] = this.programming_hand[idx]
-            this.programming_hand[idx] = cur
-            return true
-        },
+        //     // there is already a card in that slot, swap them
+        //     this.registers[register] = this.programming_hand[idx]
+        //     this.programming_hand[idx] = cur
+        //     return true
+        // },
         next_phase() {
             switch(this.phase) {
                 case GamePhase.Lobby:
@@ -112,7 +111,7 @@ export const useGameStateStore = defineStore({
                     // then clear the previous registers
                     this.clearRegisters()
                     this.registers = this.next_registers
-                    this.next_registers = EMPTY_REGISTERS
+                    this.next_registers = newRegisterArray()
                     break
                 case GamePhase.Upgrade:
                     this.phase = GamePhase.Programming
@@ -170,13 +169,14 @@ export const useGameStateStore = defineStore({
          * clear the registers
          */
         clearRegisters(): void {
-            this.registers.forEach((card:ProgrammingCardSlot) => {
+            this.registers.forEach((card:ProgrammingCard[]) => {
                 // programmed spam and haywire are discarded
-                if (card === undefined || card.action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card.action)) {
+                // if (card === undefined || card.action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card.action)) {
+                if (card.length == 0 || card[0].action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card[0].action)) {
                     return
                 }
                 // otherwise discard the card
-                this.programming_discard.push(card)
+                this.programming_discard.push(card[0])
             })
         },
         /** 
@@ -196,6 +196,13 @@ export const useGameStateStore = defineStore({
                 this.programming_deck[random_idx] = tmp
             }
         },
+        /**
+         * Submit the current program for execution
+         */
+        submitProgram() {
+            // later this needs to call the socket, then wait until the socket changes the game phase
+            this.next_phase()
+        },
         new_action(action:GameAction|undefined=undefined) {
             if (action != undefined) {
                 this.action = action
@@ -208,8 +215,10 @@ export const useGameStateStore = defineStore({
             const dark = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`
             const lite = `#${(r+50).toString(16).padStart(2,)}${(g+50).toString(16)}${(b+50).toString(16)}`
 
+            const DECK = newStandardDeck()
+
             this.action = {
-                action: STANDARD_DECK[Math.floor(Math.random() * STANDARD_DECK.length)],
+                action: DECK[Math.floor(Math.random() * DECK.length)],
                 actor: {
                     name: 'Jamison',
                     colors: {
