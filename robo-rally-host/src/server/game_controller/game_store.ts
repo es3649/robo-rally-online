@@ -1,6 +1,6 @@
 import { Game } from "./game";
-import { GameServer } from "../game_server/server";
-import { Player } from "../models/player";
+import { GameServer } from "../../game_server/server";
+import { Player } from "../../models/player";
 import { randomUUID } from "crypto";
 
 declare type GameStore = Map<string,Game>
@@ -48,9 +48,6 @@ export function add_game(host_name:string, game_type: string): Game | string {
     // construct a live game server if 
     if (game_type == 'live') {
         game_server = {
-            do_move(player, move) {
-                return true
-            },
             add_player(player) {
                 return ""
             },
@@ -58,9 +55,6 @@ export function add_game(host_name:string, game_type: string): Game | string {
         }
     } else /* use default: (game_type == 'virtual') */ {
         game_server = {
-            do_move(player, move) {
-                return true
-            },
             add_player(player) {
                 return {
                     host: 'localhost',

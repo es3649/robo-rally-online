@@ -223,11 +223,17 @@ export const useGameStateStore = defineStore({
                     name: 'Jamison',
                     colors: {
                         fill_color: lite,
-                        card_color: lite,
                         border_color: dark,
                     }
                 }
             }
+        },
+        draw_upgrade(): void {
+            if (this.energy < 1) {
+                return
+            }
+            // pull an upgrade card
+            this.energy -= 1
         }
     }
 })

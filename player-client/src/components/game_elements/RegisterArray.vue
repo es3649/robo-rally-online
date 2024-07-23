@@ -23,16 +23,18 @@ declare type onMoveEvent<T> = {
 }
 
 /**
- * This is currently passed to @change on the draggable to stop the registers from getting too
+ * This is currently passed to @add on the draggable to stop the registers from getting too
  * long, however it's kind of a band-aid. I would like to prevent new objects from being added
  * at all, instead of just removing them after the fact.
  * 
  * If the registers are set to be the correct size with overflow=hidden in CSS, this actually
  * looks OK because you can't see the other one going in
  * 
- * I may be able to use the @move, @add, or @update handles as well.
+ * I may be able to use the @move, @change, or @update handles as well.
  */
 function rebalance(): void  {
+    // TODO: if we have crab legs, the length is 2, and it contains one turn and a move forward,
+    // then move the cards elsewhere to hold, and create a move right/left
     game_state.registers.forEach((register:Card[]) => {
         // make sure that the register isn't too full
         while (register.length > 1) {
@@ -43,8 +45,6 @@ function rebalance(): void  {
         }
     })
 }
-
-
 </script>
 
 <template>
@@ -54,7 +54,7 @@ function rebalance(): void  {
                 class="register"
                 :disabled="game_state.phase != GamePhase.Programming"
                 v-model="game_state.registers[idx]"
-                @change="rebalance"
+                @add="rebalance"
                 group="in_play"
                 item-key="id"
             >

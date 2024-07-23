@@ -48,7 +48,10 @@ function finish(): void {
          <div v-if="game_state.phase == GamePhase.Upgrade">
 
              <!-- current execution (register #, cur player, ) -->
-             
+            <button @click="game_state.draw_upgrade" 
+                :disabled="game_state.energy < 1"
+                :title="game_state.energy < 1 ? 'Insufficient energy' : undefined"
+            >Draw Upgrade (1 Energy)</button>
         </div>
         <div v-else>
             <!-- programming registers -->
