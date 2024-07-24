@@ -27,5 +27,13 @@
  */
 
 import './index.css';
+import { createApp } from 'vue';
+import App from './App.vue'
+import router from './router';
+
+// create and mount the Vue app
+const app = createApp(App)
+app.use(router)
+app.mount('#app')
 
 console.log('👋 This message is being logged by "renderer.ts", included via Vite');

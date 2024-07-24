@@ -25,6 +25,7 @@
     "@types/express": "^4.17.21",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vitejs/plugin-vue": "^5.1.0",
     "electron": "31.2.0",
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.29.1",
@@ -45,6 +46,9 @@
     "electron-squirrel-startup": "^1.0.1",
     "express": "^4.19.2",
     "http-status-codes": "^2.3.0",
-    "socket.io": "^4.7.5"
+    "pinia": "^2.1.7",
+    "socket.io": "^4.7.5",
+    "vue": "^3.4.33",
+    "vue-router": "^4.4.0"
   }
 }

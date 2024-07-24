@@ -33,7 +33,9 @@ io.on('connection', (socket) => {
     // add socket handlers here
 })
 
-// listen and serve
-app.listen(port, () => {
-    console.log(`[server]: Server is running at http://localhost:${port}`);
-});
+export function start(): void {
+    // listen and serve
+    server.listen(port, () => {
+        console.log(`[server]: Server is running at http://localhost:${port}`);
+    });
+}
