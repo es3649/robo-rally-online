@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["walls", "spaces", "x_dim", "y_dim"],
+  "properties": {
+    "walls": {
+      "type": "object",
+      "required": ["horizontal_walls", "vertical_walls"],
+      "properties": {
+        "horizontal_walls": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "array",
+            "maxItems": 13,
+            "items": {
+              "type": ["object", "null"],
+              "properties": {
+                "hi": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": ["standard", "laser", "laser2", "laser3"]
+                    },{
+                      "type": "object",
+                      "required": ["registers"],
+                      "properties": {
+                        "registers": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "lo": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": ["standard", "laser", "laser2", "laser3"]
+                    },{
+                      "type": "object",
+                      "required": ["registers"],
+                      "properties": {
+                        "registers": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "vertical_walls": {
+          "type": "array",
+          "maxItems": 13,
+          "items": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {
+              "type": ["object", "null"],
+              "properties": {
+                "hi": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": ["standard", "laser", "laser2", "laser3"]
+                    },{
+                      "type": "object",
+                      "required": ["registers"],
+                      "properties": {
+                        "registers": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                "lo": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": ["standard", "laser", "laser2", "laser3"]
+                    },{
+                      "type": "object",
+                      "required": ["registers"],
+                      "properties": {
+                        "registers": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "spaces": {
+      "type": "array",
+      "maxItems": 12,
+      "minItems": 3,
+      "items": {
+        "type": "array",
+        "maxItems": 12,
+        "minItems": 3,
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["conv_F", "conv_L", "conv_R", "conv_RF", "conv_LF", "conv_LRF", "conv2_F", "conv2_L", "conv2_R", "conv2_RF", "conv2_LF", "conv2_LRF", "gear_R", "gear_L", "pit", "battery", "spawn"]
+            },
+            "cover": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "required": ["number"],
+                  "properties": {
+                    "number": {
+                      "type": "integer"
+                    }
+                  }
+                },{
+                  "type": "string",
+                  "enum": ["scrambler", "crusher", "respawn"]
+                }
+              ]
+            },
+            "orientation": {
+              "type": "string",
+              "enum": ["N", "S", "E", "W"]
+            },
+            "cover_orientation": {
+              "type": "string",
+              "enum": ["N", "S", "E", "W"]
+            }
+          }
+        }
+      }
+    },
+    "x_dim": {
+      "type": "integer"
+    },
+    "y_dim": {
+      "type": "integer"
+    }
+  }
+}

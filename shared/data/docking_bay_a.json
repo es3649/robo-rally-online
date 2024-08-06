@@ -1,0 +1,38 @@
+{
+    "$schema": "./board_schema.json",
+    "x_dim": 3,
+    "y_dim": 12,
+    "walls": {
+        "horizontal_walls": [
+            [null,null,null,null,{},null,null,null,{},null,null,null,null],
+            [null,null,null,null,{},null,null,null,{},null,null,null,null],
+            [null,null,null,null,{},null,null,null,{},null,null,null,null]
+        ],
+        "vertical_walls": [
+            [null,null,null,null,null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null,null,null,null,null],
+            [null,null,null,null,null,null,null,null,null,null,null,null]
+        ]
+    },
+    "spaces": [
+        [
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"},
+            {"type": "spawn"}
+        ],[
+            {},{},{},{},{},{},{},{},{},{},{},{}
+        ],[
+            {},{},{},{},{},{},{},{},{},{},{},{}
+        ]
+    ]
+}
