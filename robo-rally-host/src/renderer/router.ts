@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomeView from "./views/HomeView.vue";
+import LobbyView from "./views/LobbyView.vue";
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -9,6 +10,10 @@ const router = createRouter({
             name: 'home',
             component: HomeView
         },{
+            path: '/lobby',
+            name: 'lobby',
+            component: LobbyView
+        },{
             path: '/robots',
             name: 'robots',
             component: () => import('./views/RobotsView.vue')
@@ -16,6 +21,10 @@ const router = createRouter({
             path: '/board',
             name: 'board',
             component: () => import('./views/BoardView.vue')
+        },{
+            path: '/game',
+            name: 'game',
+            component: () => import('./views/GameView.vue')
         }
     ]
 })
