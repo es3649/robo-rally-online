@@ -1,0 +1,50 @@
+{
+    "extends": "@vue/tsconfig/tsconfig.dom.json",
+    // copy non-emit settings down this dependency
+    "include": ["env.d.ts", "src/**/*", "src/**/*.vue"],
+    "noEmit": false,
+    "compilerOptions": {
+        // copied from @vue/tsconfig/tsconfig.json
+        "noEmit": false, // changed from original because electron needs it
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "jsx": "preserve",
+        "jsxImportSource": "vue",
+        "noImplicitThis": true,
+        "strict": true,
+        "verbatimModuleSyntax": true,
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
+
+        // copied from @vue/tsconfig/tsconfig.dom.json
+        "lib": [
+        // Target ES2020 to align with Vite.
+        // <https://vitejs.dev/config/build-options.html#build-target>
+        // Support for newer versions of language built-ins are
+        // left for the users to include, because that would require:
+        //   - either the project doesn't need to support older versions of browsers;
+        //   - or the project has properly included the necessary polyfills.
+        "ES2020",
+
+        "DOM",
+        "DOM.Iterable"
+
+        // No `ScriptHost` because Vue 3 dropped support for IE
+        ],
+
+        // Set to empty to avoid accidental inclusion of unwanted types
+        "types": [],
+
+        // my own configs
+        "composite": true,
+        "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"]
+        }
+    }
+}

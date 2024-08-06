@@ -1,6 +1,8 @@
-import { app, BrowserWindow } from 'electron';
-import path from 'path';
-import { start } from './server/server'
+import { app, BrowserWindow, ipcMain, utilityProcess } from 'electron';
+import * as path from 'path';
+import { connectRobot } from './main/bluetooth';
+
+// import { start } from './server/server'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -23,6 +25,11 @@ const createWindow = () => {
   } else {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
+
+  // register ipc listeners
+  ipcMain.on('ble-connect', (event: Electron.IpcMainEvent, name: string) => {
+    connectRobot(name)
+  })
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -53,4 +60,13 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-start()
+// initialize game server (incl board)
+// begin robot connections
+
+// listen and serve
+console.log('starting utility process')
+// const proc = utilityProcess.fork(path.join(__dirname, 'server.ts'), [], {
+//   stdio: ['ignore', 'pipe', 'pipe'],
+//   serviceName: 'HttpServer'
+// })
+// const proc = childProcess.fork()

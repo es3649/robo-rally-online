@@ -30,9 +30,11 @@ import './index.css';
 import { createApp } from 'vue';
 import App from './App.vue'
 import router from './router';
+import { createPinia } from 'pinia';
 
 // create and mount the Vue app
 const app = createApp(App)
+app.use(createPinia())
 app.use(router)
 app.mount('#app')
 
