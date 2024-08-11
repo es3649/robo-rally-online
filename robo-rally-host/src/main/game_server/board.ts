@@ -1,5 +1,5 @@
-import { Orientation, RotationDirection } from "./movement"
-import type { AbsoluteMovement, BoardPosition, MotionArray, Rotation } from "./movement"
+import { Orientation, RotationDirection, Rotation } from "./movement"
+import type { AbsoluteMovement, BoardPosition, MotionArray } from "./movement"
 
 const BOARD_SIZE = 12
 
@@ -60,7 +60,6 @@ export type Wall = null | {
  */
 export namespace SpaceCoverType {
     export const SCRAMBLER = "scrambler"
-    export const CRUSHER = "crusher"
     export const RESPAWN = "respawn"
     export type CHECKPOINT = {
         number: number
@@ -69,8 +68,15 @@ export namespace SpaceCoverType {
         if (!!obj && obj.number !== undefined) return true
         return false
     }
+    export type CRUSHER = {
+        registers: number[]
+    }
+    export function isCRUSHER(obj: any): obj is CRUSHER {
+        if (!!obj && obj.registers !== undefined) return true
+        return false
+    }
 }
-export type SpaceCoverType = "respawn" | "scrambler" | "crusher" | SpaceCoverType.CHECKPOINT
+export type SpaceCoverType = "respawn" | "scrambler" | SpaceCoverType.CRUSHER | SpaceCoverType.CHECKPOINT
 
 /**
  * a full board space. It specifies the type of the space, a cover on the space, and any
@@ -172,6 +178,9 @@ class WallArray {
 export type BoardData = {
     spaces: BoardArray
     walls: WallArray
+    x_dim: number
+    y_dim: number
+    display_name: string
 }
 
 /**
@@ -199,11 +208,56 @@ export class Board {
         this.build_component_data()
     }
 
+    /**
+     * Rotates the board by 90-degrees in the given direction. This means tiles are moved, and 
+     * oriented tiles are rotated
+     * @param dir the direction in which to rotate the board
+     */
     rotate_board(dir: RotationDirection) {
         // rotate the data :P
+        // use the affine transformation from a rotation matrix
+        // CW: x, y = y, 11 - x; E/W facing hi-lo switches sides
+        // CCW: x, y = 11-y, x; N/S facing hi-lo switches sides
+        const X_DIM = this.data.x_dim
+        const Y_DIM = this.data.y_dim
+
+        // rotate the spaces
+        let spaces: Space[][] = []
+        // iterate over the x-dim TO BE
+        for (let x = 0; x < this.data.y_dim; x++) {
+            let col: Space[] = []
+            // iterate over the columns TO BE
+            for (let y = 0; y < this.data.x_dim; y++) {
+                // which direction are we rotating?
+                if (dir == RotationDirection.CW) {
+                    // use the formula above to determine which tile on the original board goes here
+                    const sp = this.data.spaces[y][Y_DIM - x]
+                    // if it's oriented, rotate that as well
+                    if (sp.orientation != undefined) {
+                        sp.orientation = Orientation.rotate(sp.orientation, RotationDirection.CW)
+                    }
+                    col.push(sp)
+                } else /* dir == CCW */ {
+                    // similar to CW case
+                    const sp = this.data.spaces[X_DIM-y][x]
+                    if (sp.orientation != undefined) {
+                        sp.orientation = Orientation.rotate(sp.orientation, RotationDirection.CCW)
+                    }
+                    col.push(sp)
+                }
+            }
+            spaces.push(col)
+        }
+
+
+
         this.build_component_data()
     }
 
+    /**
+     * Build the data structures associated with the board in memory. This means tracing out paths
+     * traversable by conveyor, and listing other component types
+     */
     build_component_data() {
         this.battery_positions = []
         this.scrambler_positions = []
@@ -216,7 +270,7 @@ export class Board {
                     this.battery_positions.push({x:x, y:y})
                 }
 
-                if (this.data.spaces[x][y].cover === SpaceCoverType.CRUSHER) {
+                if (SpaceCoverType.isCRUSHER(this.data.spaces[x][y].cover)) {
                     this.crusher_positions.push({x:x,y:y})
                 } else if (this.data.spaces[x][y].cover === SpaceCoverType.SCRAMBLER) {
                     this.scrambler_positions.push({x:x,y:y})
@@ -243,15 +297,9 @@ export class Board {
     handle_gear(pos: BoardPosition): Rotation | undefined {
         const space = this.data.spaces[pos.x][pos.y]
         if (space.type === SpaceType.GEAR_L) {
-            return {
-                direction: RotationDirection.CCW,
-                units: 1
-            }
+            return new Rotation(RotationDirection.CCW, 1)
         } else if (space.type === SpaceType.GEAR_R) {
-            return {
-                direction: RotationDirection.CW,
-                units: 1
-            }
+            return new Rotation(RotationDirection.CW, 1)
         }
     }
 

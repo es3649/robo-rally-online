@@ -2,6 +2,7 @@ import { acceptHMRUpdate, defineStore } from "pinia";
 import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray } from "@/models/game_data";
 import type { RegisterArray, UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
 import type { PlayerState } from "@/models/player";
+import { socket } from "@/socket"
 
 const PROGRAMMING_HAND_SIZE: number = 9
 
@@ -234,6 +235,11 @@ export const useGameStateStore = defineStore({
             }
             // pull an upgrade card
             this.energy -= 1
+        },
+        bindEvents() {
+            socket.on('beginPhase', (phase: GamePhase) => {
+                this.next_phase()
+            })
         }
     }
 })

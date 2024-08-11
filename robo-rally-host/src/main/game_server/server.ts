@@ -1,11 +1,12 @@
-import { Color, Player, PlayerState } from "../models/player"
-import { ConnectionDetails } from '../models/connection'
-import { GameAction, GamePhase, RegisterArray } from '../models/game_data'
+import { Color, type Player, type PlayerState } from "../models/player"
+import type { ConnectionDetails } from '../models/connection'
+import { type GameAction, GamePhase, type RegisterArray } from '../models/game_data'
 import { Server, Socket } from "socket.io"
-import { ServerToClientEvents, ClientToServerEvents, ClientEvents, ServerEvents } from '../models/connection'
+import { type ServerToClientEvents, type ClientToServerEvents, ClientEvents, ServerEvents } from '../models/connection'
 import { randomUUID } from "crypto"
-import { MAX_PLAYERS } from "../game_controller/game"
-import { BoardManager } from "./board_action_manager"
+import { MAX_PLAYERS } from "../server/game_controller/game"
+import type { BoardManager } from "./board_action_manager"
+import type { Board } from "./board"
 
 
 /**
@@ -19,6 +20,7 @@ export declare interface GameServer {
     // do_move(player:Player, move: GameAction): boolean
     add_player(player_name: string): ConnectionDetails | string
     stop(): void
+    load_board(board: Board): void
 }
 
 interface InterServerEvents {
@@ -34,7 +36,7 @@ export class DataServer implements GameServer {
     private players = new Map<string,Player>() // maps player names to players
     private conn = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>()
     private programs = new Map<string, RegisterArray>()
-    private board_manager: BoardManager|undefined
+    private board_manager: BoardManager
     private player_states = new Map<string, PlayerState>()
 
     constructor(manager: BoardManager) {
@@ -88,6 +90,10 @@ export class DataServer implements GameServer {
 
     stop() {
         this.started = false
+    }
+
+    load_board(board: Board): void {
+        this.board_manager.load_board(board)
     }
 
     private activationPhase() {

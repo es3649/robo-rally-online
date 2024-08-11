@@ -20,9 +20,6 @@ export default defineConfig((env) => {
     plugins: [pluginExposeRenderer(name), vue()],
     resolve: {
       preserveSymlinks: true,
-      alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url))
-      }
     },
     clearScreen: false,
   } as UserConfig;

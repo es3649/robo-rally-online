@@ -1,4 +1,7 @@
-import { GameAction, GamePhase, RegisterArray, UpgradeCard } from './game_data'
+import { GamePhase } from './game_data'
+import type { GameAction, RegisterArray, UpgradeCard } from './game_data'
+import type { Character } from './player'
+
 export declare interface ConnectionDetails {
     host: string,
     port: number,
@@ -10,6 +13,13 @@ export interface ServerToClientEvents {
     basicEmit: (a:number, b:string, c:boolean) => void
     withAck: (d:string, callback: (e:number) => void) => void
 
+    // lobby events
+    robots: (bots: Character[]) => void
+    playerJoined: (name: string) => void
+    playerUpdated: (robot: Character) => void
+    gameStarted: () => void
+
+    // game events
     beginPhase: (a: GamePhase) => void
     showAction: (action: GameAction) => void
     requestInput: (message: string, image: string, callback: (resp: boolean) => void) => void
@@ -17,11 +27,21 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+    // lobby events
+    join: (name: string, callback: (resp:string) => void) => void
+    getRobots: () => void
+    selectRobot: (name: string, callback: (resp:string) => void) => void
+
+    // game events
     submitProgram: (playerID:string, program: RegisterArray) => void
     shutdown: () => void
     buyUpgrade: (callback: (upgrade: UpgradeCard) => void) => void
     equipUpgrade: (upgrade: UpgradeCard) => void
     useUpgrade: (upgrade: UpgradeCard) => void
+}
+
+export const EventsMap = {
+    join: true
 }
 
 export namespace ServerEvents {

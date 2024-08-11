@@ -1,5 +1,8 @@
 {
-  "$schema": "./board_schema.json",
+  "$schema": "../board_schema.json",
+  "display_name": "Laser Maze",
+  "x_dim": 12,
+  "y_dim": 12,
   "walls": {
     "horizontal_walls": [
       [null,{},null,null,null,null,null,null,null,null,{},null,null],

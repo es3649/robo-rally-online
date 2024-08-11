@@ -11,6 +11,7 @@ import { RouterLink, RouterView } from 'vue-router';
         <p>Now rendering a Vue App :D</p>
         <nav>
             <RouterLink to="/robots">Robots</RouterLink>
+            &nbsp;
             <RouterLink to="/board">Board</RouterLink>
         </nav>
         <RouterView />

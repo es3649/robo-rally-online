@@ -1,8 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["walls", "spaces", "x_dim", "y_dim"],
+  "required": ["walls", "spaces", "x_dim", "y_dim", "display_name"],
   "properties": {
+    "display_name": {
+      "type": "string"
+    },
     "walls": {
       "type": "object",
       "required": ["horizontal_walls", "vertical_walls"],
@@ -137,8 +140,19 @@
                     }
                   }
                 },{
+                  "type":"object",
+                  "required": ["registers"],
+                  "properties": {
+                    "registers": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                },{
                   "type": "string",
-                  "enum": ["scrambler", "crusher", "respawn"]
+                  "enum": ["scrambler", "respawn"]
                 }
               ]
             },

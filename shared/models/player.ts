@@ -1,4 +1,3 @@
-import type { ConnectionDetails } from "./connection"
 
 export namespace Color {
     export declare type Set = {
@@ -47,8 +46,7 @@ export declare type Character = {
 export declare type Player = {
     name: string,
     character?: Character,
-    conn?: undefined,
-    conn_details?: ConnectionDetails,
+    // conn?: undefined,
     colors?: Color.Set
 }
 

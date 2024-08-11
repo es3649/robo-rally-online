@@ -21,7 +21,7 @@ The `player-client` is a Vue+Vite+Pinia web application which provides a web int
 
 ### `robo-rally-host`
 
-The `robo-rally-host` is an Electron and Vite+Typescript desktop application which provides an interface for starting the `server`, choosing some game settings, and managing Bluetooth connections with the robots.
+The `robo-rally-host` is an Electron+Vite+Vue3 desktop application written in Typescript which provides an interface for starting the `server`, choosing some game settings, and managing Bluetooth connections with the robots.
 It also contains a express-powered and socket.io-enabled server for hosting and joining games, and for handling communication with the players.
 
 ### `bot-drivers`

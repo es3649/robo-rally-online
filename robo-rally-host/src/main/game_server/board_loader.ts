@@ -1,9 +1,20 @@
 import type { Board, BoardData } from "./board";
 
-function loadFromJson(file:string): Board {
+export function loadFromJson(file:string): any {
     return {}
 }
 
-function loadFromSerial(): Board {
+export function loadFromSerial(): any {
     return {}
+}
+
+const BOARD_PATH = ''
+
+export function listBoards(): string[] {
+    console.log('which boards?')
+    return [
+        "the_keep",
+        "pushy",
+        "in_and_out"
+    ]
 }

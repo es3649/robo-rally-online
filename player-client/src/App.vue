@@ -3,8 +3,13 @@ import { RouterLink, RouterView } from 'vue-router'
 import { useGameStateStore } from './stores/game_state';
 import { GamePhase } from './models/game_data';
 import HelloWorld from './components/HelloWorld.vue'
+import { socket } from './socket';
+
+// disable any listeners (after a hot module reload)
+socket.off()
 
 const game_state = useGameStateStore()
+game_state.bindEvents()
 </script>
 
 <template>
@@ -15,8 +20,7 @@ const game_state = useGameStateStore()
         <HelloWorld msg="RoboRally Online!" />
         
         <nav>
-          <RouterLink to="/host">Host</RouterLink>
-          <RouterLink to="/join">Join</RouterLink>
+          <RouterLink to="/join">Join the game</RouterLink>
         </nav>
       </div>
     </header>

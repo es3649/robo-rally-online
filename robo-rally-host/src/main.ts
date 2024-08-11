@@ -1,6 +1,10 @@
-import { app, BrowserWindow, ipcMain, utilityProcess } from 'electron';
+import { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } from 'electron';
 import * as path from 'path';
+import { networkInterfaces } from 'node:os'
+import { existsSync } from 'fs';
 import { connectRobot } from './main/bluetooth';
+import fork from 'child_process'
+import { listBoards } from './main/game_server/board_loader';
 
 // import { start } from './server/server'
 
@@ -17,6 +21,7 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
+
   });
 
   // and load the index.html of the app.
@@ -29,6 +34,20 @@ const createWindow = () => {
   // register ipc listeners
   ipcMain.on('ble-connect', (event: Electron.IpcMainEvent, name: string) => {
     connectRobot(name)
+  })
+
+  ipcMain.handle('get-ip', (): string|undefined => {
+    return networkInterfaces()['en0']?.filter(el => el.family === 'IPv4')[0].address
+  })
+
+  ipcMain.handle('boards:list-boards', listBoards)
+
+  ipcMain.on('boards:load-board', (event: Electron.IpcMainEvent, name: string): void => {
+    console.log(`loading ${name}`)
+  })
+
+  ipcMain.on('boards:load-serial', (event: Electron.IpcMainEvent): void => {
+    console.log('loading board from serial port')
   })
 
   // Open the DevTools.
@@ -64,9 +83,33 @@ app.on('activate', () => {
 // begin robot connections
 
 // listen and serve
+// const proc = utilityProcess.fork(path.join(__dirname, 'server.ts'), [], {})
+
+// const { port1, port2 } = new MessageChannelMain()
+
+const modulePath = path.join(__dirname, './server.js')
+if (!existsSync(modulePath)) {
+  throw new Error("Module path doesn't exist")
+}
+console.log(modulePath)
 console.log('starting utility process')
-// const proc = utilityProcess.fork(path.join(__dirname, 'server.ts'), [], {
+
+// const child = utilityProcess.fork(modulePath, [], {
 //   stdio: ['ignore', 'pipe', 'pipe'],
 //   serviceName: 'HttpServer'
 // })
-// const proc = childProcess.fork()
+
+const child = fork.fork(modulePath, [], {
+  stdio: 'pipe'
+})
+
+// const child = fork(modulePath, [], {
+//   stdio: ['pipe'],
+// })
+console.log('started')
+
+// child.postMessage({message: 'honlo'}, [port1])
+
+/**
+ * 
+ */

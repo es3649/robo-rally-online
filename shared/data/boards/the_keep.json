@@ -1,5 +1,5 @@
 {
-    "$schema": "./board_schema.json",
+    "$schema": "../board_schema.json",
     "x_dim": 12,
     "y_dim": 12,
     "walls": {

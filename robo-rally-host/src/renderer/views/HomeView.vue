@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import router from '../router';
 function beginSetup(): void {
-    window.electronAPI.connectRobot('ur mom')
-    router.push('/lobby')
+    router.replace('/lobby')
 }
 </script>
 
