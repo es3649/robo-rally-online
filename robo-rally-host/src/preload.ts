@@ -6,6 +6,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model
 import { contextBridge, ipcRenderer, utilityProcess } from "electron";
 import { gameStore } from "./main/stores/game_store";
+import { Board } from "./main/game_server/board";
 
 
 // load up ipc APIs
@@ -13,7 +14,7 @@ contextBridge.exposeInMainWorld('mainAPI', {
     connectRobot: (name: string): void => ipcRenderer.send('ble-connect', name),
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke('get-ip'),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke('boards:list-boards'),
-    loadBoard: (name: string): void => ipcRenderer.send('boards:load-board'),
+    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('boards:load-board'),
     loadSerial: (): void => ipcRenderer.send('boards:load-serial')
 })
 

@@ -1,5 +1,5 @@
 import { Orientation, RotationDirection, Rotation } from "./movement"
-import type { AbsoluteMovement, BoardPosition, MotionArray } from "./movement"
+import type { AbsoluteMovement, BoardPosition, MovementArray } from "./movement"
 
 const BOARD_SIZE = 12
 
@@ -25,7 +25,9 @@ export namespace SpaceType {
     export const BATTERY = "battery"        // a battery space
     export const SPAWN = "spawn"          // an initial (not respawn) point
 }
-export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | "conv2_LRF" | "gear_R" | "gear_L" | "pit" | "battery" | "spawn"
+export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | 
+    "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | 
+    "conv2_LRF" | "gear_R" | "gear_L" | "pit" | "battery" | "spawn"
 
 /**
  * The type of a wall, having a push panel, up to three lasers, or simply being a wall
@@ -97,7 +99,8 @@ export type SpaceArray = [Space, Space, Space, Space, Space, Space, Space, Space
 /**
  * an array of space arrays, making a complete board of spaces
  */
-export type BoardArray = [SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray]
+export type BoardArray = [SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray,
+    SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray]
 
 /**
  * _WallArray holds 13 rows of 12 walls. It will be instantiated both vertically and horizontally
@@ -133,10 +136,10 @@ export type SpaceBoundaries = {
  * also able to get the walls surrounding a particular space with the getWalls method
  */
 class WallArray {
-    private horizontal_walls: _WallArray
-    private vertical_walls: _WallArray
+    public horizontal_walls: Wall[][]
+    public vertical_walls: Wall[][]
 
-    constructor(horiz: _WallArray, vert: _WallArray) {
+    constructor(horiz: Wall[][], vert: Wall[][]) {
         this.horizontal_walls = horiz,
         this.vertical_walls = vert
     }
@@ -176,11 +179,73 @@ class WallArray {
  * all of the data associated with a loaded board
  */
 export type BoardData = {
-    spaces: BoardArray
+    spaces: Space[][]
     walls: WallArray
     x_dim: number
     y_dim: number
     display_name: string
+}
+/**
+ * checks if the object contains a valid board, then makes the type assertion
+ * @param obj any old object, but probably one parsed from JSON
+ */
+export function isValidBoardData(obj:any): obj is BoardData {
+    if (obj === undefined ||
+        obj.spaces === undefined ||
+        obj.walls === undefined ||
+        obj.x_dim === undefined ||
+        obj.y_dim === undefined ||
+        obj.display_name === undefined
+    ) {
+        // the top level format is bad
+        return false
+    }
+
+    // validate the simple properties
+    if (typeof obj.x_dim != 'number' ||
+        typeof obj.y_dim != 'number' ||
+        typeof obj.display_name != 'string' ||
+        obj.walls.horizontal_walls === undefined ||
+        obj.walls.horizontal_walls.length === undefined ||
+        obj.walls.vertical_walls === undefined ||
+        obj.walls.vertical_walls.length === undefined ||
+        obj.spaces.length === undefined
+    ) {
+        return false
+    }
+
+    // run dimension checks for spaces, vert & horiz walls
+    if (
+        obj.spaces.length !== obj.x_dim ||
+        obj.walls.horizontal_walls.length !== obj.x_dim ||
+        obj.walls.vertical_walls.length !== obj.x_dim + 1
+    ) {
+        return false
+    }
+
+    // check lengths of the elements
+    try {
+        // proper array checks are a pain, just try iterating over spaces
+        for (const col of obj.spaces) {
+            if (col === undefined || col.length !== obj.y_dim) {
+                return false
+            }
+        }
+        for (const col of obj.walls.horizontal_walls) {
+            if (col === undefined || col.length !== obj.x_dim + 1) {
+                return false
+            }
+        }
+        for (const col of obj.walls.vertical_walls) {
+            if (col === undefined || col.length !== obj.y_dim) {
+                return false
+            }
+        }
+    } catch {
+        return false
+    }
+
+    return true
 }
 
 /**
@@ -188,24 +253,38 @@ export type BoardData = {
  * will make processing board events more straightforward
  */
 export class Board {
+    private static board_count = 0
+    private readonly id: number
     public data: BoardData
 
     // all other events are independent, and only the position matters
-    public battery_positions: BoardPosition[]
-    public scrambler_positions: BoardPosition[]
-    public crusher_positions: BoardPosition[]
-    public checkpoint_map: Map<BoardPosition, number>
+    public battery_positions: BoardPosition[] = []
+    public scrambler_positions: BoardPosition[] = []
+    public crusher_positions: BoardPosition[] = []
+    public checkpoint_map: Map<BoardPosition, number> = new Map<BoardPosition, number>()
+    // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
+    public h_laser_positions: BoardPosition[] = []
+    public v_laser_positions: BoardPosition[] = []
+    public h_pusher_positions: BoardPosition[] = []
+    public v_pusher_positions: BoardPosition[] = []
 
     constructor(data: BoardData) {
+        // set our instance ID from the static count
+        this.id = Board.board_count
+        Board.board_count++
+
         this.data = data
 
-        this.battery_positions = []
-        this.scrambler_positions = []
-        this.crusher_positions = []
-        this.checkpoint_map = new Map<BoardPosition, number>()
-
         // build conveyor graphs and position arrays
-        this.build_component_data()
+        this.rebuild_component_data()
+    }
+
+    /**
+     * a standard getter for this readonly property
+     * @returns the unique id of this board
+     */
+    get_id(): number {
+        return this.id
     }
 
     /**
@@ -216,22 +295,22 @@ export class Board {
     rotate_board(dir: RotationDirection) {
         // rotate the data :P
         // use the affine transformation from a rotation matrix
-        // CW: x, y = y, 11 - x; E/W facing hi-lo switches sides
-        // CCW: x, y = 11-y, x; N/S facing hi-lo switches sides
+        // CW: x, y = y, 11 - x; E/W facing (on vertical walls) hi-lo switches sides
+        // CCW: x, y = 11-y, x; N/S facing (on horizontal walls) hi-lo switches sides
         const X_DIM = this.data.x_dim
         const Y_DIM = this.data.y_dim
 
         // rotate the spaces
         let spaces: Space[][] = []
         // iterate over the x-dim TO BE
-        for (let x = 0; x < this.data.y_dim; x++) {
+        for (let x = 0; x < Y_DIM; x++) {
             let col: Space[] = []
             // iterate over the columns TO BE
-            for (let y = 0; y < this.data.x_dim; y++) {
+            for (let y = 0; y < X_DIM; y++) {
                 // which direction are we rotating?
                 if (dir == RotationDirection.CW) {
                     // use the formula above to determine which tile on the original board goes here
-                    const sp = this.data.spaces[y][Y_DIM - x]
+                    const sp = this.data.spaces[y][X_DIM - x]
                     // if it's oriented, rotate that as well
                     if (sp.orientation != undefined) {
                         sp.orientation = Orientation.rotate(sp.orientation, RotationDirection.CW)
@@ -239,7 +318,7 @@ export class Board {
                     col.push(sp)
                 } else /* dir == CCW */ {
                     // similar to CW case
-                    const sp = this.data.spaces[X_DIM-y][x]
+                    const sp = this.data.spaces[Y_DIM-y][x]
                     if (sp.orientation != undefined) {
                         sp.orientation = Orientation.rotate(sp.orientation, RotationDirection.CCW)
                     }
@@ -249,16 +328,64 @@ export class Board {
             spaces.push(col)
         }
 
+        // build the vertical walls
+        let vertical_walls: Wall[][] = []
+        for (let x = 0; x < Y_DIM+1; x++) {
+            let col: Wall[] = []
+            for (let y = 0; y < X_DIM; y++) {
+                if (dir == RotationDirection.CW) {
+                    col.push(this.data.walls.horizontal_walls[y][X_DIM-x])
+                } else /* rotating CCW */ {
+                    const wall = this.data.walls.horizontal_walls[Y_DIM-y][x]
+                    // on CCW rotations, the were-N/S walls need to be hi-lo swapped
+                    if (wall !== undefined) {
+                        col.push({
+                            lo: wall?.hi,
+                            hi: wall?.lo
+                        })
+                    } else { // just push as is
+                        col.push(wall)
+                    }
+                }
+            }
+            vertical_walls.push(col)
+        }
 
+        let horizontal_walls: Wall[][] = []
+        for (let x = 0; x < Y_DIM; x++) {
+            let col: Wall[] = []
+            for (let y = 0; y < X_DIM+1; y++) {
+                // on CW rotations, the were-E/W walls need to be hi-lo swapped
+                const wall = this.data.walls.vertical_walls[y][X_DIM-x]
+                if (dir == RotationDirection.CW) {
+                    if (wall !== undefined) {
+                        col.push({
+                            lo: wall?.hi,
+                            hi: wall?.lo
+                        })
+                    } else {
+                        col.push(wall)
+                    }
+                } else /* dir == CCW */ {
+                    col.push(wall)
+                }
+            }
+            horizontal_walls.push(col)
+        }
 
-        this.build_component_data()
+        this.data.spaces = spaces
+        this.data.walls = new WallArray(horizontal_walls, vertical_walls)
+        this.data.x_dim = Y_DIM
+        this.data.y_dim = X_DIM
+
+        this.rebuild_component_data()
     }
 
     /**
      * Build the data structures associated with the board in memory. This means tracing out paths
      * traversable by conveyor, and listing other component types
      */
-    build_component_data() {
+    rebuild_component_data() {
         this.battery_positions = []
         this.scrambler_positions = []
         this.crusher_positions = []
@@ -279,17 +406,41 @@ export class Board {
                 }
             }
         }
+
+        for (var x = 0; x < this.data.walls.horizontal_walls.length; x++) {
+            for (var y = 0; y < this.data.walls.horizontal_walls[x].length; y++) {
+                const wall = this.data.walls.horizontal_walls[x][y]
+                if (wall?.lo == WallType.LASER || wall?.lo == WallType.LASER2 || wall?.lo == WallType.LASER3 ||
+                    wall?.hi == WallType.LASER || wall?.hi == WallType.LASER2 || wall?.hi == WallType.LASER3) {
+                    this.h_laser_positions.push({x:x,y:y})
+                } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
+                    this.h_pusher_positions.push({x:x,y:y})
+                }
+            }
+        }
+
+        for (var x = 0; x < this.data.walls.vertical_walls.length; x++) {
+            for (var y = 0; y < this.data.walls.vertical_walls[x].length; y++) {
+                const wall = this.data.walls.vertical_walls[x][y]
+                if (wall?.lo == WallType.LASER || wall?.lo == WallType.LASER2 || wall?.lo == WallType.LASER3 ||
+                    wall?.hi == WallType.LASER || wall?.hi == WallType.LASER2 || wall?.hi == WallType.LASER3) {
+                    this.v_laser_positions.push({x:x,y:y})
+                } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
+                    this.v_pusher_positions.push({x:x,y:y})
+                }
+            }
+        }
     }
 //     conveyor2_map: [GraphNode]
 //     conveyor2_entries: Map<BoardPosition, GraphNode>
 //     conveyor_map: [GraphNode]
 //     conveyor_entries: Map<BoardPosition, GraphNode>
     // conveyor events should be parsed in a graph. This will allow them to be executed sequentially
-    handle_conveyor2(pos: BoardPosition): MotionArray {
+    handle_conveyor2(pos: BoardPosition): MovementArray {
         return []
     }
     
-    handle_conveyor(pos: BoardPosition): MotionArray {
+    handle_conveyor(pos: BoardPosition): MovementArray {
         return []
     }
 
@@ -305,8 +456,16 @@ export class Board {
 
     // these should specify the directions and lengths the lasers are coming in, and possibly accept as
     // arguments the current positions of other robots, to determine where lasers are blocked
-    get_laser_positions(blocked: BoardPosition[]): BoardPosition[] {
+    get_laser_origins(): BoardPosition[] {
         return []
+        // deal with the lasers one dimension at a time
+        // for vertical
+        // get the vertical facing lasers form properties
+        // look in the direction they're shooting
+            // step forward along the path of fire
+            // check for blocks from args when crossing spaces
+            // check for nonempty wall when crossing wall spaces
+        // 
     }
 
     // push events should be able to be executed simultaneously. This may require a data catch to
@@ -335,5 +494,16 @@ export class Board {
                 distance: 1
             }
         }
+    }
+
+    /**
+     * Extends the board by adding another board object. This involves merging the walls
+     * along the boundary, and rebuilding the internal data model with the 
+     * @param direction the direction in which the new board will be appended
+     * @param board the board to append
+     * @param offset an offset value, if the board is not to be appended exactly to the side
+     */
+    extend(direction: Orientation, board: Board, offset:number=0) {
+        // append the existing board in the given orientation
     }
 }
