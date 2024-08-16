@@ -32,7 +32,7 @@ const props = defineProps<{
 .col {
     float: left;
     position: relative;
-    overflow: scroll;
+    /* overflow: scroll; */
 }
 /* .tile {
     height: 50px;

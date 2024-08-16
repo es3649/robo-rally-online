@@ -484,8 +484,6 @@ export function get_walls(board: Board, pos: BoardPosition): SpaceBoundaries {
         console.error(`Given pair (${x}, ${y}) is out of bounds`)
         throw ("Out of Bounds")
     }
-    console.log(x,y)
-
     
     // A wall's special types are only considered if that type faces the space.
     // Otherwise the type is considered to be STANDARD. The
