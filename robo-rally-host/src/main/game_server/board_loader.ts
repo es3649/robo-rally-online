@@ -11,7 +11,9 @@ import * as path from 'node:path'
  * contain properly formatted board data
  */
 export async function loadFromJson(name:string): Promise<Board> {
-    const file = await readFile(path.join('res://boards', name+'.json'))
+    console.log(__dirname)
+    // const file = await readFile(path.join('/Users/studmane/workspace/robo-rally-online/robo-rally-host/assets/boards', name+'.json'))
+    const file = await readFile(path.join('assets/boards', name+'.json'))
     const raw = JSON.parse(file.toString())
 
     // validate the unsanitary json data
@@ -38,7 +40,7 @@ export function listBoards(): string[] {
     return [
         "the_keep",
         "pushy",
-        "in_and_out",
+        "in-and-out",
         "manual_list"
     ]
 }

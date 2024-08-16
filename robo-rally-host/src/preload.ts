@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('mainAPI', {
     connectRobot: (name: string): void => ipcRenderer.send('ble-connect', name),
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke('get-ip'),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke('boards:list-boards'),
-    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('boards:load-board'),
+    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('boards:load-board', name),
     loadSerial: (): void => ipcRenderer.send('boards:load-serial')
 })
 

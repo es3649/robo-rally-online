@@ -1,5 +1,6 @@
+import { walk } from "vue/compiler-sfc"
 import { Orientation, RotationDirection, Rotation } from "./movement"
-import type { AbsoluteMovement, BoardPosition, MovementArray } from "./movement"
+import type { AbsoluteMovement, BoardPosition, OrientedPosition, MovementArray } from "./movement"
 
 const BOARD_SIZE = 12
 
@@ -93,35 +94,6 @@ export type Space = {
 }
 
 /**
- * An array of board spaces
- */
-export type SpaceArray = [Space, Space, Space, Space, Space, Space, Space, Space, Space, Space, Space, Space]
-/**
- * an array of space arrays, making a complete board of spaces
- */
-export type BoardArray = [SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray,
-    SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray, SpaceArray]
-
-/**
- * _WallArray holds 13 rows of 12 walls. It will be instantiated both vertically and horizontally
- */
-export type _WallArray = [
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall],
-    [Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall, Wall]
-]
-
-/**
  * specifies the types of the walls surrounding a space and what they contain
  */
 export type SpaceBoundaries = {
@@ -142,36 +114,6 @@ class WallArray {
     constructor(horiz: Wall[][], vert: Wall[][]) {
         this.horizontal_walls = horiz,
         this.vertical_walls = vert
-    }
-
-    get_walls(pos: BoardPosition): SpaceBoundaries {
-        const x = pos.x
-        const y = pos.y
-        if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) {
-            console.error(`Given pair (${x}, ${y}) is out of bounds`)
-            throw ("Out of Bounds")
-        }
-
-        
-        // A wall's special types are only considered if that type faces the space.
-        // Otherwise the type is considered to be STANDARD. The
-        // following properties are used for the given space walls:
-        // (n, down), (e, down), (s, up), (w, up)
-        
-        // get the wall values
-        const n_wall = this.horizontal_walls[y+1][x]
-        const e_wall = this.vertical_walls[x+1][y]
-        const s_wall = this.horizontal_walls[y][x]
-        const w_wall = this.vertical_walls[x][y]
-        
-        return {
-            // if n_wall is non-null, and n_wall.lo is not defined
-            // use standard, otherwise use n_wall.lo (undefined if n_wall is undefined)
-            n: n_wall != null && !n_wall.lo ? WallType.STANDARD : n_wall?.lo,
-            e: e_wall != null && !e_wall.lo ? WallType.STANDARD : e_wall?.lo,
-            s: s_wall != null && !s_wall.hi ? WallType.STANDARD : s_wall?.hi,
-            w: w_wall != null && !w_wall.hi ? WallType.STANDARD : w_wall?.hi
-        }
     }
 }
 
@@ -246,6 +188,14 @@ export function isValidBoardData(obj:any): obj is BoardData {
     }
 
     return true
+}
+
+/**
+ * the position and damage of a laser
+ */
+export type LaserPosition = {
+    pos: OrientedPosition,
+    damage: number
 }
 
 /**
@@ -456,39 +406,58 @@ export class Board {
 
     // these should specify the directions and lengths the lasers are coming in, and possibly accept as
     // arguments the current positions of other robots, to determine where lasers are blocked
-    get_laser_origins(): BoardPosition[] {
+    get_laser_origins(): LaserPosition[] {
         return []
         // deal with the lasers one dimension at a time
         // for vertical
-        // get the vertical facing lasers form properties
+        // get the locations of the lasers on walls
+        // append their damage
+    }
+
+    /**
+     * computes paths and blockages of lasers to determine how many of the targets are hit and for how
+     * much damage
+     * @param laser_origins the origins of the lasers included in the handling
+     * @param targets the positions of the targets
+     * @param inclusive_positions do lasers also hit the space they shoot from?
+     * @return a list of damage values corresponding to the entries in targets
+     */
+    handle_laser_paths(laser_origins: LaserPosition[], targets: BoardPosition[], inclusive_positions:boolean=false): number[] {
         // look in the direction they're shooting
             // step forward along the path of fire
-            // check for blocks from args when crossing spaces
+            // check for blocks from targets when crossing spaces
+                // log a damage for this target if its in the way
             // check for nonempty wall when crossing wall spaces
         // 
+        return []
     }
 
     // push events should be able to be executed simultaneously. This may require a data catch to
     // prevent multiple push events from interacting, which I think shouldn't be allowed (else we
     // can daisy chain them like conveyors?)
-    handle_push(pos: BoardPosition): AbsoluteMovement | undefined {
-        const walls = this.data.walls.get_walls(pos)
-        if (WallType.isPUSH(walls.n)) {
+    /**
+     * Computes the resulting movement on a target in the given position by the activation of 
+     * @param pos the initial position of the target
+     * @returns the resulting absolute movement of activating all pushers
+     */
+    handle_push(pos: BoardPosition, register: number): AbsoluteMovement | undefined {
+        const walls = get_walls(this, pos)
+        if (WallType.isPUSH(walls.n) && register in walls.n.registers) {
             return {
                 direction: Orientation.S,
                 distance: 1
             }
-        } else if (WallType.isPUSH(walls.e)) {
+        } else if (WallType.isPUSH(walls.e) && register in walls.e.registers) {
             return {
                 direction: Orientation.W,
                 distance: 1
             }
-        } else if (WallType.isPUSH(walls.s)) {
+        } else if (WallType.isPUSH(walls.s) && register in walls.s.registers) {
             return {
                 direction: Orientation.N,
                 distance: 1
             }
-        } else if (WallType.isPUSH(walls.w)) {
+        } else if (WallType.isPUSH(walls.w) && register in walls.w.registers) {
             return {
                 direction: Orientation.E,
                 distance: 1
@@ -505,5 +474,36 @@ export class Board {
      */
     extend(direction: Orientation, board: Board, offset:number=0) {
         // append the existing board in the given orientation
+    }
+}
+
+export function get_walls(board: Board, pos: BoardPosition): SpaceBoundaries {
+    const x = pos.x
+    const y = pos.y
+    if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) {
+        console.error(`Given pair (${x}, ${y}) is out of bounds`)
+        throw ("Out of Bounds")
+    }
+    console.log(x,y)
+
+    
+    // A wall's special types are only considered if that type faces the space.
+    // Otherwise the type is considered to be STANDARD. The
+    // following properties are used for the given space walls:
+    // (n, down), (e, down), (s, up), (w, up)
+    
+    // get the wall values
+    const n_wall = board.data.walls.horizontal_walls[x][y+1]
+    const e_wall = board.data.walls.vertical_walls[x+1][y]
+    const s_wall = board.data.walls.horizontal_walls[x][y]
+    const w_wall = board.data.walls.vertical_walls[x][y]
+    
+    return {
+        // if n_wall is non-null, and n_wall.lo is not defined
+        // use standard, otherwise use n_wall.lo (undefined if n_wall is undefined)
+        n: n_wall != null && !n_wall.lo ? WallType.STANDARD : n_wall?.lo,
+        e: e_wall != null && !e_wall.lo ? WallType.STANDARD : e_wall?.lo,
+        s: s_wall != null && !s_wall.hi ? WallType.STANDARD : s_wall?.hi,
+        w: w_wall != null && !w_wall.hi ? WallType.STANDARD : w_wall?.hi
     }
 }

@@ -1,10 +1,12 @@
-import { app, BrowserWindow, ipcMain, MessageChannelMain, utilityProcess } from 'electron';
+import { app, BrowserWindow, ipcMain, MessageChannelMain, net, protocol, utilityProcess } from 'electron';
 import * as path from 'path';
 import { networkInterfaces } from 'node:os'
 import { existsSync } from 'fs';
 import { connectRobot } from './main/bluetooth';
 import fork from 'child_process'
-import { listBoards } from './main/game_server/board_loader';
+import { listBoards, loadFromJson } from './main/game_server/board_loader';
+import * as url from 'node:url'
+import type { Board } from './main/game_server/board';
 
 // import { start } from './server/server'
 
@@ -20,6 +22,7 @@ const createWindow = () => {
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      webSecurity: false,
     },
 
   });
@@ -31,7 +34,11 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  // register ipc listeners
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools();
+};
+
+function registerIPCListeners() {
   ipcMain.on('ble-connect', (event: Electron.IpcMainEvent, name: string) => {
     connectRobot(name)
   })
@@ -42,22 +49,38 @@ const createWindow = () => {
 
   ipcMain.handle('boards:list-boards', listBoards)
 
-  ipcMain.on('boards:load-board', (event: Electron.IpcMainEvent, name: string): void => {
+  ipcMain.handle('boards:load-board', (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
     console.log(`loading ${name}`)
+    return loadFromJson(name)
   })
 
-  ipcMain.on('boards:load-serial', (event: Electron.IpcMainEvent): void => {
+  ipcMain.on('boards:load-serial', (_: Electron.IpcMainEvent): void => {
     console.log('loading board from serial port')
   })
+}
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-};
+function defineProtocols() {
+  // from documentation example:
+  // https://www.electronjs.org/docs/latest/api/protocol#protocolregisterfileprotocolscheme-handler-completion
+  protocol.handle('res', (request: GlobalRequest): Response|Promise<Response> => {
+    // slice off the protocol
+    const filepath = request.url.slice('res://'.length)
+    const modified = url.pathToFileURL(path.join('assets', filepath)).toString()
+    console.log('Protocol looking up:', modified)
+    return net.fetch(modified)
+  })
+}
+
+function ready() {
+  registerIPCListeners()
+  defineProtocols()
+  createWindow()
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', ready);
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

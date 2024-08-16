@@ -2,6 +2,7 @@
     "$schema": "../board_schema.json",
     "x_dim": 12,
     "y_dim": 12,
+    "display_name": "The Keep",
     "walls": {
         "horizontal_walls": [
             [null,null,null,null,null,{},null,null,null,null,null,null,null],
