@@ -27,3 +27,34 @@ It also contains a express-powered and socket.io-enabled server for hosting and 
 ### `bot-drivers`
 
 The `bot-drivers` are a series of Arduino programs, designed to control robots over a Bluetooth connection managed by the host
+
+## Windows Setup
+
+```ps
+# install node
+winget install Schniz.fnm
+
+# restart shell
+fnm env --use-on-cd | Out-String | Invoke-Expression
+fnm use --install-if-missing 22
+
+# set execution policy for npm access
+Set-ExecutionPolicy -Scope CurrentUser Unrestricted
+
+# check installation versions
+node -v # should print v22.6.0
+npm -v  # should print 10.8.2
+
+# install git
+winget install --id Git.Git -e --source winget
+
+# clone project
+git clone git@github.com:es3649/robo-rally-online.git
+
+# install dependencies
+cd robo-rally-online\robo-rally-host
+npm install
+
+# start test application
+npm run start
+```
