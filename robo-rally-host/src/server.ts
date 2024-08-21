@@ -9,20 +9,18 @@ import cors from 'cors'
 
 // import { ClientToServerEvents, ServerToClientEvents} from '../models/connection'
 
-const app: Express = express()
+export const app: Express = express()
 const port = process.env.PORT || 80
-const server = createServer(app)
+// const server = createServer(app)
 // we may need to reset the path here
 // https://socket.io/docs/v4/server-options/#path
 // const io = new Server<ClientToServerEvents, ServerToClientEvents>(server)
 // const io = new Server(server)
 
-app.use(cors())
+// app.use(cors())
 
 // add a file handler at the root
-// app.get('/', express.static('./public'))
-
-app.use(express.static(__dirname+'/public'))
+app.use(express.static('assets/public_html'))
 
 // handle the connection event
 // io.on('connection', (socket) => {
@@ -36,15 +34,11 @@ app.use(express.static(__dirname+'/public'))
 //     // game events
 // })
 
-process.parentPort.once('message', (e) => {
-    const [port] = e.ports
-    console.log('got a message')
-})
 
 
 // listen and serve
-// app.listen(port, () => {
-server.listen(port, () => {
+app.listen(port, () => {
+// server.listen(port, () => {
     console.log(`[server]: Server is running at http://localhost:${port}`);
 });
 

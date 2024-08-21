@@ -23,5 +23,5 @@ setInterval(() => {
     <p>Zephyr (MarkII)</p> <!-- sleek and hexagonal, 6-wheels, spikes on/between the wheels -->
     <p>Bladestorm</p> <!-- spin bot but with a more stable base -->
     <p>Axel-V8</p> <!-- zoom bot, has 2 big wheels, a spoiler, and shaker scoop -->
-    <p>Thor</p> Norse-themed hammer bot
+    <p>Thor</p> <!-- Norse-themed hammer bot -->
 </template>

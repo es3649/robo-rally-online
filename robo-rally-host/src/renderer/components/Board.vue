@@ -9,6 +9,8 @@ const props = defineProps<{
     board: Board|undefined
 }>()
 
+// const board: Ref<Board> = ref(props.board)
+
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const props = defineProps<{
         <div v-else class="board">
             <div v-for="(col, x) of board.data.spaces" class="col">
                 <div v-for="(space, y) of col.slice().reverse()">
-                    <BoardTile :tile="space" class="tile" :dim="50" :boundary="get_walls(board, {x:x,y:board.data.y_dim-1-y})"/>
+                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="get_walls(board, {x:x,y:board.data.y_dim-1-y})"/>
                     <!-- <p>space</p> -->
                 </div>
             </div>

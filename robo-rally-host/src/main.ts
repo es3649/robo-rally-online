@@ -7,6 +7,7 @@ import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_server/board_loader';
 import * as url from 'node:url'
 import type { Board } from './main/game_server/board';
+// import { app as serverApp } from './server'
 
 // import { start } from './server/server'
 
@@ -114,6 +115,7 @@ const modulePath = path.join(__dirname, './server.js')
 if (!existsSync(modulePath)) {
   throw new Error("Module path doesn't exist")
 }
+
 console.log(modulePath)
 console.log('starting utility process')
 
