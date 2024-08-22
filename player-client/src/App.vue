@@ -4,33 +4,39 @@ import { useGameStateStore } from './stores/game_state';
 import { GamePhase } from './models/game_data';
 import HelloWorld from './components/HelloWorld.vue'
 import { socket } from './socket';
+import ConnectionStatus from './components/ConnectionStatus.vue';
+import { useConnectionStore } from './stores/connection';
 
 // disable any listeners (after a hot module reload)
 socket.off()
 
 const game_state = useGameStateStore()
+const connection_store = useConnectionStore()
 game_state.bindEvents()
+connection_store.bindEvents()
 </script>
 
 <template>
-  <div v-if="game_state.phase == GamePhase.Lobby">
-    <header>
-      <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
-      <div class="wrapper">
-        <HelloWorld msg="RoboRally Online!" />
-        
-        <nav>
-          <RouterLink to="/join">Join the game</RouterLink>
-        </nav>
-      </div>
-    </header>
-    
-    <RouterView />
-  </div>
-  <div v-else>
-    <RouterView />
-  </div>
-
+  <main>
+    <ConnectionStatus />
+    <div v-if="game_state.phase == GamePhase.Lobby">
+      <header>
+        <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
+        <div class="wrapper">
+          <HelloWorld msg="RoboRally Online!" />
+          
+          <nav>
+            <RouterLink to="/join">Join the game</RouterLink>
+          </nav>
+        </div>
+      </header>
+      
+      <RouterView />
+    </div>
+    <div v-else>
+      <RouterView />
+    </div>
+  </main>
 </template>
 
 <style scoped>

@@ -16,8 +16,7 @@ setInterval(() => {
     <div v-for="bot of bots">
         <Robot :robot="bot" />
     </div>
-    
-    
+
     <p>Twonky</p> <!-- true to RoboRally -->
     <p>Panzer-X90</p> <!-- pretty much a tank -->
     <p>Zephyr (MarkII)</p> <!-- sleek and hexagonal, 6-wheels, spikes on/between the wheels -->

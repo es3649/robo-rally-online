@@ -120,7 +120,7 @@ console.log(modulePath)
 console.log('starting utility process')
 
 // const child = utilityProcess.fork(modulePath, [], {
-//   stdio: ['ignore', 'pipe', 'pipe'],
+  // stdio: 'pipe',
 //   serviceName: 'HttpServer'
 // })
 

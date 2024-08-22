@@ -11,22 +11,35 @@ It's also just an excuse for me to develop my Typescript, Vuejs, and general web
 
 The project is broken into 4 main parts:
 
-* `player-client`
-* `robo-rally-host`
-* `bot-drivers`
+* Player Client
+* Host Application
+* Bot Drivers
+* Schematics
 
-### `player-client`
+### Player Client
 
-The `player-client` is a Vue+Vite+Pinia web application which provides a web interface for playing the game
+The Player Client, contained in the `player-client` directory, is a Vue+Vite+Pinia web application which provides a web interface for playing the game
 
-### `robo-rally-host`
+### Host Application
 
-The `robo-rally-host` is an Electron+Vite+Vue3 desktop application written in Typescript which provides an interface for starting the `server`, choosing some game settings, and managing Bluetooth connections with the robots.
+The host application, in the `robo-rally-host` folder, is an Electron+Vite+Vue3 desktop application written in Typescript which provides an interface for starting the game, choosing some game settings, and managing Bluetooth connections with the robots.
 It also contains a express-powered and socket.io-enabled server for hosting and joining games, and for handling communication with the players.
+This server serves the Player Client.
 
-### `bot-drivers`
+### Bot Drivers
 
-The `bot-drivers` are a series of Arduino programs, designed to control robots over a Bluetooth connection managed by the host
+The bot drivers, in the `bot-drivers` directory, are a series of Arduino programs, designed to control robots over a Bluetooth connection managed by the host
+
+### Schematics
+
+The `schematics` folder contains PCB and CAD schematics.
+
+The PCB schematics are created using KiCad to model the custom boards used inside each robot.
+For simplicity, there is one schematic to service all bots, and thus all robot features will be supported on each PCB.
+Robots which do not support a certain feature, will simply not have relevant components added, and will not have those components supported in their drivers.
+
+CAD schematics were created in OnShape, and contain the 3D models for the robots.
+Each of these is unique.
 
 ## Windows Setup
 

@@ -1,5 +1,6 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { socket } from "@/socket";
+import { disconnect } from "process";
 
 export declare interface EventHandler {
     game_start_handler(): void,
@@ -24,11 +25,43 @@ export const useConnectionStore = defineStore({
         return {
             // could we change this to a player object and let it hold the connection, or will that just create different issues?
             join_req: new PendingResponse<string>(),
-            handlers: {}
+            handlers: {},
+            connected: false,
+            fooEvents: [] as any[]
         }
     },
     actions: {
-        bindEvents() {},
+        bindEvents() {
+            socket.on('connect', () => {
+                this.connected = true
+                console.log('socket connected')
+            })
+
+            socket.on('disconnect', () => {
+                this.connected = false
+                console.log('socket disconnected')
+            })
+
+            socket.on('foo', (...args:any) => {
+                this.fooEvents.push(args)
+            })
+
+            // it's possible that the socket connected before the connect event was registered
+            // get the true connection status
+            this.connected = socket.connected
+        },
+        connect() {
+            console.log("trying to (re)connect")
+            socket.connect()
+        },
+        disconnect() {
+            console.log('disconnecting')
+            socket.disconnect()
+        },
+        reconnect() {
+            this.disconnect()
+            this.connect()
+        },
         game_start_handler () {},
         begin_programming_handler() {},
         

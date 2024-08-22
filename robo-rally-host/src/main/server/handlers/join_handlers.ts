@@ -1,5 +1,5 @@
 import { gameStore } from '../../stores/game_store'
-import { Player } from '../../models/player'
+import type { Player } from '../../models/player'
 import { MAX_PLAYERS } from '../game_controller/game'
 
 export function joinHandler(name: string, callback: (resp: string) => void): void {
