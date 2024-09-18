@@ -7,9 +7,31 @@ import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_server/board_loader';
 import * as url from 'node:url'
 import type { Board } from './main/game_server/board';
-// import { app as serverApp } from './server'
+import type { RegisterArray } from './main/models/game_data';
+import { Main2Server, Render2Main, Server2Main } from './main/models/events';
+import { GameManager } from './main/game_server/server';
 
-// import { start } from './server/server'
+// create the game manager
+// this game manager will manage the state of the game through the life of the program
+let game = new GameManager()
+
+// listen and serve
+const modulePath = path.join(__dirname, './server.js')
+if (!existsSync(modulePath)) {
+  throw new Error("Module path doesn't exist")
+}
+
+console.log(modulePath)
+console.log('starting utility process')
+
+// const child = utilityProcess.fork(modulePath, [], {
+  // stdio: 'pipe',
+//   serviceName: 'HttpServer'
+// })
+
+const child = fork.fork(modulePath, [], {
+  stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+})
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -39,27 +61,53 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 };
 
+/**
+ * register the ICP listeners. This is where calls from the renderer will come in
+ */
 function registerIPCListeners() {
-  ipcMain.on('ble-connect', (event: Electron.IpcMainEvent, name: string) => {
+  ipcMain.on(Render2Main.BLE_CONNECT, (event: Electron.IpcMainEvent, name: string) => {
     connectRobot(name)
   })
 
-  ipcMain.handle('get-ip', (): string|undefined => {
+  ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
     return networkInterfaces()['en0']?.filter(el => el.family === 'IPv4')[0].address
   })
 
-  ipcMain.handle('boards:list-boards', listBoards)
+  ipcMain.handle(Render2Main.BOARD.LIST_BOARDS, listBoards)
 
-  ipcMain.handle('boards:load-board', (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
+  ipcMain.handle(Render2Main.BOARD.LOAD_BOARD, (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
     console.log(`loading ${name}`)
-    return loadFromJson(name)
+    // load the board
+    const board = loadFromJson(name)
+    // load it into the game manager
+    game.use_board(board)
+    // return it to the caller
+    return board
   })
 
-  ipcMain.on('boards:load-serial', (_: Electron.IpcMainEvent): void => {
+  ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
     console.log('loading board from serial port')
   })
+
+  ipcMain.on(Render2Main.RESET, () => {
+    // tell the server to reset
+    child.send(Main2Server.RESET)
+    // create a new game object
+    game = new GameManager()
+  })
+
+  ipcMain.on(Render2Main.BOARD.ROTATE)
+  ipcMain.handle(Render2Main.BOARD.EXTEND)
+  ipcMain.on(Render2Main.BOARD.READY)
+  ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
+  ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
+  ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
+
 }
 
+/**
+ * define all protocols we want to use. These are the blah:// parts of URLs
+ */
 function defineProtocols() {
   // from documentation example:
   // https://www.electronjs.org/docs/latest/api/protocol#protocolregisterfileprotocolscheme-handler-completion
@@ -100,41 +148,17 @@ app.on('activate', () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
 
 // initialize game server (incl board)
 // begin robot connections
 
-// listen and serve
-// const proc = utilityProcess.fork(path.join(__dirname, 'server.ts'), [], {})
 
-// const { port1, port2 } = new MessageChannelMain()
+child.on(Server2Main.PROGRAM_SET, (player: string, program: RegisterArray) => { game.set_program(player, program) })
+child.on(Server2Main.PROGRAM_SHUTDOWN)
+child.on(Server2Main.ADD_PLAYER)
+child.on(Server2Main.LIST_BOTS)
+child.on(Server2Main.SELECT_BOT)
+child.on(Server2Main.REQUEST_UPGRADE)
+child.on(Server2Main.ADD_UPGRADE)
 
-const modulePath = path.join(__dirname, './server.js')
-if (!existsSync(modulePath)) {
-  throw new Error("Module path doesn't exist")
-}
-
-console.log(modulePath)
-console.log('starting utility process')
-
-// const child = utilityProcess.fork(modulePath, [], {
-  // stdio: 'pipe',
-//   serviceName: 'HttpServer'
-// })
-
-const child = fork.fork(modulePath, [], {
-  stdio: 'pipe'
-})
-
-// const child = fork(modulePath, [], {
-//   stdio: ['pipe'],
-// })
 console.log('started')
-
-// child.postMessage({message: 'honlo'}, [port1])
-
-/**
- * 
- */

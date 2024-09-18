@@ -3,6 +3,7 @@ import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray } from "@
 import type { RegisterArray, UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
 import type { PlayerState } from "@/models/player";
 import { socket } from "@/socket"
+import { Client2Server, Server2Client } from "@/models/events";
 
 const PROGRAMMING_HAND_SIZE: number = 9
 
@@ -36,6 +37,8 @@ export const useGameStateStore = defineStore({
             _register: -1,
             // the current phase of the game
             phase: -1 as GamePhase,
+            // whether programming is allowed, so we can lock registers after program submit
+            programming_enabled: false,
             // log messages
             log: [] as string[],
             // current action
@@ -116,6 +119,7 @@ export const useGameStateStore = defineStore({
                     break
                 case GamePhase.Upgrade:
                     this.phase = GamePhase.Programming
+                    this.programming_enabled = true
                     // draw a new hand
                     this.drawProgrammingHand()
                     break
@@ -200,9 +204,13 @@ export const useGameStateStore = defineStore({
         /**
          * Submit the current program for execution
          */
-        submitProgram() {
-            // later this needs to call the socket, then wait until the socket changes the game phase
-            this.next_phase()
+        submitProgram(shutdown: boolean) {
+            if (shutdown) {
+                // emit a shutdown event
+                socket.emit(Client2Server.PROGRAM_SHUTDOWN)
+            }
+            // emit the program
+            socket.emit(Client2Server.PROGRAM_SUBMIT, this.registers)
         },
         new_action(action:GameAction|undefined=undefined) {
             if (action != undefined) {
@@ -237,8 +245,20 @@ export const useGameStateStore = defineStore({
             this.energy -= 1
         },
         bindEvents() {
-            socket.on('beginPhase', (phase: GamePhase) => {
+            socket.on(Server2Client.PHASE_UPDATE, () => {
                 this.next_phase()
+            })
+
+            socket.on(Server2Client.GAME_ACTION, (action:GameAction) => {
+                this.action = action
+            })
+
+            socket.on(Server2Client.BOT_SELECTED, (name:string) => {
+                
+            })
+
+            socket.on(Server2Client.RESET, () => {
+                console.log('reset')
             })
         }
     }

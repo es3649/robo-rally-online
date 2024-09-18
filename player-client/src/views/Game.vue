@@ -20,11 +20,11 @@ const shutdown:Ref<boolean> = ref(false)
 function finish(): void {
     // if we're shutting down...
     if (shutdown.value) {
-        // ...for now, just do nothing
+        // submit program, disable programming, reset values
+        game_state.submitProgram(shutdown.value)
+        game_state.programming_enabled = false
         shutdown.value = false
     }
-    // move to next phase
-    game_state.next_phase()
 }
 </script>
 
@@ -55,8 +55,8 @@ function finish(): void {
         </div>
         <div v-else>
             <!-- programming registers -->
-            <RegisterArray />
-            <div v-if="game_state.phase == GamePhase.Programming">
+            <RegisterArray :disabled="!game_state.programming_enabled"/>
+            <div v-if="game_state.phase == GamePhase.Programming && game_state.programming_enabled">
                 <!-- cards -->
                 <ProgrammingHand />
                 <label for="shutdown">Shutdown</label>

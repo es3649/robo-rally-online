@@ -7,6 +7,10 @@ import { ProgrammingCard as Card } from '@/models/game_data';
 import draggable from 'vuedraggable';
 import { GamePhase } from '@/models/game_data';
 
+const props = defineProps<{
+    disabled: boolean
+}>()
+
 const game_state = useGameStateStore()
 
 declare type onMoveEvent<T> = {

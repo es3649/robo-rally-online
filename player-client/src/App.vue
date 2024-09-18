@@ -10,6 +10,7 @@ import { useConnectionStore } from './stores/connection';
 // disable any listeners (after a hot module reload)
 socket.off()
 
+// set up stores and listeners
 const game_state = useGameStateStore()
 const connection_store = useConnectionStore()
 game_state.bindEvents()
@@ -25,9 +26,6 @@ connection_store.bindEvents()
         <div class="wrapper">
           <HelloWorld msg="RoboRally Online!" />
           
-          <nav>
-            <RouterLink to="/join">Join the game</RouterLink>
-          </nav>
         </div>
       </header>
       

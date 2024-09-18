@@ -38,9 +38,9 @@ export namespace Color {
 }
 
 export declare type Character = {
-    name: string,
-    sprite_small: string,
-    sprite_large: string,
+    readonly name: string,
+    readonly sprite_small: string,
+    readonly sprite_large: string,
 }
 
 export declare type Player = {

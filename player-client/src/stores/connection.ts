@@ -1,6 +1,6 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { socket } from "@/socket";
-import { disconnect } from "process";
+import { Client2Server } from "@/models/events";
 
 export declare interface EventHandler {
     game_start_handler(): void,
@@ -42,9 +42,9 @@ export const useConnectionStore = defineStore({
                 console.log('socket disconnected')
             })
 
-            socket.on('foo', (...args:any) => {
-                this.fooEvents.push(args)
-            })
+            // socket.on('foo', (...args:any) => {
+            //     this.fooEvents.push(args)
+            // })
 
             // it's possible that the socket connected before the connect event was registered
             // get the true connection status
@@ -76,10 +76,10 @@ export const useConnectionStore = defineStore({
             this.join_req.complete = false
 
             // make the "request"
-            socket.emit('join', player_name, (resp: string) => {
+            socket.emit(Client2Server.JOIN_GAME, player_name, (ok: boolean) => {
                 // once we get a response, 
-                this.join_req.response = resp
-                this.join_req.complete = true
+                // this.join_req.response = resp
+                this.join_req.complete = ok
 
                 callback()
             })

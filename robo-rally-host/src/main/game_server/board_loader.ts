@@ -1,5 +1,6 @@
 import { isValidBoardData, Board, type BoardData } from "./board";
 import { readFile } from 'fs/promises'
+import { readdir, readdirSync } from "node:original-fs";
 import * as path from 'node:path'
 
 /**
@@ -37,10 +38,5 @@ const BOARD_PATH = ''
 
 export function listBoards(): string[] {
     console.log('which boards?')
-    return [
-        "the_keep",
-        "pushy",
-        "in-and-out",
-        "manual_list"
-    ]
+    return readdirSync('assets/boards/')
 }

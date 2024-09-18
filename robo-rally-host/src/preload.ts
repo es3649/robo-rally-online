@@ -7,15 +7,24 @@
 import { contextBridge, ipcRenderer, utilityProcess } from "electron";
 import { gameStore } from "./main/stores/game_store";
 import { Board } from "./main/game_server/board";
+import type { BoardPosition, RotationDirection } from "./main/game_server/movement";
 
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
-    connectRobot: (name: string): void => ipcRenderer.send('ble-connect', name),
-    getIP: (): Promise<string|undefined> => ipcRenderer.invoke('get-ip'),
-    listBoards: (): Promise<string[]> => ipcRenderer.invoke('boards:list-boards'),
-    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('boards:load-board', name),
-    loadSerial: (): void => ipcRenderer.send('boards:load-serial')
+    connectRobot: (name: string): void => ipcRenderer.send('render:ble-connect', name),
+    getIP: (): Promise<string|undefined> => ipcRenderer.invoke('render:get-ip'),
+    listBoards: (): Promise<string[]> => ipcRenderer.invoke('render:boards:list-boards'),
+    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('render:boards:load-board', name),
+    loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
+
+    // TODO: finish signatures
+    rotateBoard: (id:number, direction:RotationDirection): void => ipcRenderer.send('render:boards:rotate', id, direction),
+    extendBoard: (board_name:string): Promise<Board> => ipcRenderer.invoke('render:boards:extend', board_name),
+    readyBoard: (): void => ipcRenderer.send('render:boards:ready'),
+    toggleCheckpoint: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-checkpoint'),
+    toggleRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-respawn'),
+    rotateRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:rotate-checkpoint')
 })
 
 // if we want/need to divide the APIs later
