@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('mainAPI', {
     rotateRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:rotate-checkpoint')
 })
 
+contextBridge.exposeInIsolatedWorld(0, 'rendererAPI', {
+
+})
 // if we want/need to divide the APIs later
 // contextBridge.exposeInMainWorld('bleAPI', {
 // })

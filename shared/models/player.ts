@@ -37,21 +37,28 @@ export namespace Color {
     }
 }
 
+export declare type CharacterID = string
+
 export declare type Character = {
     readonly name: string,
+    readonly id: CharacterID,
     readonly sprite_small: string,
     readonly sprite_large: string,
 }
 
+export declare type PlayerName = string
+export declare type PlayerID = string
+
 export declare type Player = {
-    name: string,
+    name: PlayerName,
+    id: PlayerID,
     character?: Character,
     // conn?: undefined,
     colors?: Color.Set
 }
 
 export declare type PlayerState = {
-    name: string,
+    name: PlayerName,
     energy: number,
     checkpoints: number,
     active: boolean,

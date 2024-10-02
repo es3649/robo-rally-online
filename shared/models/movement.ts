@@ -72,7 +72,7 @@ export namespace Orientation {
                 return _rotate(o, dir == RotationDirection.CW ? RotationDirection.CCW : RotationDirection.CW)
             default:
                 // if this ever happens, we have bigger problem to worry about
-                throw new Error(`BREAKING NEWS: This just in, apparently ${units} % 4 is greater than 3! The entire meaning of the modulo operator has come into question. Experts believe that...`)
+                throw new Error(`BREAKING NEWS: This just in, apparently ${units} % 4 is greater than 3! The entire meaning of the modulo operator has come into question. Experts believe that...[Continue reading]`)
         }
     }
     /**

@@ -5,8 +5,6 @@ import type { PlayerState } from "@/models/player";
 import { socket } from "@/socket"
 import { Client2Server, Server2Client } from "@/models/events";
 
-const PROGRAMMING_HAND_SIZE: number = 9
-
 export const useGameStateStore = defineStore({
     id: "gameState",
     state() {
@@ -230,6 +228,7 @@ export const useGameStateStore = defineStore({
                 action: DECK[Math.floor(Math.random() * DECK.length)],
                 actor: {
                     name: 'Jamison',
+                    id: "abcd-efgh-123456789012",
                     colors: {
                         fill_color: lite,
                         border_color: dark,

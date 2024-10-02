@@ -4,12 +4,13 @@ import { createServer } from 'http'
 import { randomUUID } from 'crypto'
 import { Server, Socket } from 'socket.io'
 import type { GameAction, RegisterArray } from "./main/models/game_data"
-import { Client2Server, Default, Server2Main, Main2Server, type Main2ServerMessage, Server2Client } from './main/models/events'
+import { Client2Server, Default, Server2Main, Main2Server, Server2Client } from './main/models/events'
 // import dotenv from 'dotenv'
 
 // import { getRobotsHandler, selectRobotHandler } from './main/server/handlers/robot_handlers'
 
-import { senderMaker, type ClientToServerEvents, type ServerToClientEvents, type SocketData} from './main/models/connection'
+import { senderMaker } from './main/models/connection'
+import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage} from './main/models/connection'
 import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
 import { useBot } from './server/robot_handlers'
 
@@ -57,7 +58,7 @@ io.on(Default.CONNECTION, (socket) => {
     })
     
     // lobby events
-    socket.on(Client2Server.JOIN_GAME, makeJoinHandler(socket.data.id))
+    socket.on(Client2Server.JOIN_GAME, makeJoinHandler(socket.data.id, S2MSender))
 
     socket.on(Client2Server.GET_ID, (callback:(id:string) => void) => callback(socket.data.id))
 

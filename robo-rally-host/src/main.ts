@@ -4,16 +4,17 @@ import { networkInterfaces } from 'node:os'
 import { existsSync } from 'fs';
 import { connectRobot } from './main/bluetooth';
 import fork from 'child_process'
-import { listBoards, loadFromJson } from './main/game_server/board_loader';
+import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
-import type { Board } from './main/game_server/board';
+import type { Board } from './main/game_manager/board';
 import type { RegisterArray } from './main/models/game_data';
 import { Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { GameManager } from './main/game_server/server';
+import { GameManager } from './main/game_manager/manager';
+import { senderMaker, type Server2MainMessage } from './main/models/connection';
 
 // create the game manager
 // this game manager will manage the state of the game through the life of the program
-let game = new GameManager()
+let game = new GameManager(senderMaker<Main2Server>(process))
 
 // listen and serve
 const modulePath = path.join(__dirname, './server.js')
@@ -87,13 +88,14 @@ function registerIPCListeners() {
 
   ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
     console.log('loading board from serial port')
+    console.warn('NOT IMPLEMENTED')
   })
 
   ipcMain.on(Render2Main.RESET, () => {
     // tell the server to reset
     child.send(Main2Server.RESET)
     // create a new game object
-    game = new GameManager()
+    game = new GameManager(senderMaker<Main2Server>(process))
   })
 
   ipcMain.on(Render2Main.BOARD.ROTATE)
@@ -151,14 +153,24 @@ app.on('activate', () => {
 
 // initialize game server (incl board)
 // begin robot connections
-
-
-child.on(Server2Main.PROGRAM_SET, (player: string, program: RegisterArray) => { game.set_program(player, program) })
-child.on(Server2Main.PROGRAM_SHUTDOWN)
-child.on(Server2Main.ADD_PLAYER)
-child.on(Server2Main.LIST_BOTS)
-child.on(Server2Main.SELECT_BOT)
-child.on(Server2Main.REQUEST_UPGRADE)
-child.on(Server2Main.ADD_UPGRADE)
+child.on('message', (message: Server2MainMessage<any>) => {
+  switch (message.name) {
+    case Server2Main.PROGRAM_SET:
+      game.set_program(message.data.name, message.data.program)
+      break
+    case Server2Main.PROGRAM_SHUTDOWN:
+      break
+    case Server2Main.ADD_PLAYER:
+      break
+    case Server2Main.LIST_BOTS:
+      break
+    case Server2Main.SELECT_BOT:
+      break
+    case Server2Main.REQUEST_UPGRADE:
+      break
+    case Server2Main.ADD_UPGRADE:
+      break
+  }
+})
 
 console.log('started')

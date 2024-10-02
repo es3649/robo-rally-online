@@ -1,4 +1,6 @@
 import type { Player } from "./player"
+import { MovementDirection, RotationDirection, type MovementArray, Rotation, type Movement, Orientation } from "./movement"
+
 
 export declare type GameAction = {
     action: ProgrammingCard,
@@ -23,15 +25,23 @@ export namespace ProgrammingCard {
     export const again = "again"
     export const power_up = "power_up"
     export const spam = "spam"
+    export declare interface ActionChoice {
+        prompt: string
+        options: string[]
+        choice: (option: string) => MovementArray
+    }
     export declare interface Haywire {
         text: string,
-        id: number,
-        // to implement this guy, we may need access to a lot of data
-        effect: (game_state:any) => void
+        actions: MovementArray | ActionChoice
     }
+    export function is_action_choice(obj:MovementArray | ActionChoice): obj is ActionChoice {
+        const choice = obj as ActionChoice
+        return choice.prompt != undefined && choice.options != undefined && choice.choice != undefined
+    }
+
     export function is_haywire(card:string|undefined|Haywire): card is Haywire {
         const h = card as Haywire
-        return h.id != undefined && h.text != undefined
+        return h.actions != undefined && h.text != undefined
     }
     export function get_text(action: CardAction): string {
         if (is_haywire(action)) {
@@ -60,11 +70,64 @@ export namespace ProgrammingCard {
                 return "Replace this card with the top card of your programming deck" 
         }
     }
+    /**
+     * is the action a turn: one of left, right, u_turn
+     * @param action the action to check
+     * @returns whether the action is a turn
+     */
+    export function is_turn(action: CardAction) {
+        switch (action) {
+            case left:
+            case right:
+            case u_turn:
+                return true
+            default:
+                return false
+        }
+    }
+    /**
+     * is the action a movement: one of forward1, forward2, forward3, or back
+     * @param action the action to check
+     * @returns true if the action moves
+     */
+    export function is_movement(action: CardAction) {
+        switch (action) {
+            case forward1:
+            case forward2:
+            case forward3:
+            case back:
+                return true
+            default:
+                return false
+        }
+    }
 }
 export declare type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
 export declare type ProgrammingCard = {
     id: number,
     action: CardAction
+}
+
+export function from_card(card: ProgrammingCard): Movement|undefined {
+    // we don't really deal with these
+    switch (card.action) {
+        case ProgrammingCard.forward1:
+            return {direction: MovementDirection.Forward, distance: 1}
+        case ProgrammingCard.forward2:
+            return {direction: MovementDirection.Forward, distance: 2}
+        case ProgrammingCard.forward3:
+            return {direction: MovementDirection.Forward, distance: 3}
+        case ProgrammingCard.back:
+            return {direction: MovementDirection.Back, distance: 1}
+        case ProgrammingCard.left:
+            return new Rotation(RotationDirection.CCW, 1)
+        case ProgrammingCard.right:
+            return new Rotation(RotationDirection.CW, 1)
+        case ProgrammingCard.u_turn:
+            return new Rotation(RotationDirection.CW, 2)
+        default: // power_up, again, spam, haywire; action is do nothing or not determinable here
+            return 
+    }
 }
 
 export declare interface UpgradeCard {
@@ -142,6 +205,224 @@ export function newStandardDeck(): ProgrammingCard[] {
             id: 19
         }
     ]
+}
+
+export function newDamageDeck(): ProgrammingCard[] {
+    // write out the haywires explicitly
+    let cards: ProgrammingCard[] = [{
+        action: {
+            text: 'Move 2, Rotate Right.',
+            actions: [{
+                direction: MovementDirection.Forward,
+                distance: 2
+            },new Rotation(RotationDirection.CW, 1)]
+        },
+        id: 43
+    },{
+        action: {
+            text: 'Rotate Right or Rotate Left.',
+            actions: {
+                prompt: "Choose a direction",
+                options: ['Right', 'Left'],
+                choice(option: string): MovementArray {
+                    switch (option) {
+                        case "Right":
+                            return [new Rotation(RotationDirection.CW, 1)]
+                            case "Left":
+                            return [new Rotation(RotationDirection.CCW, 1)]
+                    }
+                    
+                    return []
+                }
+            }
+        },
+        id: 44
+    },{
+        action: {
+            text: 'Move 1, Rotate Left, Move 1.',
+            actions: [{
+                direction: MovementDirection.Forward,
+                distance: 1
+            },new Rotation(RotationDirection.CCW, 1),{
+                direction: MovementDirection.Forward,
+                distance: 1
+            }]
+        },
+        id: 45
+    },{
+        action: {
+            text: 'Rotate to any Facing, Move 1.',
+            actions: {
+                prompt: "Rotation",
+                options: ["None", "Left", "U-Turn", "Right"],
+                choice(option:string): MovementArray {
+                    let moves: MovementArray = []
+                    switch (option) {
+                        case "None":
+                            break
+                        case "Left":
+                            moves.push(new Rotation(RotationDirection.CCW, 1))
+                            case "U-Turn":
+                            moves.push(new Rotation(RotationDirection.CW, 2))
+                        case "Right":
+                            moves.push(new Rotation(RotationDirection.CW, 1))
+                        default:
+                            console.warn(`Illegal option in Haywire 46: ${option}`)
+                    }
+                    moves.push({
+                        direction: MovementDirection.Forward,
+                        distance: 1
+                    })
+                    return moves
+                }
+            }
+        },
+        id: 46
+    },{
+        action: {
+            text: 'Install a permanent upgrade from your collection of uninstalled upgrades. At the end of round, place that card into the upgrade discard pile.',
+            actions: []
+        },
+        id: 47
+    },{
+        action: {
+            text: 'Move 1, then take the priority token. Do not move the priority token at the end of this round.',
+            actions: []
+        },
+        id: 48
+    },{
+        action: {
+            text: 'Pay 0-8 energy, then move 2 spaces for each energy you paid.',
+            actions: {
+                prompt: "Pay energy",
+                options: ['0','1','2','3','4','5','6','7','8'],
+                choice(option: string): MovementArray {
+                    try {
+                        const energy = Math.round(parseInt(option))
+                        if (energy < 0 || energy > 8) {
+                            console.warn(`Illegal option in Haywire 49: ${option}`)
+                            return []
+                        }
+                        return [{
+                            direction: MovementDirection.Forward,
+                            distance: 2*energy
+                        }]
+                    } catch {
+                        console.warn(`Illegal option in Haywire 49: ${option}`)
+                        return []
+                    }
+                }
+            }
+        },
+        id: 49
+    },{
+        action: {
+            text: 'Move back 3.',
+            actions: [{
+                direction: MovementDirection.Back,
+                distance: 3
+            }]
+        },
+        id: 50
+    },{
+        action: {
+            text: 'Move back 1, U-turn.',
+            actions: [{
+                direction: MovementDirection.Back,
+                distance: 1
+            }, new Rotation(RotationDirection.CW, 2)]
+        },
+        id: 51
+    },{
+        action: {
+            text: 'Move 1, rotate right, move 1.',
+            actions: [{
+                direction: MovementDirection.Forward,
+                distance: 1
+            },new Rotation(RotationDirection.CW, 1),{
+                direction: MovementDirection.Forward,
+                distance: 1
+            }]
+        },
+        id: 52
+    },{
+        action: {
+            text: 'Move 2 left or right, without changing facing.',
+            actions: {
+                prompt: "Movement direction",
+                options: ["Left", "Right"],
+                choice(option: string): MovementArray {
+                    switch (option) {
+                        case "Left":
+                            return [{
+                                direction: MovementDirection.Left,
+                                distance: 2
+                            }]
+                        case "Right":
+                            return [{
+                                direction: MovementDirection.Right,
+                                distance: 2
+                            }]
+                        default:
+                            console.warn(`Illegal option in Haywire 53: ${option}`)
+                            return []
+                    }
+                }
+            }
+        },
+        id: 53
+    },{
+        action: {
+            text: 'Move back 1. Remove a card in your discard pile from the game.',
+            actions: []
+        },
+        id: 54
+    },{
+        action: {
+            text: 'Move 2, rotate left.',
+            actions: [{
+                direction: MovementDirection.Forward,
+                distance: 2
+            }, new Rotation(RotationDirection.CCW, 1)]
+        },
+        id: 55
+    },{
+        action: {
+            text: 'Move 5. If you hit a wall this register take 1 damage.',
+            actions: []
+        },
+        id: 56
+    },{
+        action: {
+            text: "Move 1, your robot's laser deals 1 additional damage this register.",
+            actions: []
+        },
+        id: 57
+    },{
+        action: {
+            text: 'Draw and reveal the top 2 cards of your programming deck. Resolve both in the order of your choosing.',
+            actions: []
+        },
+        id: 58
+    },{
+        action: {
+            text: 'Move 3, U-turn.',
+            actions: [{
+                direction: MovementDirection.Forward,
+                distance: 3
+            }, new Rotation(RotationDirection.CW, 2)]
+        },
+        id: 59
+    }]
+
+    // add 23 spams
+    for (let i = 0; i < 23; i++) {
+        cards.push({
+            action: 'spam',
+            id: 20+i
+        })
+    }
+    return cards
 }
 
 export declare type ProgrammingHand = ProgrammingCard[]

@@ -1,6 +1,6 @@
 import { walk } from "vue/compiler-sfc"
-import { Orientation, RotationDirection, Rotation } from "./movement"
-import type { AbsoluteMovement, BoardPosition, OrientedPosition, MovementArray } from "./movement"
+import { Orientation, RotationDirection, Rotation } from "../models/movement"
+import type { AbsoluteMovement, BoardPosition, OrientedPosition, MovementArray } from "../models/movement"
 
 const BOARD_SIZE = 12
 
