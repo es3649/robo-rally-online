@@ -129,14 +129,14 @@
     ],[
       {"type": "pit"},
       {"type": "pit"},
-      {"type": "conv_L","orientation": "E"},
       {"type": "conv_L","orientation": "N"},
+      {"type": "conv_L","orientation": "W"},
       {"type": "battery"},
       {},
       {},
       {},
-      {"type": "conv_L","orientation": "E"},
       {"type": "conv_L","orientation": "N"},
+      {"type": "conv_L","orientation": "W"},
       {},
       {"type": "conv_F","orientation": "W"}
     ],[
@@ -173,11 +173,11 @@
       {"type": "conv_F","orientation": "N"},
       {"type": "conv_R","orientation": "N"},
       {"type": "conv_R","orientation": "W"},
-      {"type": "conv_L","orientation": "N"},
+      {"type": "conv_L","orientation": "W"},
       {},
       {},
       {"type": "conv_R","orientation": "W"},
-      {"type": "conv_L","orientation": "N"}
+      {"type": "conv_L","orientation": "W"}
     ],[
       {"type": "battery"},
       {"type": "conv_F","orientation": "E"},
