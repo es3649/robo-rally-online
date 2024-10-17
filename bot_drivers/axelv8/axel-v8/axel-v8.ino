@@ -99,6 +99,7 @@ int steps_taken = 0;
 
 void motorStep() {
   if (motor_steps > -1) {
+    Serial.println("Stepping Motor");
     if (digitalRead(MTR_CLK_PIN) == HIGH) {
       digitalWrite(MTR_CLK_PIN, LOW);
     } else {
@@ -108,6 +109,7 @@ void motorStep() {
   }
   if (steps_taken >= motor_steps) {
     digitalWrite(MTR_ENABLE_PIN, LOW);
+    Serial.println("Finished");
     motor_steps = -1;
   }
 }
@@ -154,7 +156,12 @@ void setup() {
   // Serial.println(DAC.getSPIspeed());
   Serial.println("initialized");
 
-  loadFile("shutdown0.wav");
+  // loadFile("shutdown0.wav");
+
+  motor_steps = 20;
+  digitalWrite(MTR_ENABLE_PIN, HIGH);
+  digitalWrite(MTR1_ORIENTATION_PIN, HIGH);
+  digitalWrite(MTR2_ORIENTATION_PIN, HIGH);
 }
 
 int iter = 0;
@@ -165,10 +172,12 @@ void loop() {
   } else {
     iter++;
   }
-  playerStep();
+  // playerStep();
   if (iter % 10 == 0) {
-    motorStep();
-    laserStep();
+    // motorStep();
+    // laserStep();
     // ledStep();
   }
+  motorStep();
+  delay(1000);
 }
