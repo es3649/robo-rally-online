@@ -33,6 +33,9 @@ out
 test-results/
 playwright-report/
 
-# vector graphic design files
+# Vector graphic design files
 logoist/
 **/*.logoist
+
+# KiCad schematic backups
+schematics/pcb/pcb-schematics-backups

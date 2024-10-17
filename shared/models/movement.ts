@@ -57,7 +57,7 @@ export namespace Orientation {
      * @returns the resulting orientation
      */
     export function rotate(o: Orientation, dir: RotationDirection, units:number=1): Orientation {
-        switch (units % 4) {
+        switch (((units % 4) + 4) % 4) {
             case 0:
                 // 0 rotations, no-op
                 return o
@@ -171,15 +171,15 @@ export class Rotation {
      * @returns the reduced rotation
      */
     static reduce(r: Rotation): Rotation {
-        let units = r.units % 4
-        let dir = r.direction
+        let units = ((r.units % 4) + 4) % 4 // js has a bug with mods of negative numbers
+        let dir: RotationDirection = r.direction
         if (units > 2) {
             // swap the rotation direction
             units = 4 - units
             dir = dir === RotationDirection.CW ? RotationDirection.CCW : RotationDirection.CW
         }
         // return
-        return new Rotation(units, dir)
+        return new Rotation(dir, units)
     }
 
     /**
@@ -241,9 +241,10 @@ export type MovementArray = Movement[]
  * @param mv the object to test
  * @returns is the object an AbsoluteMovement
  */
-function isAbsoluteMovement(mv: any): mv is AbsoluteMovement {
-    if (mv.direction !== undefined &&
-        mv.direction in [Orientation.N, Orientation.E, Orientation.S, Orientation.W] &&
+export function isAbsoluteMovement(mv: any): mv is AbsoluteMovement {
+    if (mv !== undefined &&
+        mv.direction !== undefined &&
+        [Orientation.N, Orientation.E, Orientation.S, Orientation.W].includes(mv.direction) &&
         mv.distance !== undefined
     ) {
         return true
@@ -252,12 +253,54 @@ function isAbsoluteMovement(mv: any): mv is AbsoluteMovement {
 }
 
 /**
+ * steps the position by one step in the direction indicate by the orientation
+ * @param position the starting position
+ * @param orientation the orientation in which to step the position
+ */
+export function applyOrientationStep<T extends BoardPosition>(pos: T, orientation: Orientation): T {
+    let x = pos.x
+    let y = pos.y
+    switch (orientation) {
+        case Orientation.N:
+            y += 1
+            break
+        case Orientation.E:
+            x += 1
+            break
+        case Orientation.S:
+            y -= 1
+            break
+        case Orientation.W:
+            x -= 1
+            break
+    }
+    // return the items to the result, only modifying x and y
+    return {...pos, x: x, y: y}
+}
+
+/**
+ * gets the effect of an absolute movement on a position, returning the updated position
+ * @param pos the starting position
+ * @param movement the movement to apply
+ * @returns the resulting position
+ */
+export function applyAbsoluteMovement(pos: BoardPosition, movement: AbsoluteMovement): BoardPosition {
+    let ret_pos = pos
+    // just step 
+    for (let i = 0; i < movement.distance; i++) {
+        pos = applyOrientationStep(ret_pos, movement.direction)
+    }
+    return ret_pos
+}
+
+/**
  * Test if an object is a RelativeMovement
  * @param mv the object to test
  * @returns is the object a RelativeMovement
  */
-function isRelativeMovement(mv: any): mv is RelativeMovement {
-    if (mv.direction !== undefined &&
+export function isRelativeMovement(mv: any): mv is RelativeMovement {
+    if (mv !== undefined &&
+        mv.direction !== undefined &&
         mv.direction in [MovementDirection.Back, MovementDirection.Forward, MovementDirection.Left, MovementDirection.Right]
         && mv.units === undefined
     ) {
@@ -271,8 +314,9 @@ function isRelativeMovement(mv: any): mv is RelativeMovement {
  * @param mv the object to test
  * @returns is the object a Rotation
  */
-function isRotation(mv: any): mv is Rotation {
-    if (mv.direction !== undefined &&
+export function isRotation(mv: any): mv is Rotation {
+    if (mv !== undefined &&
+        mv.direction !== undefined &&
         mv.direction in [RotationDirection.CW, RotationDirection.CCW] &&
         mv.units !== undefined
     ) {
@@ -286,29 +330,6 @@ function isRotation(mv: any): mv is Rotation {
  * OrientedPosition as an interface, not a class
  */
 export namespace OrientedPosition {
-    /**
-     * performs a single step of an absolute movement
-     * @param pos the starting position
-     * @param dir the direction in which to move one space
-     * @returns the resulting position after moving exactly one space as specified
-     */
-    function moveAbsolutely(pos: OrientedPosition, dir: Orientation): OrientedPosition {
-        switch (dir) {
-            case Orientation.N:
-                pos.y += 1
-                break
-            case Orientation.E:
-                pos.x += 1
-                break
-            case Orientation.S:
-                pos.y -= 1
-                break
-            case Orientation.W:
-                pos.x -= 1
-                break
-        }
-        return pos
-    }
 
     /**
      * applies a movement object to the position
@@ -317,16 +338,17 @@ export namespace OrientedPosition {
      * @param hook a hook to be called after each step of movement. If it returns false, movement is interrupted
      * @returns the resulting position after applying all movements, or after halting with the hook
      */
-    export function apply_movement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
+    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
+        let ret = {...pos}
         if (isRotation(mv)) {
-            pos.orientation = Orientation.rotate(pos.orientation, mv.direction, mv.units)
+            ret.orientation = Orientation.rotate(ret.orientation, mv.direction, mv.units)
         } else if (isAbsoluteMovement(mv)) {
             let mvmt = mv.distance
             while (mvmt > 0) {
                 // perform the movement
-                pos = moveAbsolutely(pos, mv.direction)
-                if (!hook(pos)) {
-                    return pos
+                ret = applyOrientationStep(ret, mv.direction)
+                if (!hook(ret)) {
+                    return ret
                 }
                 mvmt -= 1
             }
@@ -336,29 +358,30 @@ export namespace OrientedPosition {
             let o: Orientation
             switch (mv.direction) {
                 case MovementDirection.Forward:
-                    o = pos.orientation
+                    o = ret.orientation
                     break
                 case MovementDirection.Right:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CW)
+                    o = Orientation.rotate(ret.orientation, RotationDirection.CW)
                     break
                 case MovementDirection.Back:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CW, 2)
+                    o = Orientation.rotate(ret.orientation, RotationDirection.CW, 2)
                     break
                 case MovementDirection.Left:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CCW)
+                    o = Orientation.rotate(ret.orientation, RotationDirection.CCW)
                     break
             }
             while (mvmt > 0) {
-                pos = moveAbsolutely(pos, o)
-                if (!hook(pos)) {
-                    return pos
+                ret = applyOrientationStep(ret, o)
+                if (!hook(ret)) {
+                    return ret
                 }
                 mvmt -= 1
             }
-            return pos
+        } else {
+            console.error(mv)
+            throw new Error("Given Movement object was not recognized as a type")
         }
-        console.error(mv)
-        throw new Error("Given Movement object was not recognized as a type")
+        return ret
     }
 
     /**
@@ -369,11 +392,11 @@ export namespace OrientedPosition {
      * movement is stopped
      * @returns the resulting position after all movements are applied
      */
-    export function apply_movements(pos: OrientedPosition, mvs: MovementArray, hook: (pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
+    export function applyMovements(pos: OrientedPosition, mvs: MovementArray, hook: (pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
         for (const mv of mvs) {
             var hook_ret: boolean = true
             // nest in a hook
-            pos = apply_movement(pos, mv, (p) => {
+            pos = applyMovement(pos, mv, (p) => {
                 hook_ret = hook(p)
                 return hook_ret
             })

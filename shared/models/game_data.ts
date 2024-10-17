@@ -1,5 +1,5 @@
 import type { Player } from "./player"
-import { MovementDirection, RotationDirection, type MovementArray, Rotation, type Movement, Orientation } from "./movement"
+import { MovementDirection, RotationDirection, type MovementArray, Rotation, type Movement } from "./movement"
 
 
 export declare type GameAction = {
@@ -33,18 +33,19 @@ export namespace ProgrammingCard {
     export declare interface Haywire {
         text: string,
         actions: MovementArray | ActionChoice
+        special?(...args: any): any // this should be used for 
     }
-    export function is_action_choice(obj:MovementArray | ActionChoice): obj is ActionChoice {
+    export function isActionChoice(obj:MovementArray | ActionChoice): obj is ActionChoice {
         const choice = obj as ActionChoice
         return choice.prompt != undefined && choice.options != undefined && choice.choice != undefined
     }
 
-    export function is_haywire(card:string|undefined|Haywire): card is Haywire {
+    export function isHaywire(card:string|undefined|Haywire): card is Haywire {
         const h = card as Haywire
         return h.actions != undefined && h.text != undefined
     }
-    export function get_text(action: CardAction): string {
-        if (is_haywire(action)) {
+    export function getText(action: CardAction): string {
+        if (isHaywire(action)) {
             return action.text
         }
         switch (action) {
@@ -75,7 +76,10 @@ export namespace ProgrammingCard {
      * @param action the action to check
      * @returns whether the action is a turn
      */
-    export function is_turn(action: CardAction) {
+    export function isTurn(action: CardAction) {
+        if (isHaywire(action)) {
+            return false
+        }
         switch (action) {
             case left:
             case right:
@@ -90,7 +94,10 @@ export namespace ProgrammingCard {
      * @param action the action to check
      * @returns true if the action moves
      */
-    export function is_movement(action: CardAction) {
+    export function isMovement(action: CardAction) {
+        if (isHaywire(action)) {
+            return false
+        }
         switch (action) {
             case forward1:
             case forward2:
@@ -108,26 +115,53 @@ export declare type ProgrammingCard = {
     action: CardAction
 }
 
-export function from_card(card: ProgrammingCard): Movement|undefined {
-    // we don't really deal with these
-    switch (card.action) {
-        case ProgrammingCard.forward1:
-            return {direction: MovementDirection.Forward, distance: 1}
-        case ProgrammingCard.forward2:
-            return {direction: MovementDirection.Forward, distance: 2}
-        case ProgrammingCard.forward3:
-            return {direction: MovementDirection.Forward, distance: 3}
-        case ProgrammingCard.back:
-            return {direction: MovementDirection.Back, distance: 1}
-        case ProgrammingCard.left:
-            return new Rotation(RotationDirection.CCW, 1)
-        case ProgrammingCard.right:
-            return new Rotation(RotationDirection.CW, 1)
-        case ProgrammingCard.u_turn:
-            return new Rotation(RotationDirection.CW, 2)
-        default: // power_up, again, spam, haywire; action is do nothing or not determinable here
-            return 
+export namespace Movements {
+    /**
+     * Gets the Movement represented by a card
+     * @param card the card to derive a movement from. This function may be obsolete
+     * @returns the movement that the card represents, or undefined if that card does
+     *    not represent a movement
+     */
+    export function fromCard(card: ProgrammingCard): Movement|undefined {
+        // we don't really deal with these
+        switch (card.action) {
+            case ProgrammingCard.forward1:
+                return {direction: MovementDirection.Forward, distance: 1}
+            case ProgrammingCard.forward2:
+                return {direction: MovementDirection.Forward, distance: 2}
+            case ProgrammingCard.forward3:
+                return {direction: MovementDirection.Forward, distance: 3}
+            case ProgrammingCard.back:
+                return {direction: MovementDirection.Back, distance: 1}
+            case ProgrammingCard.left:
+                return new Rotation(RotationDirection.CCW, 1)
+            case ProgrammingCard.right:
+                return new Rotation(RotationDirection.CW, 1)
+            case ProgrammingCard.u_turn:
+                return new Rotation(RotationDirection.CW, 2)
+            default: // power_up, again, spam, haywire; action is do nothing or not determinable here
+                return
+        }
     }
+    export const Forward1: Movement = {
+        direction: MovementDirection.Forward,
+        distance: 1
+    }
+    export const Forward2: Movement = {
+        direction: MovementDirection.Forward,
+        distance: 2
+    }
+    export const Forward3: Movement = {
+        direction: MovementDirection.Forward,
+        distance: 3
+    }
+    export const Back: Movement = {
+        direction: MovementDirection.Back,
+        distance: 1
+    }
+    export const Right: Movement = new Rotation(RotationDirection.CW, 1)
+    export const Left: Movement = new Rotation(RotationDirection.CCW, 1)
+    export const U_turn: Movement = new Rotation(RotationDirection.CW, 2)
 }
 
 export declare interface UpgradeCard {
