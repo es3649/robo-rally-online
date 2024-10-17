@@ -3,7 +3,7 @@ import { Ref, ref } from 'vue';
 import { useGameDataStore } from '../stores/game_data_store';
 import BoardComponent from '../components/Board.vue'
 import router from '../router';
-import { Board } from '../../main/game_server/board';
+import { Board } from '../../main/game_manager/board';
 
 const gds = useGameDataStore()
 const board_name = ref('')

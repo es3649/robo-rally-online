@@ -57,10 +57,35 @@ export declare type Player = {
     colors?: Color.Set
 }
 
-export declare type PlayerState = {
-    name: PlayerName,
-    energy: number,
-    checkpoints: number,
-    active: boolean,
-    priority: number,
+export class PlayerState {
+    priority: number
+    name: PlayerName
+    energy: number
+    checkpoints: number
+    active: boolean
+    static readonly MAX_ENERGY: number = 10
+
+    constructor (name: PlayerName, priority: number) {
+        this.name = name
+        this.priority = priority
+
+        // fill in defaults
+        this.energy = 3
+        this.checkpoints = 0
+        this.active = true
+    }
+
+    gainEnergy(): void {
+        if (this.energy < PlayerState.MAX_ENERGY) {
+            this.energy++
+        }
+    }
+
+    spendEnergy(count:number): boolean {
+        if (this.energy >= count) {
+            this.energy -= count
+            return true
+        }
+        return false
+    }
 }

@@ -172,7 +172,7 @@ export const useGameStateStore = defineStore({
          * clear the registers
          */
         clearRegisters(): void {
-            this.registers.forEach((card:ProgrammingCard[]) => {
+            this.registers.forEach((card: ProgrammingCard[]) => {
                 // programmed spam and haywire are discarded
                 // if (card === undefined || card.action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card.action)) {
                 if (card.length == 0 || card[0].action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card[0].action)) {

@@ -5,13 +5,16 @@ const PROGRAMMING_HAND_SIZE: number = 9
 export class DeckManager {
     private hand = [] as ProgrammingCardSlot[]
     private deck = [] as ProgrammingCard[]
-    private discard = [] as ProgrammingCard[]
+    private discard_pile = [] as ProgrammingCard[]
 
     constructor() {
         this.deck = newStandardDeck()
         this.shuffleDeck()
     }
 
+    /**
+     * performs an in-place shuffle of the deck.
+     */
     shuffleDeck(): void {
         // do a Fisher-Yates (Knuth) shuffle
         let cur: number = this.deck.length
@@ -21,6 +24,7 @@ export class DeckManager {
             const random_idx: number = Math.floor(Math.random() * cur)
             cur--
 
+            // swap
             const tmp = this.deck[cur]
             this.deck[cur] = this.deck[random_idx]
             this.deck[random_idx] = tmp
@@ -33,10 +37,10 @@ export class DeckManager {
      * @returns the top card from the programming deck
      */
     drawCard(): ProgrammingCard {
-        // shuffle the discard into the 
+        // shuffle the discard into the deck
         if (this.deck.length == 0) {
-            this.deck = this.discard
-            this.discard = []
+            this.deck = this.discard_pile
+            this.discard_pile = []
             this.shuffleDeck()
         }
         // this should never be undefined
@@ -54,7 +58,7 @@ export class DeckManager {
                 return
             }
             // discard the card and remove from hand
-            this.discard.push(card)
+            this.discard_pile.push(card)
             this.hand[idx] = undefined
         })
 
@@ -76,17 +80,31 @@ export class DeckManager {
         })
     }
 
+    getHand(): ProgrammingCardSlot[] {
+        return this.hand
+    }
+
+    /**
+     * clears damage cards programmed in this program
+     * TODO: this cannot be used to discard cards from the program. It will cause card duplication. It should
+     * be used to clear damage cards from the hand
+     * @param program the program to clear
+     */
     clearProgram(program: RegisterArray): void {
         program.forEach((register: ProgrammingCard[]) => {
             // programmed spam and haywire are discarded
-            if (register.length == 0 || register[0].action == ProgrammingCard.spam || ProgrammingCard.is_haywire(register[0].action)) {
+            if (register.length == 0 || register[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(register[0].action)) {
                 return
                 // TODO, haywire should be returned to the deck, I think
             }
             // otherwise discard the card(s)
             register.forEach((card: ProgrammingCard) => {
-                this.discard.push(card)
+                this.discard_pile.push(card)
             })
         })
+    }
+
+    discard(card: ProgrammingCard): void {
+        this.discard_pile.push(card)
     }
 }

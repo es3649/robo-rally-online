@@ -1,6 +1,7 @@
 import { walk } from "vue/compiler-sfc"
-import { Orientation, RotationDirection, Rotation } from "../models/movement"
-import type { AbsoluteMovement, BoardPosition, OrientedPosition, MovementArray } from "../models/movement"
+import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement } from "../models/movement"
+import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
+import { ConveyorForest } from "./graph"
 
 const BOARD_SIZE = 12
 
@@ -25,6 +26,53 @@ export namespace SpaceType {
     export const PIT = "pit"            // a pit
     export const BATTERY = "battery"        // a battery space
     export const SPAWN = "spawn"          // an initial (not respawn) point
+
+    /**
+     * checks if the given type is any of the 2 conveyor(1) types
+     * @param t the SpaceType to check
+     * @returns is the space type a conveyor(1)
+     */
+    export function isConveyor(t: SpaceType|undefined): boolean {
+        switch(t) {
+            case SpaceType.CONVEYOR_F:
+            case SpaceType.CONVEYOR_L:
+            case SpaceType.CONVEYOR_R:
+            case SpaceType.CONVEYOR_RF:
+            case SpaceType.CONVEYOR_LF:
+            case SpaceType.CONVEYOR_LRF:
+                return true
+            default:
+                return false
+        }
+    }
+
+    /**
+     * checks if the given type is any of the 6 conveyor2 types
+     * @param t the SpaceType to check
+     * @returns is the space type a conveyor2
+     */
+    export function isConveyor2(t: SpaceType|undefined): boolean {
+        switch(t) {
+            case SpaceType.CONVEYOR2_F:
+            case SpaceType.CONVEYOR2_L:
+            case SpaceType.CONVEYOR2_R:
+            case SpaceType.CONVEYOR2_RF:
+            case SpaceType.CONVEYOR2_LF:
+            case SpaceType.CONVEYOR2_LRF:
+                return true
+            default:
+                return false
+        }
+    }
+
+    /**
+     * checks if the given type is any of the 12 conveyor types
+     * @param t the SpaceType to check
+     * @returns is the space type a conveyor
+     */
+    export function isAnyConveyor(t: SpaceType|undefined): boolean {
+        return isConveyor(t) || isConveyor2(t)
+    }
 }
 export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | 
     "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | 
@@ -42,7 +90,13 @@ export namespace WallType {
         registers: number[]
     }
     export function isPUSH(obj: any): obj is PUSH {
-        if (!!obj && obj.registers !== undefined) return true
+        if (!!obj &&
+            obj.registers !== undefined &&
+            obj.registers.length !== undefined &&
+            obj.registers.length > 0) 
+        {
+            return true
+        }
         return false
     }
 }
@@ -75,7 +129,13 @@ export namespace SpaceCoverType {
         registers: number[]
     }
     export function isCRUSHER(obj: any): obj is CRUSHER {
-        if (!!obj && obj.registers !== undefined) return true
+        if (!!obj &&
+            obj.registers !== undefined &&
+            obj.registers.length !== undefined &&
+            obj.registers.length > 0)
+        {
+            return true
+        }
         return false
     }
 }
@@ -208,15 +268,17 @@ export class Board {
     public data: BoardData
 
     // all other events are independent, and only the position matters
-    public battery_positions: BoardPosition[] = []
-    public scrambler_positions: BoardPosition[] = []
-    public crusher_positions: BoardPosition[] = []
+    // public battery_positions: BoardPosition[] = []
+    // public scrambler_positions: BoardPosition[] = []
+    // public crusher_positions: BoardPosition[] = []
     public checkpoint_map: Map<BoardPosition, number> = new Map<BoardPosition, number>()
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
     public h_laser_positions: BoardPosition[] = []
     public v_laser_positions: BoardPosition[] = []
     public h_pusher_positions: BoardPosition[] = []
     public v_pusher_positions: BoardPosition[] = []
+    private conveyors: ConveyorForest = new ConveyorForest()
+    private conveyors2: ConveyorForest = new ConveyorForest()
 
     constructor(data: BoardData) {
         // set our instance ID from the static count
@@ -226,14 +288,26 @@ export class Board {
         this.data = data
 
         // build conveyor graphs and position arrays
-        this.rebuild_component_data()
+        this.rebuildComponentData()
+    }
+
+    /**
+     * checks if the given position is on the board
+     * @param pos the position to test
+     * @returns true if the position is on the board
+     */
+    private _onBoard(pos: BoardPosition): boolean {
+        return (
+            pos.x >= 0 && pos.x < this.data.x_dim &&
+            pos.y >= 0 && pos.y < this.data.y_dim
+        )
     }
 
     /**
      * a standard getter for this readonly property
      * @returns the unique id of this board
      */
-    get_id(): number {
+    public getId(): number {
         return this.id
     }
 
@@ -242,7 +316,7 @@ export class Board {
      * oriented tiles are rotated
      * @param dir the direction in which to rotate the board
      */
-    rotate_board(dir: RotationDirection) {
+    public rotateBoard(dir: RotationDirection) {
         // rotate the data :P
         // use the affine transformation from a rotation matrix
         // CW: x, y = y, 11 - x; E/W facing (on vertical walls) hi-lo switches sides
@@ -328,35 +402,110 @@ export class Board {
         this.data.x_dim = Y_DIM
         this.data.y_dim = X_DIM
 
-        this.rebuild_component_data()
+        this.rebuildComponentData()
+    }
+
+    /**
+     * If the space is a conveyor, this determines the direction in which it rotates when it activates.
+     * This is done by finding the space that the conveyor pushes onto, determining if it is a rotating
+     * conveyor (a consideration of its type and orientation), and then returns that direction. If
+     * these cases aren't met, it returns undefined
+     * @param pos the position of the space to check
+     * @returns the direction in which the space rotates if it is a conveyor, else undefined
+     */
+    private _conveyorTurnDirection(pos: BoardPosition): RotationDirection|undefined {
+        const o = this.data.spaces[pos.x][pos.y].orientation
+        if (o == undefined) {
+            return
+        }
+        const destination_pos = applyOrientationStep(pos, o)
+        const destination_space = this.data.spaces[destination_pos.x][destination_pos.y]
+        if (!this._onBoard(destination_pos) ||
+            !SpaceType.isAnyConveyor(destination_space.type))
+        {
+            return
+        }
+
+        switch (destination_space.type) {
+            case SpaceType.CONVEYOR_L:
+            case SpaceType.CONVEYOR2_L:
+                return RotationDirection.CCW
+            case SpaceType.CONVEYOR_R:
+            case SpaceType.CONVEYOR2_R:
+                return RotationDirection.CW
+            case SpaceType.CONVEYOR_LRF:
+            case SpaceType.CONVEYOR2_LRF:
+                // if we are coming in the same direction as we are facing, then no rotation, otherwise
+                // rotate in the direction we are coming in from
+                if (destination_space.orientation == o) {
+                    return
+                }
+                // if we come in from the relative right of the tile, we rotate
+                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CW, 1)) {
+                    return RotationDirection.CW
+                }
+                // otherwise, test entrance from relative left by flowing in to the next case, below
+            case SpaceType.CONVEYOR_LF:
+            case SpaceType.CONVEYOR2_LF:
+                // if we are coming in from the relative left of the tile, we rotate
+                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CCW, 1)) {
+                    return RotationDirection.CCW
+                }
+                // otherwise we don't
+                return
+            case SpaceType.CONVEYOR_RF:
+            case SpaceType.CONVEYOR2_RF:
+                // if we are coming in from the relative right of the tile, we rotate
+                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CW, 1)) {
+                    return RotationDirection.CW
+                }
+                // otherwise we don't
+                return
+            default:
+                return
+        }
     }
 
     /**
      * Build the data structures associated with the board in memory. This means tracing out paths
      * traversable by conveyor, and listing other component types
      */
-    rebuild_component_data() {
-        this.battery_positions = []
-        this.scrambler_positions = []
-        this.crusher_positions = []
+    private rebuildComponentData() {
+        // this.battery_positions = []
+        // this.scrambler_positions = []
+        // this.crusher_positions = []
         this.checkpoint_map = new Map<BoardPosition, number>()
+        this.conveyors.clear()
+        this.conveyors2.clear()
         // run over the board and add each component to its list
         for (var x = 0; x < this.data.spaces.length; x++) {
             for (var y = 0; y < this.data.spaces[x].length; y++) {
-                if (this.data.spaces[x][y].type === SpaceType.BATTERY) {
-                    this.battery_positions.push({x:x, y:y})
-                }
-
-                if (SpaceCoverType.isCRUSHER(this.data.spaces[x][y].cover)) {
-                    this.crusher_positions.push({x:x,y:y})
-                } else if (this.data.spaces[x][y].cover === SpaceCoverType.SCRAMBLER) {
-                    this.scrambler_positions.push({x:x,y:y})
-                } else if (SpaceCoverType.isCHECKPOINT(this.data.spaces[x][y].cover)) {
+                const space = this.data.spaces[x][y]
+                // if (SpaceCoverType.isCRUSHER(this.data.spaces[x][y].cover)) {
+                //     // list this as a crusher
+                //     this.crusher_positions.push({x:x,y:y})
+                // } else if (this.data.spaces[x][y].cover === SpaceCoverType.SCRAMBLER) {
+                //     this.scrambler_positions.push({x:x,y:y})
+                // } else 
+                if (SpaceCoverType.isCHECKPOINT(space.cover)) {
                     this.checkpoint_map.set({x:x,y:y}, (this.data.spaces[x][y].cover as SpaceCoverType.CHECKPOINT).number)
+                // } else if (this.data.spaces[x][y].type == SpaceType.BATTERY) {
+                    // this.battery_positions.push({x:x, y:y})
+                } else if (SpaceType.isAnyConveyor(space.type)) {
+                    // check if it gives a rotation when it pushes
+                    const pos: BoardPosition = {x:x, y:y}
+                    const rotation: RotationDirection|undefined = this._conveyorTurnDirection(pos)
+                    // make sure that this gets added to the correct forest
+                    if (SpaceType.isConveyor(space.type)) {
+                        this.conveyors.addConveyor(pos, (space.orientation as Orientation), rotation)
+                    } else {
+                        this.conveyors2.addConveyor(pos, (space.orientation as Orientation), rotation)
+                    }
                 }
             }
         }
 
+        // loop over the horizontal walls to get the lasers
         for (var x = 0; x < this.data.walls.horizontal_walls.length; x++) {
             for (var y = 0; y < this.data.walls.horizontal_walls[x].length; y++) {
                 const wall = this.data.walls.horizontal_walls[x][y]
@@ -369,6 +518,7 @@ export class Board {
             }
         }
 
+        // loop over the vertical walls to get the lasers
         for (var x = 0; x < this.data.walls.vertical_walls.length; x++) {
             for (var y = 0; y < this.data.walls.vertical_walls[x].length; y++) {
                 const wall = this.data.walls.vertical_walls[x][y]
@@ -381,21 +531,49 @@ export class Board {
             }
         }
     }
-//     conveyor2_map: [GraphNode]
-//     conveyor2_entries: Map<BoardPosition, GraphNode>
-//     conveyor_map: [GraphNode]
-//     conveyor_entries: Map<BoardPosition, GraphNode>
-    // conveyor events should be parsed in a graph. This will allow them to be executed sequentially
-    handle_conveyor2(pos: BoardPosition): MovementArray {
-        return []
+
+    /**
+     * computes movements for each position resulting from the actions of the 2-step conveyors. The
+     * return array will be the same size as the input array, and each entry should be applied to the
+     * position at the same index in the input
+     * @param positions the starting positions of the actors to act upon
+     * @returns the movements to be applied by the conveyors in a list, placed in the same order as
+     * the positions in the input
+     */
+    public handle_conveyor2(positions: BoardPosition[]): MovementArray[] {
+        // call handle conveyance twice because handle conveyance only handles one step
+        let movements_1 = this.conveyors2.handleConveyance(positions)
+        let mid_positions: BoardPosition[] = []
+        // apply the movements to the positions in the array to get the next round of positions
+        positions.forEach((value: BoardPosition, index: number) => {
+            let new_pos: BoardPosition = value
+            // for each movement
+            movements_1[index].forEach((value: Movement) => {
+                // if it's an absolute movement (not a rotation), apply it
+                if (isAbsoluteMovement(value)) {
+                    new_pos = applyOrientationStep(new_pos, value.direction)
+                }
+            })
+            // add the updated movement 
+            mid_positions.push(new_pos)
+        })
+        return this.conveyors2.handleConveyance(mid_positions)
     }
     
-    handle_conveyor(pos: BoardPosition): MovementArray {
-        return []
+    /**
+     * computes movements for each position resulting from the actions of the 1-step conveyors. The
+     * return array will be the same size as the input array, and each entry should be applied to the
+     * position at the same index in the input
+     * @param positions the starting positions of the actors to act upon
+     * @returns the movements to be applied by the conveyors in a list, placed in the same order as
+     * the positions in the input
+     */
+    public handleConveyor(positions: BoardPosition[]): MovementArray[] {
+        return this.conveyors.handleConveyance(positions)
     }
 
     // gear events can all be executed simultaneously
-    handle_gear(pos: BoardPosition): Rotation | undefined {
+    public handleGear(pos: BoardPosition): Rotation | undefined {
         const space = this.data.spaces[pos.x][pos.y]
         if (space.type === SpaceType.GEAR_L) {
             return new Rotation(RotationDirection.CCW, 1)
@@ -406,7 +584,7 @@ export class Board {
 
     // these should specify the directions and lengths the lasers are coming in, and possibly accept as
     // arguments the current positions of other robots, to determine where lasers are blocked
-    get_laser_origins(): LaserPosition[] {
+    private getLaserOrigins(): LaserPosition[] {
         return []
         // deal with the lasers one dimension at a time
         // for vertical
@@ -422,7 +600,7 @@ export class Board {
      * @param inclusive_positions do lasers also hit the space they shoot from?
      * @return a list of damage values corresponding to the entries in targets
      */
-    handle_laser_paths(laser_origins: LaserPosition[], targets: BoardPosition[], inclusive_positions:boolean=false): number[] {
+    public handleLaserPaths(laser_origins: LaserPosition[], targets: BoardPosition[], inclusive_positions:boolean=false): number[] {
         // look in the direction they're shooting
             // step forward along the path of fire
             // check for blocks from targets when crossing spaces
@@ -440,8 +618,8 @@ export class Board {
      * @param pos the initial position of the target
      * @returns the resulting absolute movement of activating all pushers
      */
-    handle_push(pos: BoardPosition, register: number): AbsoluteMovement | undefined {
-        const walls = get_walls(this, pos)
+    public handlePush(pos: BoardPosition, register: number): AbsoluteMovement | undefined {
+        const walls = getWalls(this, pos)
         if (WallType.isPUSH(walls.n) && register in walls.n.registers) {
             return {
                 direction: Orientation.S,
@@ -477,7 +655,7 @@ export class Board {
     }
 }
 
-export function get_walls(board: Board, pos: BoardPosition): SpaceBoundaries {
+export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries {
     const x = pos.x
     const y = pos.y
     if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) {

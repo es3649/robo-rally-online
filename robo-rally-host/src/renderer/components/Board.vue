@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import BoardTile from './BoardTile.vue'
-import { Board } from '../../main/game_server/board';
+import { Board } from '../../main/game_manager/board';
 import { Ref, ref } from 'vue';
-import { get_walls } from '../../main/game_server/board';
+import { getWalls } from '../../main/game_manager/board';
 
 const props = defineProps<{
     editable: boolean,
@@ -21,7 +21,7 @@ const props = defineProps<{
         <div v-else class="board">
             <div v-for="(col, x) of board.data.spaces" class="col">
                 <div v-for="(space, y) of col.slice().reverse()">
-                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="get_walls(board, {x:x,y:board.data.y_dim-1-y})"/>
+                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="getWalls(board, {x:x,y:board.data.y_dim-1-y})"/>
                     <!-- <p>space</p> -->
                 </div>
             </div>

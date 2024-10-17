@@ -81,7 +81,9 @@ function registerIPCListeners() {
     // load the board
     const board = loadFromJson(name)
     // load it into the game manager
-    game.use_board(board)
+    board.then((board: Board) => {
+      game.use_board(board)
+    })
     // return it to the caller
     return board
   })
@@ -98,12 +100,12 @@ function registerIPCListeners() {
     game = new GameManager(senderMaker<Main2Server>(process))
   })
 
-  ipcMain.on(Render2Main.BOARD.ROTATE)
-  ipcMain.handle(Render2Main.BOARD.EXTEND)
-  ipcMain.on(Render2Main.BOARD.READY)
-  ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
-  ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
-  ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
+  // ipcMain.on(Render2Main.BOARD.ROTATE)
+  // ipcMain.handle(Render2Main.BOARD.EXTEND)
+  // ipcMain.on(Render2Main.BOARD.READY)
+  // ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
+  // ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
+  // ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
 
 }
 

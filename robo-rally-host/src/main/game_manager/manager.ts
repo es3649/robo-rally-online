@@ -1,17 +1,15 @@
 import { Color } from "../models/player"
-import type {  Character, Player, PlayerID, PlayerName, PlayerState } from "../models/player"
+import {  PlayerState, type Character, type Player, type PlayerID, type PlayerName } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
-import { type GameAction, GamePhase, ProgrammingCard, type RegisterArray } from '../models/game_data'
+import { type GameAction, GamePhase, Movements, ProgrammingCard, type RegisterArray } from '../models/game_data'
 
 import type { Board } from "./board"
 import { Main2Server } from "../models/events"
 import { bot_action, connectRobot, BotAction } from "../bluetooth"
 import { DeckManager } from "./deck_manager"
-import type { OrientedPosition } from "../models/movement"
+import { type OrientedPosition, type MovementArray, type Movement, MovementDirection } from "../models/movement"
 
-const MAX_PLAYERS = 6
-
-declare type PositionMap = Map<PlayerID, OrientedPosition>
+export const MAX_PLAYERS = 6
 
 /**
  * GameManager class manages the game state and invokes the game logic when it's
@@ -25,11 +23,12 @@ export class GameManager {
     private shutdowns = new Set<PlayerID>()
     private board: Board|undefined
     private player_states = new Map<string, PlayerState>()
+    private player_positions = new Map<PlayerID, OrientedPosition>()
     private readonly M2SSender: Sender<Main2Server>
 
     /**
      * 
-     * @param server_proc the process for the server which we will need to send data to
+     * @param sender function which can be used to send data to clients
      */
     constructor(sender: Sender<Main2Server>) {
         this.M2SSender = sender
@@ -60,19 +59,22 @@ export class GameManager {
         }
         
         // set the players initial state
-        this.player_states.set(player_id, {
-            priority: this.players.size,
-            energy: 3,
-            name: player_name,
-            checkpoints: 0,
-            active: true
-        })
+        this.player_states.set(player_id, new PlayerState(player_name, this.players.size))
         
         // add this player to our registry
         this.players.set(player_id, player)
         this.decks.set(player_id, new DeckManager())
         // return the conn details to the caller
         return true
+    }
+
+    /**
+     * sets the position of the player
+     * @param player_id the id of the player to set the position
+     * @param position the position of the player
+     */
+    setPlayerPosition(player_id: PlayerID, position: OrientedPosition) {
+        this.player_positions.set(player_id, position)
     }
 
     /**
@@ -117,6 +119,7 @@ export class GameManager {
             if (!connectRobot(player.character.id)) {
                 return false
             }
+
         }
         // add the players to the programs
         this.reset_programs()
@@ -223,19 +226,15 @@ export class GameManager {
                     return
                 }
 
-                const movements = this.resolveMovements(program[index])
-                // preprocess the action and create the movement array
-                // if this is a spam, resolve it
-                // if this is again, resolve it
-                // if this is a haywire, resolve it
-                    // prompt the user if needed
-                    // resolve any decision
+                // convert the card into a series of movements
+                const movements = this.resolveRegister(index, program, player.id)
+                // preprocess the action using the board data; create a modified movement array if needed
 
                 // verify that the execution of the movement array is legal from the current position
                     // i.e.: (no walls in the way of any movements)
                 // discover any pushing of other bots
 
-                // execute the action
+                // execute the action(s)
                 
             })
 
@@ -253,19 +252,115 @@ export class GameManager {
         this.M2SSender(message)
     }
 
-    resolveMovements(action: ProgrammingCard[], player_id: PlayerID): MovementArray {
-        if (action.length > 1) {
-            // figure this case out
-            console.warn("multi-input program sets are not Implemented")
+    /**
+     * handles a movement when there are 2 cards in the register
+     * @param actions the list of cards in the register, should have length 2
+     * @returns the resulting movement of performing both actions
+     */
+    private handle2CardMovement(actions: ProgrammingCard[]): MovementArray {
+        // be sure that the two actions are move forward, and either rotate left or right
+        let has_fwd = false
+        let has_right = false
+        let has_left = false
+        // set the variables according to what we find in the register
+        for (const card of actions) {
+            switch (card.action) {
+                case ProgrammingCard.forward1:
+                    has_fwd = true
+                    break
+                case ProgrammingCard.right:
+                    has_right = true
+                    break
+                case ProgrammingCard.left:
+                    has_left = true
+                    break
+                default:
+                    break
+            }
+        }
+        // if we didn't get forward, and a left or right: error
+        if (!has_fwd && !(has_left || has_right)) {
+            console.warn("Multiple card action is not a crab-legs")
+            return []
+        }
+        if (has_right) {
+            // we have fwd+right
+            return [{direction: MovementDirection.Right, distance: 1}]
+        }
+        // we have fwd+left
+        return [{direction: MovementDirection.Left, distance: 1}]
+    }
+
+    /**
+     * resolves the contents of the register into a series of Movements, handling all other collateral
+     * actions along the way, such as powering up or haywire effects
+     * @param register the index of the register to resolve
+     * @param program the program to resolve the action from
+     * @param player_id the id of the player who owns this program
+     * @returns an array of movements to be taken
+     */
+    private resolveRegister(register: number, program: RegisterArray, player_id: PlayerID, card: ProgrammingCard|undefined=undefined): MovementArray {
+        const actions: ProgrammingCard[] = program[register]
+        // if there is no program for some reason, or the player is on shutdown, take no actions
+        if (actions.length == 0 || this.shutdowns.has(player_id)) {
             return []
         }
 
-        if (action[0].action == ProgrammingCard.spam) {
-            var card: ProgrammingCard
-            do {
-                card = (this.decks.get(player_id) as DeckManager).drawCard()
-            } while (card.action != ProgrammingCard.spam)
-            return 
+        // if there are more than 2 cards, that's a serious issue
+        if (actions.length > 2) {
+            console.warn(`${player_id} sent too many cards (${actions.length})`)
         }
+
+        // this should be the crab-legs option
+        if (actions.length == 2) {
+            return this.handle2CardMovement(program[register])
+        }
+
+        // if we were not given a card, pull from the program
+        if (card === undefined) {
+            card = actions[0]
+        }
+
+        // resolve spam
+        if (card.action == ProgrammingCard.spam) {
+            const deck = (this.decks.get(player_id) as DeckManager)
+            do {
+                card = deck.drawCard()
+            } while (card.action != ProgrammingCard.spam)
+            // discard the card, it wasn't actually in the register
+            deck.discard(card)
+            return this.resolveRegister(register, program, player_id, card)
+        }
+
+        // resolve again
+        if (card.action == ProgrammingCard.again) {
+            if (register == 1) {
+                card = {action: ProgrammingCard.spam, id: -1}
+                // recurse to handle the card in the previous register again
+                return this.resolveRegister(register, program, player_id, card)
+            } else {
+                // resolve the previous register again
+                return this.resolveRegister(register-1, program, player_id)
+            }
+        }
+
+        // if it's power up, add the energy, don't process the card ()
+        if (card.action == ProgrammingCard.power_up) {
+            this.player_states.get(player_id)?.gainEnergy()
+        }
+
+        // resolve haywires
+        if (ProgrammingCard.isHaywire(card.action)) {
+            // if there's a simple move, do it
+            if (!ProgrammingCard.isActionChoice(card.action.actions)) {
+                return card.action.actions
+            }
+            // do the action and choices
+            // heaven help us
+        }
+
+        // it's a regular card 
+        const result = Movements.fromCard(card)
+        return result === undefined ? [] : [result]
     }
 }

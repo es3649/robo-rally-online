@@ -1,4 +1,4 @@
-import { Board } from "../../main/game_server/board";
+import { Board } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 
 export enum SetupPhase {

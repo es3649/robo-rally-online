@@ -44,4 +44,4 @@ export namespace Robots {
     }
 }
 
-export const bots = [Robots.Twonky, Robots.PanzerX90, Robots.AxelV8, Robots.Bladestorm, Robots.ZephyrM2, Robots.Thor]
+export const bots: Character[] = [Robots.Twonky, Robots.PanzerX90, Robots.AxelV8, Robots.Bladestorm, Robots.ZephyrM2, Robots.Thor]

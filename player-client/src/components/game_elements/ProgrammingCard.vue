@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ProgrammingCard } from '@/models/game_data';
+import { movement_from_card } from '@/models/game_data';
 defineProps(['fill_color', 'border_color', 'value', 'size'])
 
 </script>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Space, SpaceBoundaries, WallType } from '../../main/game_server/board';
-import { Rotation, RotationDirection } from '../../main/game_server/movement';
+import { Space, SpaceBoundaries, WallType } from '../../main/game_manager/board';
+import { Rotation, RotationDirection } from '../../main/models/movement';
 import { ref } from 'vue'
-import { SpaceCoverType } from '../../main/game_server/board'
+import { SpaceCoverType } from '../../main/game_manager/board'
 
 const props = defineProps<{
     tile: Space
