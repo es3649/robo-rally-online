@@ -1,4 +1,3 @@
-import { walk } from "vue/compiler-sfc"
 import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement } from "../models/movement"
 import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
 import { ConveyorForest } from "./graph"
@@ -14,12 +13,14 @@ export namespace SpaceType {
     export const CONVEYOR_R = "conv_R"     // conveyor turns to the right
     export const CONVEYOR_RF = "conv_RF"    // conveyor comes in from straight and right
     export const CONVEYOR_LF = "conv_LF"    // conveyor comes in from left and straight
+    export const CONVEYOR_LR = "conv_LR"    // conveyor comes in from left and straight
     export const CONVEYOR_LRF = "conv_LRF"   // conveyor comes in from all 3 directions
     export const CONVEYOR2_F = "conv2_F"    // save as above, blue conveyors
     export const CONVEYOR2_L = "conv2_L"
     export const CONVEYOR2_R = "conv2_R"
     export const CONVEYOR2_RF = "conv2_RF"
     export const CONVEYOR2_LF = "conv2_LF"
+    export const CONVEYOR2_LR = "conv2_LR"
     export const CONVEYOR2_LRF = "conv2_LRF"
     export const GEAR_R = "gear_R"         // right rotating gear
     export const GEAR_L = "gear_L"         // left rotating gear
@@ -39,6 +40,7 @@ export namespace SpaceType {
             case SpaceType.CONVEYOR_R:
             case SpaceType.CONVEYOR_RF:
             case SpaceType.CONVEYOR_LF:
+            case SpaceType.CONVEYOR_LR:
             case SpaceType.CONVEYOR_LRF:
                 return true
             default:
@@ -58,6 +60,7 @@ export namespace SpaceType {
             case SpaceType.CONVEYOR2_R:
             case SpaceType.CONVEYOR2_RF:
             case SpaceType.CONVEYOR2_LF:
+            case SpaceType.CONVEYOR2_LR:
             case SpaceType.CONVEYOR2_LRF:
                 return true
             default:
@@ -74,8 +77,8 @@ export namespace SpaceType {
         return isConveyor(t) || isConveyor2(t)
     }
 }
-export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | 
-    "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | 
+export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | "conv_LR" |
+    "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | "conv2_LR" |
     "conv2_LRF" | "gear_R" | "gear_L" | "pit" | "battery" | "spawn"
 
 /**

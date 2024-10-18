@@ -127,7 +127,7 @@
           "properties": {
             "type": {
               "type": "string",
-              "enum": ["conv_F", "conv_L", "conv_R", "conv_RF", "conv_LF", "conv_LRF", "conv2_F", "conv2_L", "conv2_R", "conv2_RF", "conv2_LF", "conv2_LRF", "gear_R", "gear_L", "pit", "battery", "spawn"]
+              "enum": ["conv_F", "conv_L", "conv_R", "conv_RF", "conv_LF", "conv_LR", "conv_LRF", "conv2_F", "conv2_L", "conv2_R", "conv2_RF", "conv2_LF", "conv2_LR", "conv2_LRF", "gear_R", "gear_L", "pit", "battery", "spawn"]
             },
             "cover": {
               "oneOf": [

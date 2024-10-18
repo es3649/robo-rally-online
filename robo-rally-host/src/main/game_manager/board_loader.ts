@@ -34,9 +34,8 @@ export async function loadFromSerial(): Promise<any> {
     return {}
 }
 
-const BOARD_PATH = ''
-
 export function listBoards(): string[] {
     console.log('which boards?')
-    return readdirSync('assets/boards/')
+    // don't return any test boards
+    return readdirSync('assets/boards/').filter((val: string) => !val.startsWith("test."))
 }
