@@ -1,13 +1,13 @@
 import { Color } from "../models/player"
 import {  PlayerState, type Character, type Player, type PlayerID, type PlayerName } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
-import { type GameAction, GamePhase, Movements, ProgrammingCard, type RegisterArray } from '../models/game_data'
+import { GamePhase, Movements, ProgrammingCard, type RegisterArray } from '../models/game_data'
 
 import type { Board } from "./board"
 import { Main2Server } from "../models/events"
 import { bot_action, connectRobot, BotAction } from "../bluetooth"
 import { DeckManager } from "./deck_manager"
-import { type OrientedPosition, type MovementArray, type Movement, MovementDirection } from "../models/movement"
+import { type OrientedPosition, type MovementArray, MovementDirection } from "../models/movement"
 
 export const MAX_PLAYERS = 6
 
@@ -186,7 +186,30 @@ export class GameManager {
     }
 
     private board_elements(): void {
+        // execute these in order
 
+        // conveyor-2s
+        // const conv2 = this.board?.handle_conveyor2()
+        
+        // conveyors
+        // const conv = this.board?.handleConveyor()
+        
+        // gears
+        // const gears = this.board?.handleGear()
+        
+        // pushers
+
+        // crushers
+
+        // board lasers
+        // const damages = this.board?.handleLaserPaths(this.board.laser_origins, )
+        
+        // robot lasers
+        // const damages2 = this.board?.handleLaserPaths( , , true)
+        
+        // batteries
+        
+        // checkpoints
     }
 
     /**

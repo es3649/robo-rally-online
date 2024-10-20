@@ -27,10 +27,16 @@ test('loadFromJson', async () => {
     expect(loadFromJson('test.illegal_spaces.json')).toThrow()
     expect(loadFromJson('test.illegal_walls.json')).toThrow()
 
-
+    // required boards should load
+    // correctness determined more in the Board class tests
+    // JSON reader can be assumed to function
     expect(await loadFromJson('pushy.json')).toBeDefined()
     expect(await loadFromJson('in-and-out.json')).toBeDefined()
     expect(await loadFromJson('docking-bay-a.json')).toBeDefined()
     expect(await loadFromJson('the_keep.json')).toBeDefined()
     expect(await loadFromJson('party.json')).toBeDefined()
+})
+
+test('loadSerial', () => {
+    // TODO
 })

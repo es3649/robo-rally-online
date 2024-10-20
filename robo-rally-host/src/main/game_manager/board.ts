@@ -1,6 +1,6 @@
 import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement } from "../models/movement"
 import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
-import { ConveyorForest } from "./graph"
+import { ConveyorForest, DualKeyMap } from "./graph"
 
 const BOARD_SIZE = 12
 
@@ -102,6 +102,23 @@ export namespace WallType {
         }
         return false
     }
+
+    /**
+     * Checks that the given wall type is a laser or no
+     * @param type the WallType to check
+     * @returns whether it is a laser
+     */
+    export function isLaser(type: WallType|undefined): type is (typeof WallType.LASER | typeof WallType.LASER2 | typeof WallType.LASER3) {
+        if (type === undefined) return false
+        switch (type) {
+            case LASER:
+            case LASER2:
+            case LASER3:
+                return true
+            default:
+                return false
+        }
+    }
 }
 export type WallType = "standard" | "laser" | "laser2" | "laser3" | WallType.PUSH
 
@@ -159,11 +176,31 @@ export type Space = {
 /**
  * specifies the types of the walls surrounding a space and what they contain
  */
-export type SpaceBoundaries = {
-    n: WallType | undefined,
-    e: WallType | undefined,
-    s: WallType | undefined,
+export class SpaceBoundaries {
+    n: WallType | undefined
+    e: WallType | undefined
+    s: WallType | undefined
     w: WallType | undefined
+
+    constructor(n: WallType|undefined, e: WallType|undefined, s: WallType|undefined, w: WallType|undefined) {
+        this.n = n
+        this.e = e
+        this.s = s
+        this.w = w
+    }
+
+    wall(o: Orientation): WallType|undefined {
+        switch (o) {
+            case Orientation.N:
+                return this.n
+            case Orientation.E:
+                return this.e
+            case Orientation.S:
+                return this.s
+            case Orientation.W:
+                return this.w
+        }
+    }
 }
 /**
  * Wall array is a slightly more interactive container for the wall data. It is broken up into
@@ -274,10 +311,9 @@ export class Board {
     // public battery_positions: BoardPosition[] = []
     // public scrambler_positions: BoardPosition[] = []
     // public crusher_positions: BoardPosition[] = []
-    public checkpoint_map: Map<BoardPosition, number> = new Map<BoardPosition, number>()
+    public checkpoint_map: DualKeyMap<number, number> = new DualKeyMap<number, number>()
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
-    public h_laser_positions: BoardPosition[] = []
-    public v_laser_positions: BoardPosition[] = []
+    public laser_origins: LaserPosition[] = []
     public h_pusher_positions: BoardPosition[] = []
     public v_pusher_positions: BoardPosition[] = []
     private conveyors: ConveyorForest = new ConveyorForest()
@@ -438,6 +474,8 @@ export class Board {
                 return RotationDirection.CW
             case SpaceType.CONVEYOR_LRF:
             case SpaceType.CONVEYOR2_LRF:
+            case SpaceType.CONVEYOR_LR:
+            case SpaceType.CONVEYOR2_LR:
                 // if we are coming in the same direction as we are facing, then no rotation, otherwise
                 // rotate in the direction we are coming in from
                 if (destination_space.orientation == o) {
@@ -469,6 +507,20 @@ export class Board {
         }
     }
 
+    private _getLaserDamage(type: WallType): number {
+        switch (type) {
+            case WallType.LASER:
+                return 1
+            case WallType.LASER2:
+                return 2
+            case WallType.LASER3:
+                return 3
+            default:
+                console.warn(`checking damage of non-laser type: ${type}`)
+                return 0
+        }
+    }
+
     /**
      * Build the data structures associated with the board in memory. This means tracing out paths
      * traversable by conveyor, and listing other component types
@@ -477,7 +529,7 @@ export class Board {
         // this.battery_positions = []
         // this.scrambler_positions = []
         // this.crusher_positions = []
-        this.checkpoint_map = new Map<BoardPosition, number>()
+        this.checkpoint_map = new DualKeyMap<number, number>()
         this.conveyors.clear()
         this.conveyors2.clear()
         // run over the board and add each component to its list
@@ -491,7 +543,7 @@ export class Board {
                 //     this.scrambler_positions.push({x:x,y:y})
                 // } else 
                 if (SpaceCoverType.isCHECKPOINT(space.cover)) {
-                    this.checkpoint_map.set({x:x,y:y}, (this.data.spaces[x][y].cover as SpaceCoverType.CHECKPOINT).number)
+                    this.checkpoint_map.set(x, y, (this.data.spaces[x][y].cover as SpaceCoverType.CHECKPOINT).number)
                 // } else if (this.data.spaces[x][y].type == SpaceType.BATTERY) {
                     // this.battery_positions.push({x:x, y:y})
                 } else if (SpaceType.isAnyConveyor(space.type)) {
@@ -512,9 +564,30 @@ export class Board {
         for (var x = 0; x < this.data.walls.horizontal_walls.length; x++) {
             for (var y = 0; y < this.data.walls.horizontal_walls[x].length; y++) {
                 const wall = this.data.walls.horizontal_walls[x][y]
-                if (wall?.lo == WallType.LASER || wall?.lo == WallType.LASER2 || wall?.lo == WallType.LASER3 ||
-                    wall?.hi == WallType.LASER || wall?.hi == WallType.LASER2 || wall?.hi == WallType.LASER3) {
-                    this.h_laser_positions.push({x:x,y:y})
+                if (wall === undefined || wall === null) {
+                    continue
+                }
+                // lasers are perpendicular to walls, so horizontal walls bear vertical facing lasers
+                if (WallType.isLaser(wall?.lo)) {
+                    // add a South (vertical-low) facing laser
+                    this.laser_origins.push({
+                        pos: {
+                            x:x,
+                            y:y, 
+                            orientation: Orientation.S
+                        },
+                        damage: this._getLaserDamage(wall.lo)
+                    })
+                } else if (WallType.isLaser(wall.hi)) {
+                    // add a North (vertical-high) facing laser
+                    this.laser_origins.push({
+                        pos: {
+                            x:x,
+                            y:y, 
+                            orientation: Orientation.N
+                        },
+                        damage: this._getLaserDamage(wall.hi)
+                    })
                 } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
                     this.h_pusher_positions.push({x:x,y:y})
                 }
@@ -525,9 +598,27 @@ export class Board {
         for (var x = 0; x < this.data.walls.vertical_walls.length; x++) {
             for (var y = 0; y < this.data.walls.vertical_walls[x].length; y++) {
                 const wall = this.data.walls.vertical_walls[x][y]
-                if (wall?.lo == WallType.LASER || wall?.lo == WallType.LASER2 || wall?.lo == WallType.LASER3 ||
-                    wall?.hi == WallType.LASER || wall?.hi == WallType.LASER2 || wall?.hi == WallType.LASER3) {
-                    this.v_laser_positions.push({x:x,y:y})
+                // lasers are perpendicular to walls, so vertical walls bear horizontal facing lasers
+                if (WallType.isLaser(wall?.lo)) {
+                    // add a West (horizontal-low) facing laser
+                    this.laser_origins.push({
+                        pos: {
+                            x:x,
+                            y:y, 
+                            orientation: Orientation.W
+                        },
+                        damage: this._getLaserDamage(wall.lo)
+                    })
+                } else if (WallType.isLaser(wall?.hi)) {
+                    // add an East (horizontal-high) facing laser
+                    this.laser_origins.push({
+                        pos: {
+                            x:x,
+                            y:y, 
+                            orientation: Orientation.E
+                        },
+                        damage: this._getLaserDamage(wall.hi)
+                    })
                 } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
                     this.v_pusher_positions.push({x:x,y:y})
                 }
@@ -543,23 +634,22 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handle_conveyor2(positions: BoardPosition[]): MovementArray[] {
+    public handle_conveyor2(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
         // call handle conveyance twice because handle conveyance only handles one step
         let movements_1 = this.conveyors2.handleConveyance(positions)
-        let mid_positions: BoardPosition[] = []
+        let mid_positions = new Map<string, BoardPosition>()
         // apply the movements to the positions in the array to get the next round of positions
-        positions.forEach((value: BoardPosition, index: number) => {
-            let new_pos: BoardPosition = value
-            // for each movement
-            movements_1[index].forEach((value: Movement) => {
-                // if it's an absolute movement (not a rotation), apply it
+        for (const [key, movements] of movements_1) {
+            let new_pos: BoardPosition = positions.get(key) as BoardPosition
+
+            movements_1.get(key)?.forEach((value: Movement) => {
                 if (isAbsoluteMovement(value)) {
                     new_pos = applyOrientationStep(new_pos, value.direction)
                 }
             })
-            // add the updated movement 
-            mid_positions.push(new_pos)
-        })
+            mid_positions.set(key, new_pos)
+        }
+
         return this.conveyors2.handleConveyance(mid_positions)
     }
     
@@ -571,7 +661,7 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor(positions: BoardPosition[]): MovementArray[] {
+    public handleConveyor(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
         return this.conveyors.handleConveyance(positions)
     }
 
@@ -585,16 +675,6 @@ export class Board {
         }
     }
 
-    // these should specify the directions and lengths the lasers are coming in, and possibly accept as
-    // arguments the current positions of other robots, to determine where lasers are blocked
-    private getLaserOrigins(): LaserPosition[] {
-        return []
-        // deal with the lasers one dimension at a time
-        // for vertical
-        // get the locations of the lasers on walls
-        // append their damage
-    }
-
     /**
      * computes paths and blockages of lasers to determine how many of the targets are hit and for how
      * much damage
@@ -604,13 +684,67 @@ export class Board {
      * @return a list of damage values corresponding to the entries in targets
      */
     public handleLaserPaths(laser_origins: LaserPosition[], targets: BoardPosition[], inclusive_positions:boolean=false): number[] {
+        // create a mapping to simplify the world a little
+        const damages = new Map<BoardPosition, number>()
+        for (const target of targets) {
+            damages.set(target, 0)
+        }
+
         // look in the direction they're shooting
+        for (const origin of laser_origins) {
+            const orientation = origin.pos.orientation
+            let working: BoardPosition = {x: origin.pos.x, y: origin.pos.y}
+
+            if (inclusive_positions && damages.has(working)) {
+                // if inclusive, and there is a target, they take damage
+                damages.set(working, damages.get(working) as number + origin.damage)
+                // target is hit, continue to next origin
+                continue
+            }
+
             // step forward along the path of fire
-            // check for blocks from targets when crossing spaces
-                // log a damage for this target if its in the way
-            // check for nonempty wall when crossing wall spaces
-        // 
-        return []
+            // if there is a wall here, stop
+            let here = getWalls(this, working)
+            if (here.wall(orientation)) {
+                continue
+            }
+
+            // step
+            working = applyOrientationStep(working, orientation)
+
+            // store this for speed over multiple orientations
+            const flipped = Orientation.flip(orientation)
+
+            // while the position os on the board
+            while (this._onBoard(working)) {
+                // if we hit a wall on entry, break
+                if (here.wall(flipped)) {
+                    break
+                }
+                // if there is a target here, hit it
+                if (damages.has(working)) {
+                    damages.set(working, damages.get(working) as number + origin.damage)
+                    // end of this laser
+                    break
+                }
+
+                // check for walls before stepping on
+                here = getWalls(this, working)
+                if (here.wall(orientation)) {
+                    break
+                }
+
+                // step
+                working = applyOrientationStep(working, orientation)
+            }
+        }
+        // postprocess the damages array
+        const ret: number[] = []
+        for (const pos of targets) {
+            ret.push(damages.get(pos) as number)
+        }
+        // damages align to the positions given
+        return ret
     }
 
     // push events should be able to be executed simultaneously. This may require a data catch to
@@ -677,12 +811,12 @@ export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries {
     const s_wall = board.data.walls.horizontal_walls[x][y]
     const w_wall = board.data.walls.vertical_walls[x][y]
     
-    return {
-        // if n_wall is non-null, and n_wall.lo is not defined
-        // use standard, otherwise use n_wall.lo (undefined if n_wall is undefined)
-        n: n_wall != null && !n_wall.lo ? WallType.STANDARD : n_wall?.lo,
-        e: e_wall != null && !e_wall.lo ? WallType.STANDARD : e_wall?.lo,
-        s: s_wall != null && !s_wall.hi ? WallType.STANDARD : s_wall?.hi,
-        w: w_wall != null && !w_wall.hi ? WallType.STANDARD : w_wall?.hi
-    }
+    // if n_wall is non-null, and n_wall.lo is not defined
+    // use standard, otherwise use n_wall.lo (undefined if n_wall is undefined)
+    return new SpaceBoundaries(
+        /* n */ n_wall != null && !n_wall.lo ? WallType.STANDARD : n_wall?.lo,
+        /* e */ e_wall != null && !e_wall.lo ? WallType.STANDARD : e_wall?.lo,
+        /* s */ s_wall != null && !s_wall.hi ? WallType.STANDARD : s_wall?.hi,
+        /* w */ w_wall != null && !w_wall.hi ? WallType.STANDARD : w_wall?.hi
+    )
 }

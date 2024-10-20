@@ -1,6 +1,6 @@
 import { isValidBoardData, Board, type BoardData } from "./board";
 import { readFile } from 'fs/promises'
-import { readdir, readdirSync } from "node:original-fs";
+import { readdirSync } from "node:original-fs";
 import * as path from 'node:path'
 
 /**

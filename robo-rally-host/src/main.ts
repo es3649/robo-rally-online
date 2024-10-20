@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, MessageChannelMain, net, protocol, utilityProcess } from 'electron';
+import { app, BrowserWindow, ipcMain, net, protocol } from 'electron';
 import * as path from 'path';
 import { networkInterfaces } from 'node:os'
 import { existsSync } from 'fs';
@@ -7,7 +7,6 @@ import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import type { Board } from './main/game_manager/board';
-import type { RegisterArray } from './main/models/game_data';
 import { Main2Server, Render2Main, Server2Main } from './main/models/events';
 import { GameManager } from './main/game_manager/manager';
 import { senderMaker, type Server2MainMessage } from './main/models/connection';
