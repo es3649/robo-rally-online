@@ -40,7 +40,7 @@ export class GameManager {
      * @param player_name the name of the player we are adding to the game
      * @returns false if the player couldn't be added
      */
-    add_player(player_name: string, player_id: string): boolean {
+    addPlayer(player_name: string, player_id: string): boolean {
         // don't add players after game start
         if (this.started) {
             return false
@@ -64,6 +64,7 @@ export class GameManager {
         // add this player to our registry
         this.players.set(player_id, player)
         this.decks.set(player_id, new DeckManager())
+        this.programs.set(player_id, undefined)
         // return the conn details to the caller
         return true
     }
@@ -82,7 +83,7 @@ export class GameManager {
      * @param player_id the id of the player to add the character to
      * @param bot the character to add
      */
-    add_character(player_id: string, bot: Character): boolean {
+    setPlayerCharacter(player_id: string, bot: Character): boolean {
         // don't change bots after game start
         if (this.started) {
             return false
@@ -108,6 +109,12 @@ export class GameManager {
         if (this.board === undefined) {
             return false
         }
+
+        // don't start with too few players
+        if (this.players.size < 2) {
+            return false
+        }
+
         // validate all players and bot connections
         for (const player of this.players.values()) {
             if (player.character === undefined) {
@@ -122,7 +129,7 @@ export class GameManager {
 
         }
         // add the players to the programs
-        this.reset_programs()
+        this.resetPrograms()
         // set the game to started
         this.started = true
         return true
@@ -139,7 +146,7 @@ export class GameManager {
      * loads the given board to the game data
      * @param board the board to use
      */
-    use_board(board: Board): void {
+    useBoard(board: Board): void {
         // don't change the board after the game has started
         if (this.started) {
             return
@@ -148,7 +155,7 @@ export class GameManager {
         this.board = board
     }
 
-    set_program(player_name:PlayerName, program: RegisterArray) {
+    setProgram(player_name:PlayerName, program: RegisterArray) {
         this.programs.set(player_name, program)
         for (const [_, program] of this.programs.entries()) {
             if (program === undefined) {
@@ -171,21 +178,21 @@ export class GameManager {
      * mark the player for a shutdown
      * @param player_id the id of the player marked for shutdown
      */
-    set_shutdown(player_id: PlayerID) {
+    setShutdown(player_id: PlayerID) {
         this.shutdowns.add(player_id)
     }
 
     /**
      * reset the player's programs
      */
-    private reset_programs() {
+    private resetPrograms() {
         for (const player of this.players.keys()) {
             this.programs.set(player, undefined)
         }
         this.shutdowns.clear()
     }
 
-    private board_elements(): void {
+    private boardElements(): void {
         // execute these in order
 
         // conveyor-2s
@@ -262,11 +269,11 @@ export class GameManager {
             })
 
             // execute actions related to board events
-            this.board_elements()
+            this.boardElements()
         }
 
         // reset their programs
-        this.reset_programs()
+        this.resetPrograms()
         // update the phase
         const message: Main2ServerMessage<GamePhase> = {
             name: Main2Server.PHASE_UPDATE,

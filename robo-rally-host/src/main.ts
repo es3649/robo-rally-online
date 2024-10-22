@@ -81,7 +81,7 @@ function registerIPCListeners() {
     const board = loadFromJson(name)
     // load it into the game manager
     board.then((board: Board) => {
-      game.use_board(board)
+      game.useBoard(board)
     })
     // return it to the caller
     return board
@@ -157,7 +157,7 @@ app.on('activate', () => {
 child.on('message', (message: Server2MainMessage<any>) => {
   switch (message.name) {
     case Server2Main.PROGRAM_SET:
-      game.set_program(message.data.name, message.data.program)
+      game.setProgram(message.data.name, message.data.program)
       break
     case Server2Main.PROGRAM_SHUTDOWN:
       break

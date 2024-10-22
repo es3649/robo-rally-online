@@ -182,7 +182,6 @@ export class ConveyorForest {
             resulting_positions.set(pos.x, pos.y, key)
             illegal_positions.set(pos.x, pos.y, true)
         }
-        console.log(resulting_positions)
         return movement_arrays
     }
 }

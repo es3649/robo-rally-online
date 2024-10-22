@@ -1,5 +1,7 @@
-import { expect, test } from '@jest/globals'
-import { listBoards, loadFromJson } from '../src/main/game_manager/board_loader'
+import { expect, test, jest } from '@jest/globals'
+import { listBoards, loadFromJson, loadFromSerial } from '../src/main/game_manager/board_loader'
+
+jest.mock('node:original-fs')
 
 test('listBoards', () => {
     const boards = listBoards()
@@ -19,24 +21,25 @@ test('listBoards', () => {
 
 test('loadFromJson', async () => {
     // Bad filenames shouldn't work
-    expect(loadFromJson('')).toThrow()
-    expect(loadFromJson('ur_mom')).toThrow()
+    await expect(loadFromJson('')).rejects.toThrow()
+    await expect(loadFromJson('ur_mom')).rejects.toThrow()
 
     // incorrect boards shouldn't load
-    expect(loadFromJson('test.empty.json')).toThrow()
-    expect(loadFromJson('test.illegal_spaces.json')).toThrow()
-    expect(loadFromJson('test.illegal_walls.json')).toThrow()
+    await expect(loadFromJson('test.empty')).rejects.toThrow()
+    await expect(loadFromJson('test.illegal_spaces')).rejects.toThrow()
+    await expect(loadFromJson('test.illegal_walls')).rejects.toThrow()
 
     // required boards should load
     // correctness determined more in the Board class tests
     // JSON reader can be assumed to function
-    expect(await loadFromJson('pushy.json')).toBeDefined()
-    expect(await loadFromJson('in-and-out.json')).toBeDefined()
-    expect(await loadFromJson('docking-bay-a.json')).toBeDefined()
-    expect(await loadFromJson('the_keep.json')).toBeDefined()
-    expect(await loadFromJson('party.json')).toBeDefined()
+    expect(await loadFromJson('pushy')).toBeDefined()
+    expect(await loadFromJson('in-and-out')).toBeDefined()
+    expect(await loadFromJson('docking-bay-a')).toBeDefined()
+    expect(await loadFromJson('the_keep')).toBeDefined()
+    expect(await loadFromJson('party')).toBeDefined()
 })
 
 test('loadSerial', () => {
-    // TODO
+    // not implemented, should throw
+    expect(loadFromSerial()).toThrow()
 })

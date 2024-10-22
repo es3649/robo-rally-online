@@ -1,4 +1,4 @@
-import { isValidBoardData, Board, type BoardData } from "./board";
+import { isValidBoardData, Board } from "./board";
 import { readFile } from 'fs/promises'
 import { readdirSync } from "node:original-fs";
 import * as path from 'node:path'
@@ -12,9 +12,9 @@ import * as path from 'node:path'
  * contain properly formatted board data
  */
 export async function loadFromJson(name:string): Promise<Board> {
-    console.log(__dirname)
     // const file = await readFile(path.join('/Users/studmane/workspace/robo-rally-online/robo-rally-host/assets/boards', name+'.json'))
-    const file = await readFile(path.join('assets/boards', name+'.json'))
+    const fname = path.join('assets/boards', `${name}.json`)
+    const file = await readFile(fname)
     const raw = JSON.parse(file.toString())
 
     // validate the unsanitary json data
@@ -30,8 +30,8 @@ export async function loadFromJson(name:string): Promise<Board> {
  * defined, so this function should not be used yet.
  * @returns board data loaded from a serial port
  */
-export async function loadFromSerial(): Promise<any> {
-    return {}
+export async function loadFromSerial(): Promise<Board> {
+    throw new Error("Not Implemented")
 }
 
 export function listBoards(): string[] {

@@ -67,7 +67,7 @@ export interface SocketData {
  * @template T the type of the message, should be a string
  * @template S the type of the data to be sent in the message
  */
-type Message<T, S> = {
+export type Message<T, S> = {
     name: T,
     id?: string,
     data?: S
@@ -89,12 +89,20 @@ export type Sender<T> = {
     ): boolean
 }
 
+export interface Sendable {
+    send(message: any,
+        sendHandle?: any,
+        options?: { keepOpen?: boolean|undefined } | undefined,
+        callback?: ((error: Error|null) => void) | undefined
+    ): boolean
+}
+
 /**
  * @template T the type of the message to be sent, should be a string
  * @param process the process that messages can be sent on
  * @returns a template function with the same signature as process.send or childProcess.send
  */
-export function senderMaker<T>(process: NodeJS.Process | fork.ChildProcess): Sender<T> {
+export function senderMaker<T>(process: Sendable): Sender<T> {
     /**
      * a wrapper for process.send, or fork.ChildProcess.send, since the former could
      * technically be undefined
