@@ -284,11 +284,19 @@ export function applyOrientationStep<T extends BoardPosition>(pos: T, orientatio
  * @param movement the movement to apply
  * @returns the resulting position
  */
-export function applyAbsoluteMovement(pos: BoardPosition, movement: AbsoluteMovement): BoardPosition {
+export function applyAbsoluteMovement<T extends BoardPosition>(pos: T, movement: AbsoluteMovement): BoardPosition {
     let ret_pos = pos
+    let direction = movement.direction
+    let distance = movement.distance
+
+    // handle negative distances
+    if (distance < 0) {
+        distance *= -1
+        direction = Orientation.flip(direction)
+    }
     // just step 
-    for (let i = 0; i < movement.distance; i++) {
-        pos = applyOrientationStep(ret_pos, movement.direction)
+    for (let i = 0; i < distance; i++) {
+        ret_pos = applyOrientationStep(ret_pos, direction)
     }
     return ret_pos
 }

@@ -31,12 +31,12 @@ export function connectRobot(name: string): boolean {
  * @param botID the id of the bot to send the command to
  * @param movement the movements the bot should perform
  */
-export function move_bot(botID: CharacterID, movement: MovementArray): void {
+export function moveBot(botID: CharacterID, movement: MovementArray): void {
     console.log(`sending ${movement.length} movements to ${botID}`)
     console.warn('NOT IMPLEMENTED')
 }
 
-export function bot_action(botID: CharacterID, action: BotAction): void {
+export function botAction(botID: CharacterID, action: BotAction): void {
     console.log(`sending ${action} to ${botID}`)
     console.warn('NOT IMPLEMENTED')
 }

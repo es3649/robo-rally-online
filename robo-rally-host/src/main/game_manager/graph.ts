@@ -137,50 +137,77 @@ export class ConveyorForest {
      * @returns a list of equal length of movements corresponding to the positions in the input
      */
     handleConveyance<T extends BoardPosition>(positions: Map<string, T>): Map<string, MovementArray> {
-        // map the resulting positions to 
         let resulting_positions = new DualKeyMap<number, string>()
         let movement_arrays = new Map<string, MovementArray>()
         let illegal_positions = new DualKeyMap<number, boolean>()
-
+        // for each position
         for (const [key, start] of positions) {
             // for each position, get the conveyor action
             const movements = this.getConveyorAction(start)
+            // for each of those movements
             let pos: BoardPosition = start
             for (const movement of movements) {
+                // apply it to the starting position to get the resulting position
                 // use the applyAbsoluteMovement function
                 if (isAbsoluteMovement(movement)) {
                     pos = applyAbsoluteMovement(pos, movement)
                 }
             }
 
-            // if the resulting action puts two robots at the same position, cancel those movements
-            // this can result if
-                // 1: both would be moved onto the same position by conveyors
-                // 2: one would be moved into an occupied stationary position
-            // in both cases, the resulting movements can be omitted (since we are only moving one
-            // step at a time)
-            // if (illegal_positions.has(pos.x, pos.y)) {
-            //     // then don't move
-            //     movement_arrays.set(key, [])
-            //     // our position becomes illegal
-            //     illegal_positions.set(start.x, start.y, true)
-            // } else 
-            if (resulting_positions.has(pos.x, pos.y)) {
-                // this should be the first time we find an offending key
+            console.log(`${key} results at (${pos.x},${pos.y})`)
 
-                const offending_key = (resulting_positions.get(pos.x, pos.y) as string)
-                // clear the offender and push an empty array
-                movement_arrays.set(offending_key, [])
+            // if the resulting position is in the illegal set
+            if (illegal_positions.has(pos.x, pos.y)) {
+                // change our movement array to empty
+                console.log('position is illegal')
                 movement_arrays.set(key, [])
+                // our position is illegal
+                illegal_positions.set(pos.x, pos.y, true)
+            } else if (resulting_positions.has(pos.x, pos.y)) {
+                console.log('position is in conflict')
+                /**
+                 * this can only happen if (1) we both move into each other, in which case both movements
+                 * should be cancelled, or (2) we move into the space of a stationary actor, in which case
+                 * resetting their movements has no effect
+                 */
 
-                // set our starting position, the starting position at the offending key, and 
-                // then we can't move into that position
+                // if the resulting position is someone else's resulting position
+                // make the resulting position an illegal position
+                illegal_positions.set(pos.x, pos.y, true)
+                
+                // do a makeIllegal routine:
+                function _makeIllegal(key: string) {
+                    // make our starting position an illegal position
+                    const start = positions.get(key) as T
+                    illegal_positions.set(start.x, start.y, true)
+                    // make our movements empty
+                    movement_arrays.set(key, [])
+                    
+                    /**
+                     * No actor other than ourselves should have a starting position equal to ours
+                     * and therefore if their resulting position is equal to ours, they have moved
+                     * Since our movement is now illegal, they cannot move into us, and so must
+                     * have movement reset to empty
+                     */
+                    // for each resulting position equal to our starting position (should be max 1)
+                    const prev = resulting_positions.get(start.x, start.y)
+                    // if that actor is not ourself
+                    if (prev !== undefined && prev != key) {
+                        // recurse
+                        _makeIllegal(prev)
+                    }
+                }
+
+                // for our position, and the other resulting position
+                _makeIllegal(key)
+                _makeIllegal(resulting_positions.get(pos.x, pos.y) as string)
             } else {
-                // add the computed movements
+                console.log('position is legal')
+                // everything is fine
+                resulting_positions.set(pos.x, pos.y, key)
                 movement_arrays.set(key, movements)
             }
-            resulting_positions.set(pos.x, pos.y, key)
-            illegal_positions.set(pos.x, pos.y, true)
+
         }
         return movement_arrays
     }

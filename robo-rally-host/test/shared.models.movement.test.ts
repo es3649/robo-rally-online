@@ -168,6 +168,32 @@ test('applyOrientationStep', () => {
     expect(step_W.y).toBe(0)
 })
 
+test('applyAbsoluteMovement', () => {
+    const init: BoardPosition = {x: 0, y: 0}
+
+    // test boundary distances
+    const step_N0 = applyAbsoluteMovement(init, { direction: Orientation.N, distance: 0})
+    expect(step_N0.x).toBe(0)
+    expect(step_N0.y).toBe(0)
+    const step_negN = applyAbsoluteMovement(init, { direction: Orientation.N, distance: -1})
+    expect(step_negN.x).toBe(0)
+    expect(step_negN.y).toBe(-1)
+
+    // test each direction
+    const step_N = applyAbsoluteMovement(init, { direction: Orientation.N, distance: 1})
+    expect(step_N.x).toBe(0)
+    expect(step_N.y).toBe(1)
+    const step_E = applyAbsoluteMovement(init, { direction: Orientation.E, distance: 1})
+    expect(step_E.x).toBe(1)
+    expect(step_E.y).toBe(0)
+    const step_S = applyAbsoluteMovement(init, { direction: Orientation.S, distance: 1})
+    expect(step_S.x).toBe(0)
+    expect(step_S.y).toBe(-1)
+    const step_W = applyAbsoluteMovement(init, { direction: Orientation.W, distance: 1})
+    expect(step_W.x).toBe(-1)
+    expect(step_W.y).toBe(0)
+})
+
 test('OrientedPosition.applyMovement', () => {
     const init: OrientedPosition = {x: 0, y: 0, orientation: Orientation.N}
 

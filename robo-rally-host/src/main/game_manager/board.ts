@@ -240,6 +240,7 @@ export function isValidBoardData(obj:any): obj is BoardData {
         obj.display_name === undefined
     ) {
         // the top level format is bad
+        console.warn(`Missing properties for ${obj.display_name}`)
         return false
     }
 
@@ -253,6 +254,7 @@ export function isValidBoardData(obj:any): obj is BoardData {
         obj.walls.vertical_walls.length === undefined ||
         obj.spaces.length === undefined
     ) {
+        console.warn(`Invalid property types for ${obj.display_name}`)
         return false
     }
 
@@ -262,6 +264,7 @@ export function isValidBoardData(obj:any): obj is BoardData {
         obj.walls.horizontal_walls.length !== obj.x_dim ||
         obj.walls.vertical_walls.length !== obj.x_dim + 1
     ) {
+        console.warn(`Invalid dimensions for ${obj.display_name}`)
         return false
     }
 
@@ -270,20 +273,24 @@ export function isValidBoardData(obj:any): obj is BoardData {
         // proper array checks are a pain, just try iterating over spaces
         for (const col of obj.spaces) {
             if (col === undefined || col.length !== obj.y_dim) {
+                console.warn('Spaces column of incorrect length')
                 return false
             }
         }
         for (const col of obj.walls.horizontal_walls) {
-            if (col === undefined || col.length !== obj.x_dim + 1) {
+            if (col === undefined || col.length !== obj.y_dim + 1) {
+                console.warn('Horizontal walls column of incorrect length')
                 return false
             }
         }
         for (const col of obj.walls.vertical_walls) {
             if (col === undefined || col.length !== obj.y_dim) {
+                console.warn('Vertical walls column of incorrect length')
                 return false
             }
         }
-    } catch {
+    } catch (e) {
+        console.warn(`Error encountered: ${e}`)
         return false
     }
 

@@ -90,11 +90,11 @@ export type Sender<T> = {
 }
 
 export interface Sendable {
-    send(message: any,
+    send?: (message: any,
         sendHandle?: any,
         options?: { keepOpen?: boolean|undefined } | undefined,
         callback?: ((error: Error|null) => void) | undefined
-    ): boolean
+    ) => boolean
 }
 
 /**

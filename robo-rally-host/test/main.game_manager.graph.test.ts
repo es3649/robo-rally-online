@@ -142,50 +142,71 @@ test('ConveyorForest.handleConveyance (adjacent actors)', () => {
     expect(isRotation(mvmt)).toBeTruthy()
 })
 
-// test('ConveyorForest.handleConveyance (collision w/ stationary)', () => {
-//     console.log('begin problems)')
-//     // check that an actor cannot be pushed into a stationary actor
-//     const stationary_collision = new Map<string, BoardPosition>()
-//     stationary_collision.set("first", {x:2,y:0})
-//     stationary_collision.set("second", {x:2,y:1})
-//     const res_stationary_col = cf.handleConveyance(stationary_collision)
-//     console.log(res_stationary_col)
+test('ConveyorForest.handleConveyance (collision w/ stationary)', () => {
+    console.log('begin problems)')
+    // check that an actor cannot be pushed into a stationary actor
+    const stationary_collision = new Map<string, BoardPosition>()
+    stationary_collision.set("first", {x:2,y:0})
+    stationary_collision.set("second", {x:2,y:1})
+    const res_stationary_col = cf.handleConveyance(stationary_collision)
 
-//     expect(res_stationary_col.size).toBe(2)
-//     expect(res_stationary_col.has('first')).toBeTruthy()
-//     expect(res_stationary_col.has('second')).toBeTruthy()
-//     expect(res_stationary_col.get("first").length).toBe(0)
-//     expect(res_stationary_col.get("second").length).toBe(0)
-// })
+    expect(res_stationary_col.size).toBe(2)
+    expect(res_stationary_col.has('first')).toBeTruthy()
+    expect(res_stationary_col.has('second')).toBeTruthy()
+    expect(res_stationary_col.get("first").length).toBe(0)
+    expect(res_stationary_col.get("second").length).toBe(0)
+})
 
-// test('ConveyorForest.handleConveyance (collision w/ moving)', () => {
+test('ConveyorForest.handleConveyance (collision w/ moving)', () => {
 
-//     // check that two actors cannot be pushed onto the same space
-//     const moving_collision = new Map<string, BoardPosition>()
-//     moving_collision.set("first", {x:2,y:0})
-//     moving_collision.set("second", {x:1,y:1})
-//     const res_moving_col = cf.handleConveyance(moving_collision)
-
-//     console.log(res_moving_col)
+    // check that two actors cannot be pushed onto the same space
+    const moving_collision = new Map<string, BoardPosition>()
+    moving_collision.set("first", {x:2,y:0})
+    moving_collision.set("second", {x:1,y:1})
+    const res_moving_col = cf.handleConveyance(moving_collision)
     
-//     expect(res_moving_col.size).toBe(2)
-//     expect(res_moving_col.has('first')).toBeTruthy()
-//     expect(res_moving_col.has('second')).toBeTruthy()
-//     expect(res_moving_col.get("first").length).toBe(0)
-//     expect(res_moving_col.get("second").length).toBe(0)
-// })
+    expect(res_moving_col.size).toBe(2)
+    expect(res_moving_col.has('first')).toBeTruthy()
+    expect(res_moving_col.has('second')).toBeTruthy()
+    expect(res_moving_col.get("first").length).toBe(0)
+    expect(res_moving_col.get("second").length).toBe(0)
+})
 
-// test('ConveyorForest.handleConveyance (3-way collision)', () => {
-//     const triple = new Map<string, BoardPosition>()
-//     triple.set('first', {x:1,y:1})
-//     triple.set('second', {x:2,y:0})
-//     triple.set('third', {x:2,y:1})
-//     const res_triple = cf.handleConveyance(triple)
+test('ConveyorForest.handleConveyance (3-way collision)', () => {
+    cf.addConveyor({x:2, y:2}, Orientation.S)
+    const triple = new Map<string, BoardPosition>()
+    triple.set('first', {x:1,y:1})
+    triple.set('second', {x:2,y:0})
+    triple.set('third', {x:2,y:2})
+    const res_triple = cf.handleConveyance(triple)
 
-//     // expect()
-//     throw new Error('Not Implemented')
-// })
+    expect(res_triple.size).toBe(3)
+    expect(res_triple.has('first')).toBeTruthy()
+    expect(res_triple.has('second')).toBeTruthy()
+    expect(res_triple.has('third')).toBeTruthy()
+    // all are moving to the same spot, so no movements should be allowed
+    expect(res_triple.get('first').length).toBe(0)
+    expect(res_triple.get('second').length).toBe(0)
+    expect(res_triple.get('third').length).toBe(0)
+})
 
-// test('ConveyorForest.handleConveyance (multiple pushing to collision)', () => {
-//     throw new Error('Not Implemented')
-// })
+test('ConveyorForest.handleConveyance (multiple pushing to collision)', () => {
+    cf.addConveyor({x:0, y:1}, Orientation.S)
+    const lineup = new Map<string, BoardPosition>()
+    lineup.set("first", {x:2,y:0})
+    lineup.set("second", {x:1,y:1})
+    lineup.set("third", {x:1,y:0})
+    lineup.set("fourth", {x:0,y:1})
+    const res_lineup = cf.handleConveyance(lineup)
+
+    expect(res_lineup.size).toBe(4)
+    expect(res_lineup.has('first')).toBeTruthy()
+    expect(res_lineup.has('second')).toBeTruthy()
+    expect(res_lineup.has('third')).toBeTruthy()
+    expect(res_lineup.has('fourth')).toBeTruthy()
+    // all are moving to the same spot, so no movements should be allowed
+    expect(res_lineup.get('first').length).toBe(0)
+    expect(res_lineup.get('second').length).toBe(0)
+    expect(res_lineup.get('third').length).toBe(0)
+    expect(res_lineup.get('fourth').length).toBe(1)
+})

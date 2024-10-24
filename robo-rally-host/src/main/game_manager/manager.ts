@@ -5,7 +5,7 @@ import { GamePhase, Movements, ProgrammingCard, type RegisterArray } from '../mo
 
 import type { Board } from "./board"
 import { Main2Server } from "../models/events"
-import { bot_action, connectRobot, BotAction } from "../bluetooth"
+import { botAction, connectRobot, BotAction } from "../bluetooth"
 import { DeckManager } from "./deck_manager"
 import { type OrientedPosition, type MovementArray, MovementDirection } from "../models/movement"
 
@@ -100,9 +100,13 @@ export class GameManager {
         return true
     }
 
+    private getPlayerPositions() {
+        // run through the players and get starting positions for them
+    }
+
     /**
-     * start the current game
-     * @returns false if the game dat is not configured correctly yet
+     * start the current game, and execute starting logic
+     * @returns false if the game data is not configured correctly yet
      */
     start(): boolean {
         // there better be a board
@@ -126,12 +130,14 @@ export class GameManager {
             if (!connectRobot(player.character.id)) {
                 return false
             }
-
         }
         // add the players to the programs
         this.resetPrograms()
         // set the game to started
         this.started = true
+
+        this.getPlayerPositions()
+
         return true
     }
 
@@ -236,7 +242,7 @@ export class GameManager {
             const player = this.players.get(player_id)
             if (player === undefined || player.character === undefined) return
             // send the action to the bot
-            bot_action(player.character.id, BotAction.SHUTDOWN)
+            botAction(player.character.id, BotAction.SHUTDOWN)
         })
 
         // TODO set shutdown players in the renderer
