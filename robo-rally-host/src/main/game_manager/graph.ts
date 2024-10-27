@@ -66,27 +66,34 @@ export class DualKeyMap<K, V> {
     }
 }
 
-interface ConveyorNode {
+interface MoverNode {
     direction: Orientation,
-    rotation: RotationDirection|undefined
+    rotation?: RotationDirection
+    activation?: number[]
 }
 
-export class ConveyorForest {
-    private nodes = new DualKeyMap<number, ConveyorNode>()
+// TODO make this a base class, and subclass it for movers and conveyors
+// conveyors can rotate where movers can't, and movers can push adjacent targets while conveyors can't
+// movers also have an activation register check, and need to disable if something passes through a wall
+// ALSO: consider making robot pushing an independent function, as we will need it when handling
+// programmed actor movement as well
+export class MoverForest {
+    protected nodes = new DualKeyMap<number, MoverNode>()
 
     constructor () {}
 
     /**
      * add the conveyor to the tree
      * @param position the position where this conveyer lies
-     * @param direction the direciton in which this conveyor faces
+     * @param direction the direction in which this conveyor faces
      * @param rotation the rotation effect of this conveyor, in the case it pushes onto a rotating
      * conveyor
      */
-    public addConveyor(position: BoardPosition, direction: Orientation, rotation?:RotationDirection): void {
+    public addMover(position: BoardPosition, direction: Orientation, rotation?:RotationDirection, activation?: number[]|undefined): void {
         this.nodes.set(position.x, position.y, {
             direction: direction,
-            rotation: rotation
+            rotation: rotation,
+            activation: activation
         })
     }
 
@@ -103,25 +110,32 @@ export class ConveyorForest {
      * @param position the starting position
      * @returns the movement applied to the position by the conveyors
      */
-    private getConveyorAction(position: BoardPosition): MovementArray {
-        const conveyor = this.nodes.get(position.x, position.y)
+    private getMoverAction(position: BoardPosition, register?: number): MovementArray {
+        const mover = this.nodes.get(position.x, position.y)
         // if this position is not on a conveyor
         let moves: MovementArray = []
-        if (conveyor == undefined) {
+        if (mover == undefined) {
             // take no moves
+            return moves
+        }
+
+        // check activation registers: given register, activation and no inclusion,, we don't activate now 
+        if (register !== undefined &&
+            mover.activation !== undefined &&
+            !mover.activation.includes(register)) {
             return moves
         }
 
         // add the absolute movement of the bot by the conveyor
         moves.push({
-            direction: conveyor.direction,
+            direction: mover.direction,
             distance: 1
         })
 
         // if there is a rotation (if it pushes onto a turn)
-        if (conveyor.rotation !== undefined) {
+        if (mover.rotation !== undefined) {
             // add the turn to the actions as well
-            moves.push(new Rotation(conveyor.rotation, 1))
+            moves.push(new Rotation(mover.rotation, 1))
         }
 
         return moves
@@ -136,14 +150,14 @@ export class ConveyorForest {
      * @param positions the list of all positions of actors to be conveyed (invariant)
      * @returns a list of equal length of movements corresponding to the positions in the input
      */
-    handleConveyance<T extends BoardPosition>(positions: Map<string, T>): Map<string, MovementArray> {
+    handleMovement<T extends BoardPosition>(positions: Map<string, T>, register?: number): Map<string, MovementArray> {
         let resulting_positions = new DualKeyMap<number, string>()
         let movement_arrays = new Map<string, MovementArray>()
         let illegal_positions = new DualKeyMap<number, boolean>()
         // for each position
         for (const [key, start] of positions) {
             // for each position, get the conveyor action
-            const movements = this.getConveyorAction(start)
+            const movements = this.getMoverAction(start, register)
             // for each of those movements
             let pos: BoardPosition = start
             for (const movement of movements) {
@@ -154,17 +168,13 @@ export class ConveyorForest {
                 }
             }
 
-            console.log(`${key} results at (${pos.x},${pos.y})`)
-
             // if the resulting position is in the illegal set
             if (illegal_positions.has(pos.x, pos.y)) {
                 // change our movement array to empty
-                console.log('position is illegal')
                 movement_arrays.set(key, [])
                 // our position is illegal
                 illegal_positions.set(pos.x, pos.y, true)
             } else if (resulting_positions.has(pos.x, pos.y)) {
-                console.log('position is in conflict')
                 /**
                  * this can only happen if (1) we both move into each other, in which case both movements
                  * should be cancelled, or (2) we move into the space of a stationary actor, in which case
@@ -202,7 +212,6 @@ export class ConveyorForest {
                 _makeIllegal(key)
                 _makeIllegal(resulting_positions.get(pos.x, pos.y) as string)
             } else {
-                console.log('position is legal')
                 // everything is fine
                 resulting_positions.set(pos.x, pos.y, key)
                 movement_arrays.set(key, movements)

@@ -1,6 +1,6 @@
-import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement } from "../models/movement"
+import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement, isRotation, MovementDirection } from "../models/movement"
 import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
-import { ConveyorForest, DualKeyMap } from "./graph"
+import { MoverForest, DualKeyMap } from "./graph"
 
 const BOARD_SIZE = 12
 
@@ -306,6 +306,26 @@ export type LaserPosition = {
 }
 
 /**
+ * the positions and activation registers of a pusher
+ */
+export type PusherPosition = {
+    pos: OrientedPosition,
+    registers: number[]
+}
+
+
+export enum MovementStatus {
+    wall,
+    pit,
+    ok
+}
+
+export type MovementResult = {
+    movement: Movement
+    status: MovementStatus
+}
+
+/**
  * A full board object. It contains the raw board data, as well as some processed data which
  * will make processing board events more straightforward
  */
@@ -321,10 +341,9 @@ export class Board {
     public checkpoint_map: DualKeyMap<number, number> = new DualKeyMap<number, number>()
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
     public laser_origins: LaserPosition[] = []
-    public h_pusher_positions: BoardPosition[] = []
-    public v_pusher_positions: BoardPosition[] = []
-    private conveyors: ConveyorForest = new ConveyorForest()
-    private conveyors2: ConveyorForest = new ConveyorForest()
+    public pusher_positions: MoverForest = new MoverForest()
+    private conveyors: MoverForest = new MoverForest()
+    private conveyors2: MoverForest = new MoverForest()
 
     constructor(data: BoardData) {
         // set our instance ID from the static count
@@ -488,15 +507,15 @@ export class Board {
                 if (destination_space.orientation == o) {
                     return
                 }
-                // if we come in from the relative right of the tile, we rotate
-                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CW, 1)) {
+                // otherwise, test entrance from relative left by flowing in to the next case, below
+                // if we are coming in from the relative right of the tile, we rotate
+                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CCW, 1)) {
                     return RotationDirection.CW
                 }
-                // otherwise, test entrance from relative left by flowing in to the next case, below
             case SpaceType.CONVEYOR_LF:
             case SpaceType.CONVEYOR2_LF:
-                // if we are coming in from the relative left of the tile, we rotate
-                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CCW, 1)) {
+                // if we come in from the relative left of the tile, we rotate
+                if (o == Orientation.rotate((destination_space.orientation as Orientation), RotationDirection.CW, 1)) {
                     return RotationDirection.CCW
                 }
                 // otherwise we don't
@@ -559,9 +578,9 @@ export class Board {
                     const rotation: RotationDirection|undefined = this._conveyorTurnDirection(pos)
                     // make sure that this gets added to the correct forest
                     if (SpaceType.isConveyor(space.type)) {
-                        this.conveyors.addConveyor(pos, (space.orientation as Orientation), rotation)
+                        this.conveyors.addMover(pos, (space.orientation as Orientation), rotation)
                     } else {
-                        this.conveyors2.addConveyor(pos, (space.orientation as Orientation), rotation)
+                        this.conveyors2.addMover(pos, (space.orientation as Orientation), rotation)
                     }
                 }
             }
@@ -580,7 +599,7 @@ export class Board {
                     this.laser_origins.push({
                         pos: {
                             x:x,
-                            y:y, 
+                            y:y-1, 
                             orientation: Orientation.S
                         },
                         damage: this._getLaserDamage(wall.lo)
@@ -595,8 +614,12 @@ export class Board {
                         },
                         damage: this._getLaserDamage(wall.hi)
                     })
-                } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
-                    this.h_pusher_positions.push({x:x,y:y})
+                } else if (WallType.isPUSH(wall?.lo)) {
+                    // add a South (vertical-low) facing pusher
+                    this.pusher_positions.addMover({x:x, y:y-1}, Orientation.S, undefined, wall.lo.registers)
+                } else if (WallType.isPUSH(wall?.hi)) {
+                    // add a North (vertical-high) facing pusher
+                    this.pusher_positions.addMover({x:x, y:y}, Orientation.N, undefined, wall.hi.registers)
                 }
             }
         }
@@ -610,7 +633,7 @@ export class Board {
                     // add a West (horizontal-low) facing laser
                     this.laser_origins.push({
                         pos: {
-                            x:x,
+                            x:x-1,
                             y:y, 
                             orientation: Orientation.W
                         },
@@ -626,8 +649,12 @@ export class Board {
                         },
                         damage: this._getLaserDamage(wall.hi)
                     })
-                } else if (WallType.isPUSH(wall?.lo) || WallType.isPUSH(wall?.hi)) {
-                    this.v_pusher_positions.push({x:x,y:y})
+                } else if (WallType.isPUSH(wall?.lo)) {
+                    // add a West (horizontal-low) facing pusher
+                    this.pusher_positions.addMover({x:x-1, y:y}, Orientation.W, undefined, wall.lo.registers)
+                } else if (WallType.isPUSH(wall?.hi)) {
+                    // add an East (horizontal-high) facing pusher
+                    this.pusher_positions.addMover({x:x, y:y}, Orientation.E, undefined, wall.hi.registers)
                 }
             }
         }
@@ -641,12 +668,12 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handle_conveyor2(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
+    public handleConveyor2(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
         // call handle conveyance twice because handle conveyance only handles one step
-        let movements_1 = this.conveyors2.handleConveyance(positions)
+        let movements_1 = this.conveyors2.handleMovement(positions)
         let mid_positions = new Map<string, BoardPosition>()
         // apply the movements to the positions in the array to get the next round of positions
-        for (const [key, movements] of movements_1) {
+        for (const key of movements_1.keys()) {
             let new_pos: BoardPosition = positions.get(key) as BoardPosition
 
             movements_1.get(key)?.forEach((value: Movement) => {
@@ -657,7 +684,16 @@ export class Board {
             mid_positions.set(key, new_pos)
         }
 
-        return this.conveyors2.handleConveyance(mid_positions)
+        // egt the second set of movements
+        const movements_2 = this.conveyors2.handleMovement(mid_positions)
+
+        const ret = new Map<string, MovementArray>()
+        for (const key of positions.keys()) {
+            // concatenate the two movement arrays and set it in the return map
+            ret.set(key, (movements_1.get(key) as MovementArray).concat(movements_2.get(key) as MovementArray))
+        }
+
+        return ret
     }
     
     /**
@@ -669,17 +705,27 @@ export class Board {
      * the positions in the input
      */
     public handleConveyor(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
-        return this.conveyors.handleConveyance(positions)
+        return this.conveyors.handleMovement(positions)
     }
 
     // gear events can all be executed simultaneously
-    public handleGear(pos: BoardPosition): Rotation | undefined {
-        const space = this.data.spaces[pos.x][pos.y]
-        if (space.type === SpaceType.GEAR_L) {
-            return new Rotation(RotationDirection.CCW, 1)
-        } else if (space.type === SpaceType.GEAR_R) {
-            return new Rotation(RotationDirection.CW, 1)
+    public handleGear(positions: Map<string, BoardPosition>): Map<string, Rotation[]> {
+        const ret = new Map<string, Rotation[]>()
+        // check each entry
+        for (const [key, pos] of positions.entries()) {
+            let res: Rotation[] = []
+            const space = this.data.spaces[pos.x][pos.y]
+            // check if it's a gear
+            if (space.type === SpaceType.GEAR_L) {
+                res.push(new Rotation(RotationDirection.CCW, 1))
+            } else if (space.type === SpaceType.GEAR_R) {
+                res.push(new Rotation(RotationDirection.CW, 1))
+            }
+            // set the result
+            ret.set(key, res)
         }
+
+        return ret
     }
 
     /**
@@ -690,11 +736,13 @@ export class Board {
      * @param inclusive_positions do lasers also hit the space they shoot from?
      * @return a list of damage values corresponding to the entries in targets
      */
-    public handleLaserPaths(laser_origins: LaserPosition[], targets: BoardPosition[], inclusive_positions:boolean=false): number[] {
+    public handleLaserPaths(laser_origins: LaserPosition[], targets: Map<string, BoardPosition>, inclusive_positions:boolean=false): Map<string, number> {
         // create a mapping to simplify the world a little
-        const damages = new Map<BoardPosition, number>()
-        for (const target of targets) {
+        const damages = new Map<string, number>()
+        const actor_positions = new DualKeyMap<number, string>()
+        for (const [target, position] of targets.entries()) {
             damages.set(target, 0)
+            actor_positions.set(position.x, position.y, target)
         }
 
         // look in the direction they're shooting
@@ -702,9 +750,10 @@ export class Board {
             const orientation = origin.pos.orientation
             let working: BoardPosition = {x: origin.pos.x, y: origin.pos.y}
 
-            if (inclusive_positions && damages.has(working)) {
+            const key = actor_positions.get(working.x, working.y)
+            if (inclusive_positions && key !== undefined) {
                 // if inclusive, and there is a target, they take damage
-                damages.set(working, damages.get(working) as number + origin.damage)
+                damages.set(key, damages.get(key) as number + origin.damage)
                 // target is hit, continue to next origin
                 continue
             }
@@ -724,19 +773,21 @@ export class Board {
 
             // while the position os on the board
             while (this._onBoard(working)) {
+                here = getWalls(this, working)
+
                 // if we hit a wall on entry, break
                 if (here.wall(flipped)) {
                     break
                 }
                 // if there is a target here, hit it
-                if (damages.has(working)) {
-                    damages.set(working, damages.get(working) as number + origin.damage)
+                const key = actor_positions.get(working.x, working.y)
+                if (key !== undefined) {
+                    damages.set(key, damages.get(key) as number + origin.damage)
                     // end of this laser
                     break
                 }
-
+                
                 // check for walls before stepping on
-                here = getWalls(this, working)
                 if (here.wall(orientation)) {
                     break
                 }
@@ -745,13 +796,16 @@ export class Board {
                 working = applyOrientationStep(working, orientation)
             }
         }
-        // postprocess the damages array
-        const ret: number[] = []
-        for (const pos of targets) {
-            ret.push(damages.get(pos) as number)
-        }
-        // damages align to the positions given
-        return ret
+        
+        return damages
+    }
+
+    /**
+     * gets the laser origins
+     * @returns the laser origins
+     */
+    public getLaserOrigins(): LaserPosition[] {
+        return this.laser_origins
     }
 
     // push events should be able to be executed simultaneously. This may require a data catch to
@@ -762,29 +816,152 @@ export class Board {
      * @param pos the initial position of the target
      * @returns the resulting absolute movement of activating all pushers
      */
-    public handlePush(pos: BoardPosition, register: number): AbsoluteMovement | undefined {
-        const walls = getWalls(this, pos)
-        if (WallType.isPUSH(walls.n) && register in walls.n.registers) {
-            return {
-                direction: Orientation.S,
-                distance: 1
+    public handlePush(positions: Map<string, BoardPosition>, register: number): Map<string, AbsoluteMovement[]> {
+        const ret = new Map<string, AbsoluteMovement[]>()
+
+        return ret
+    }
+
+    /**
+     * Checks the legality of the given movements, and updates those which are not legal
+     * @param position the starting position for the movement array
+     * @param movements the list of movements to execute
+     * @param pit_on_end_only if this is true, we only check for pits on the final step. This means that
+     * movements over pits will be ignored
+     * @returns an updated list of movements, cutting short those which end at walls or in pits. Each
+     * updated movement is paired with a status for that movement, indicating whether it was ok, hit a 
+     * wall, or ended in a pit
+     */
+    public movementResult(position: OrientedPosition, movements: MovementArray, pit_on_end_only: boolean = false): MovementResult[] {
+        const result: MovementResult[] = []
+
+        for (const movement of movements) {
+
+            // rotations should always be legal, as well as 0-distance movements
+            if (isRotation(movement) || movement.distance == 0) {
+                result.push({
+                    movement: movement,
+                    status: MovementStatus.ok
+                })
+                continue
             }
-        } else if (WallType.isPUSH(walls.e) && register in walls.e.registers) {
-            return {
-                direction: Orientation.W,
-                distance: 1
+            
+            let direction: Orientation = Orientation.N
+            if (isAbsoluteMovement(movement)) {
+                direction = movement.direction
+            } else {
+                // movement is relative movement
+                switch (movement.direction) {
+                    case MovementDirection.Forward:
+                        direction = position.orientation
+                        break
+                    case MovementDirection.Right:
+                        direction = Orientation.rotate(position.orientation, RotationDirection.CW)
+                        break
+                    case MovementDirection.Left:
+                        direction = Orientation.rotate(position.orientation, RotationDirection.CCW)
+                        break
+                    case MovementDirection.Back:
+                        direction = Orientation.flip(position.orientation)
+                        break
+                }
             }
-        } else if (WallType.isPUSH(walls.s) && register in walls.s.registers) {
-            return {
-                direction: Orientation.N,
-                distance: 1
+            
+            let distance = movement.distance
+            // I don't think that this should happen, but it's pretty easy to deal with
+            if (distance < 0) {
+                distance = -distance
+                direction = Orientation.flip(direction)
             }
-        } else if (WallType.isPUSH(walls.w) && register in walls.w.registers) {
-            return {
-                direction: Orientation.E,
-                distance: 1
+
+            // distance will be at least 1, try to leave this cell
+
+            let cell = getWalls(this, position)
+            
+            let steps = 0
+            const flipped = Orientation.flip(direction)
+            let working: BoardPosition = position
+            // check legality of movement in that direction
+            while (steps < distance) {
+                // check cell exit
+                if (cell.wall(direction)) {
+                    // then we move 0
+                    result.push({
+                        movement: {
+                            direction: direction,
+                            distance: steps
+                        },
+                        status: MovementStatus.wall
+                    })
+                    break
+                }
+
+                // step forward
+                working = applyOrientationStep(working, direction)
+
+                // check entry
+                cell = getWalls(this, working)
+                if (cell.wall(flipped)) {
+                    result.push({
+                        movement: {
+                            direction: direction,
+                            distance: steps
+                        },
+                        status: MovementStatus.wall
+                    })
+                    break
+                }
+
+                // increase steps, we made it onto the cell
+                steps += 1
+
+                // check the cell status (on board/ is pit)
+                if (!this._onBoard(working)) {
+                    result.push({
+                        movement: {
+                            direction: direction,
+                            distance: steps
+                        },
+                        status: MovementStatus.pit
+                    })
+                    break
+                }
+                
+                // at the end we must check pits, as well as each step when we check pits each step
+                if (steps == distance || !pit_on_end_only) {
+                    if (this.data.spaces[working.x][working.y].type == SpaceType.PIT) {
+                        // this is a pit, and we check pits on each step
+                        result.push({
+                            movement: {
+                                direction: direction,
+                                distance: steps
+                            },
+                            status: MovementStatus.pit
+                        })
+                        // we automatically terminate on pit if checked each step
+                        break
+                    }
+
+                    
+                }
+
+                if (steps == distance) {
+                    // else, not a pit, this is the last iteration: the movement is OK as written
+                    result.push({
+                        movement: {
+                            direction: direction,
+                            distance: distance
+                        },
+                        status: MovementStatus.ok
+                        
+                    })
+                }
+                // we're good, bo to the next loop step and try to exit the cell there
+                // if we're still moving
             }
         }
+
+        return result
     }
 
     /**
@@ -794,7 +971,7 @@ export class Board {
      * @param board the board to append
      * @param offset an offset value, if the board is not to be appended exactly to the side
      */
-    extend(direction: Orientation, board: Board, offset:number=0) {
+    public extend(direction: Orientation, board: Board, offset:number=0) {
         // append the existing board in the given orientation
     }
 }

@@ -338,7 +338,6 @@ export function isRotation(mv: any): mv is Rotation {
  * OrientedPosition as an interface, not a class
  */
 export namespace OrientedPosition {
-
     /**
      * applies a movement object to the position
      * @param pos the starting position

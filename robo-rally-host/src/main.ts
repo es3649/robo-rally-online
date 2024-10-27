@@ -6,7 +6,7 @@ import { connectRobot } from './main/bluetooth';
 import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
-import type { Board } from './main/game_manager/board';
+import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Server, Render2Main, Server2Main } from './main/models/events';
 import { GameManager } from './main/game_manager/manager';
 import { senderMaker, type Server2MainMessage } from './main/models/connection';
@@ -75,14 +75,16 @@ function registerIPCListeners() {
 
   ipcMain.handle(Render2Main.BOARD.LIST_BOARDS, listBoards)
 
-  ipcMain.handle(Render2Main.BOARD.LOAD_BOARD, (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
+  ipcMain.handle(Render2Main.BOARD.LOAD_BOARD, async (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
     console.log(`loading ${name}`)
     // load the board
-    const board = loadFromJson(name)
+    const board_data = await loadFromJson(name)
     // load it into the game manager
-    board.then((board: Board) => {
-      game.useBoard(board)
-    })
+    
+    // create the board
+    const board = new Board(board_data)
+    game.useBoard(board)
+    
     // return it to the caller
     return board
   })

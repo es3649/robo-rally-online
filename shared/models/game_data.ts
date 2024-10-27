@@ -108,21 +108,13 @@ export namespace ProgrammingCard {
                 return false
         }
     }
-}
-export declare type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
-export declare type ProgrammingCard = {
-    id: number,
-    action: CardAction
-}
-
-export namespace Movements {
     /**
      * Gets the Movement represented by a card
      * @param card the card to derive a movement from. This function may be obsolete
      * @returns the movement that the card represents, or undefined if that card does
      *    not represent a movement
      */
-    export function fromCard(card: ProgrammingCard): Movement|undefined {
+    export function toMovement(card: ProgrammingCard): Movement|undefined {
         // we don't really deal with these
         switch (card.action) {
             case ProgrammingCard.forward1:
@@ -143,25 +135,34 @@ export namespace Movements {
                 return
         }
     }
-    export const Forward1: Movement = {
-        direction: MovementDirection.Forward,
-        distance: 1
+    
+    export namespace Movements {
+
+        export const Forward1: Movement = {
+            direction: MovementDirection.Forward,
+            distance: 1
+        }
+        export const Forward2: Movement = {
+            direction: MovementDirection.Forward,
+            distance: 2
+        }
+        export const Forward3: Movement = {
+            direction: MovementDirection.Forward,
+            distance: 3
+        }
+        export const Back: Movement = {
+            direction: MovementDirection.Back,
+            distance: 1
+        }
+        export const Right: Movement = new Rotation(RotationDirection.CW, 1)
+        export const Left: Movement = new Rotation(RotationDirection.CCW, 1)
+        export const U_turn: Movement = new Rotation(RotationDirection.CW, 2)
     }
-    export const Forward2: Movement = {
-        direction: MovementDirection.Forward,
-        distance: 2
-    }
-    export const Forward3: Movement = {
-        direction: MovementDirection.Forward,
-        distance: 3
-    }
-    export const Back: Movement = {
-        direction: MovementDirection.Back,
-        distance: 1
-    }
-    export const Right: Movement = new Rotation(RotationDirection.CW, 1)
-    export const Left: Movement = new Rotation(RotationDirection.CCW, 1)
-    export const U_turn: Movement = new Rotation(RotationDirection.CW, 2)
+}
+export declare type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
+export declare type ProgrammingCard = {
+    id: number,
+    action: CardAction
 }
 
 export declare interface UpgradeCard {

@@ -1,4 +1,4 @@
-import { anyRegisterEmpty, Movements, newDamageDeck, newRegisterArray, newStandardDeck, ProgrammingCard, type RegisterArray } from '../src/main/models/game_data'
+import { anyRegisterEmpty, newDamageDeck, newRegisterArray, newStandardDeck, ProgrammingCard, type RegisterArray } from '../src/main/models/game_data'
 import { isRelativeMovement, isRotation, MovementDirection, Rotation, RotationDirection, type MovementArray, type RelativeMovement } from '../src/main/models/movement'
 import { expect, jest, test } from '@jest/globals'
 
@@ -90,30 +90,30 @@ test('ProgrammingCard.isMovement', () => {
     })).toBeFalsy()
 })
 
-test('Movements.fromCard', () => {
+test('ProgrammingCard.toMovement', () => {
     // these should all be relative movements
-    let f1_mv = Movements.fromCard({ action: ProgrammingCard.forward1, id: 0})
+    let f1_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.forward1, id: 0})
     expect(f1_mv).toBeDefined()
     expect(isRelativeMovement(f1_mv)).toBeTruthy()
     f1_mv = f1_mv as RelativeMovement
     expect(f1_mv.direction).toBe(MovementDirection.Forward)
     expect(f1_mv.distance).toBe(1)
 
-    let f2_mv = Movements.fromCard({ action: ProgrammingCard.forward2, id: 0})
+    let f2_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.forward2, id: 0})
     expect(f2_mv).toBeDefined()
     expect(isRelativeMovement(f2_mv)).toBeTruthy()
     f2_mv = f2_mv as RelativeMovement
     expect(f2_mv.direction).toBe(MovementDirection.Forward)
     expect(f2_mv.distance).toBe(2)
 
-    let f3_mv = Movements.fromCard({ action: ProgrammingCard.forward3, id: 0})
+    let f3_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.forward3, id: 0})
     expect(f3_mv).toBeDefined()
     expect(isRelativeMovement(f3_mv)).toBeTruthy()
     f3_mv = f3_mv as RelativeMovement
     expect(f3_mv.direction).toBe(MovementDirection.Forward)
     expect(f3_mv.distance).toBe(3)
 
-    let bk_mv = Movements.fromCard({ action: ProgrammingCard.back, id: 0})
+    let bk_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.back, id: 0})
     expect(bk_mv).toBeDefined()
     expect(isRelativeMovement(bk_mv)).toBeTruthy()
     bk_mv = bk_mv as RelativeMovement
@@ -121,37 +121,37 @@ test('Movements.fromCard', () => {
     expect(bk_mv.distance).toBe(1)
 
     // check that turns are rotations
-    let rt_mv = Movements.fromCard({ action: ProgrammingCard.right, id: 0})
+    let rt_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.right, id: 0})
     expect(rt_mv).toBeDefined()
     expect(isRotation(rt_mv)).toBeTruthy()
     rt_mv = rt_mv as Rotation
     expect(rt_mv.direction).toBe(RotationDirection.CW)
     expect(rt_mv.units).toBe(1)
 
-    let lf_mv = Movements.fromCard({ action: ProgrammingCard.left, id: 0})
+    let lf_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.left, id: 0})
     expect(lf_mv).toBeDefined()
     expect(isRotation(lf_mv)).toBeTruthy()
     lf_mv = lf_mv as Rotation
     expect(lf_mv.direction).toBe(RotationDirection.CCW)
     expect(lf_mv.units).toBe(1)
     
-    let ut_mv = Movements.fromCard({ action: ProgrammingCard.u_turn, id: 0})
+    let ut_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.u_turn, id: 0})
     expect(ut_mv).toBeDefined()
     expect(isRotation(ut_mv)).toBeTruthy()
     ut_mv = ut_mv as Rotation
     expect(ut_mv.units).toBe(2)
 
     // specials have no movement
-    let pu_mv = Movements.fromCard({ action: ProgrammingCard.power_up, id: 0})
+    let pu_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.power_up, id: 0})
     expect(pu_mv).toBeUndefined()
 
-    let ag_mv = Movements.fromCard({ action: ProgrammingCard.again, id: 0})
+    let ag_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.again, id: 0})
     expect(ag_mv).toBeUndefined()
 
-    let sp_mv = Movements.fromCard({ action: ProgrammingCard.spam, id: 0})
+    let sp_mv = ProgrammingCard.toMovement({ action: ProgrammingCard.spam, id: 0})
     expect(sp_mv).toBeUndefined()
 
-    let hw_mv = Movements.fromCard({ action: { text: "test haywire", actions: [new Rotation(RotationDirection.CCW, 1)]}, id: 0})
+    let hw_mv = ProgrammingCard.toMovement({ action: { text: "test haywire", actions: [new Rotation(RotationDirection.CCW, 1)]}, id: 0})
     expect(hw_mv).toBeUndefined()
 })
 

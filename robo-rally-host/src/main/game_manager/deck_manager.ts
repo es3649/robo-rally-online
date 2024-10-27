@@ -7,8 +7,12 @@ export class DeckManager {
     private deck = [] as ProgrammingCard[]
     private discard_pile = [] as ProgrammingCard[]
 
-    constructor() {
-        this.deck = newStandardDeck()
+    constructor(deck?: ProgrammingCard[]) {
+        if (deck) {
+            this.deck = deck
+        } else {
+            this.deck = newStandardDeck()
+        }
         this.shuffleDeck()
     }
 

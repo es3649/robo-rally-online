@@ -1,9 +1,9 @@
 import { Color } from "../models/player"
 import {  PlayerState, type Character, type Player, type PlayerID, type PlayerName } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
-import { GamePhase, Movements, ProgrammingCard, type RegisterArray } from '../models/game_data'
+import { GamePhase, newDamageDeck, ProgrammingCard, type RegisterArray } from '../models/game_data'
 
-import type { Board } from "./board"
+import type { Board, LaserPosition } from "./board"
 import { Main2Server } from "../models/events"
 import { botAction, connectRobot, BotAction } from "../bluetooth"
 import { DeckManager } from "./deck_manager"
@@ -19,7 +19,9 @@ export class GameManager {
     private started: boolean = false
     private players = new Map<PlayerID,Player>() // maps player names to players
     private decks = new Map<PlayerID, DeckManager>()
+    private damage_deck = new DeckManager(newDamageDeck())
     private programs = new Map<PlayerID, RegisterArray|undefined>()
+    private next_programs = new Map<PlayerID, RegisterArray>()
     private shutdowns = new Set<PlayerID>()
     private board: Board|undefined
     private player_states = new Map<string, PlayerState>()
@@ -198,31 +200,84 @@ export class GameManager {
         this.shutdowns.clear()
     }
 
-    private boardElements(): void {
+    private executeMovements(movements: Map<string, MovementArray>): void {
+        // check if the movement is legal
+        // if so, execute it
+        // update the local player position
+    }
+
+    private dealDamage(damages: Map<string, number>, register: number) {
+        // for each player
+        for (const [player, damage] of damages.entries()) {
+            // draw that many cards from the damage deck
+            // check if we have a haywire already
+            let has_haywire = ProgrammingCard.isHaywire((this.next_programs.get(player) as RegisterArray)[register][0]?.action)
+            for (let i = 0; i < damage; i++) {
+                // get the damage card
+                const damage = this.damage_deck.drawCard()
+                if (ProgrammingCard.isHaywire(damage.action)) {
+                    // if there's already a haywire, then ignore this card
+                    if (has_haywire) {
+                        this.damage_deck.discard(damage)
+                        continue
+                    }
+                    (this.next_programs.get(player) as RegisterArray)[register] = [damage]
+                } else {
+                    // this card should be spam, discard it to the player's deck
+                    // TODO, log that damage was taken
+                    (this.decks.get(player)?.discard(damage))
+                }
+            }
+        }
+    }
+
+    private boardElements(register: number): void {
         // execute these in order
+        if (this.board === undefined) {
+            console.error("No board!")
+            return
+        }
 
         // conveyor-2s
-        // const conv2 = this.board?.handle_conveyor2()
+        const conv2 = this.board.handleConveyor2(this.player_positions)
+        this.executeMovements(conv2)
         
         // conveyors
-        // const conv = this.board?.handleConveyor()
-        
+        const conv = this.board.handleConveyor(this.player_positions)
+        this.executeMovements(conv)
+
         // gears
-        // const gears = this.board?.handleGear()
+        const gears = this.board.handleGear(this.player_positions)
+        this.executeMovements(gears)
         
         // pushers
+        const pushed = this.board.handlePush(this.player_positions, register)
+        this.executeMovements(pushed)
 
         // crushers
+        console.warn("crushers are not implemented")
 
         // board lasers
-        // const damages = this.board?.handleLaserPaths(this.board.laser_origins, )
+        const damages = this.board.handleLaserPaths(this.board.getLaserOrigins(), this.player_positions, false)
+        this.dealDamage(damages, register)
         
         // robot lasers
-        // const damages2 = this.board?.handleLaserPaths( , , true)
-        
+        // turn the player positions into a laser origin set
+        const origins: LaserPosition[] = []
+        for (const value of this.player_positions.values()) {
+            origins.push({
+                pos: value,
+                damage: 1
+            })
+        }
+        const damages_2 = this.board.handleLaserPaths(origins, this.player_positions, true)
+        this.dealDamage(damages_2, register)
+
         // batteries
+        console.warn("batteries are not implemented")
         
         // checkpoints
+        console.warn("checkpoints are not implemented")
     }
 
     /**
@@ -275,7 +330,7 @@ export class GameManager {
             })
 
             // execute actions related to board events
-            this.boardElements()
+            this.boardElements(i)
         }
 
         // reset their programs
@@ -396,7 +451,7 @@ export class GameManager {
         }
 
         // it's a regular card 
-        const result = Movements.fromCard(card)
+        const result = ProgrammingCard.toMovement(card)
         return result === undefined ? [] : [result]
     }
 }
