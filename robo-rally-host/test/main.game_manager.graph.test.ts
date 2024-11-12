@@ -1,13 +1,13 @@
 import { expect, test } from '@jest/globals'
-import { MoverForest, DualKeyMap } from "../src/main/game_manager/graph";
+import { ConveyorForest, DualKeyMap } from "../src/main/game_manager/graph";
 import { AbsoluteMovement, BoardPosition, isAbsoluteMovement, isRotation, Movement, Orientation, Rotation, RotationDirection } from '../src/main/models/movement';
 
 // populate the forest
-const cf = new MoverForest()
-cf.addMover({x:0,y:0}, Orientation.E)
-cf.addMover({x:1,y:0}, Orientation.E, RotationDirection.CCW)
-cf.addMover({x:2,y:0}, Orientation.N)
-cf.addMover({x:1, y:1}, Orientation.E)
+const cf = new ConveyorForest()
+cf.addConveyor({x:0,y:0}, Orientation.E)
+cf.addConveyor({x:1,y:0}, Orientation.E, RotationDirection.CCW)
+cf.addConveyor({x:2,y:0}, Orientation.N)
+cf.addConveyor({x:1, y:1}, Orientation.E)
 
 test('DualKeyMap', () => {
     const dkm = new DualKeyMap<number, string>()
@@ -54,7 +54,7 @@ test('ConveyorForest.handleConveyance (empty)', () => {
     basic.set("first", {x:0, y:0})
 
     // ake an empty forest
-    const cf_empty = new MoverForest()
+    const cf_empty = new ConveyorForest()
     
     // if the forest is empty, shouldn't be a problem
     const res_basic = cf_empty.handleMovement(basic)
@@ -172,7 +172,7 @@ test('ConveyorForest.handleConveyance (collision w/ moving)', () => {
 })
 
 test('ConveyorForest.handleConveyance (3-way collision)', () => {
-    cf.addMover({x:2, y:2}, Orientation.S)
+    cf.addConveyor({x:2, y:2}, Orientation.S)
     const triple = new Map<string, BoardPosition>()
     triple.set('first', {x:1,y:1})
     triple.set('second', {x:2,y:0})
@@ -190,7 +190,7 @@ test('ConveyorForest.handleConveyance (3-way collision)', () => {
 })
 
 test('ConveyorForest.handleConveyance (multiple pushing to collision)', () => {
-    cf.addMover({x:0, y:1}, Orientation.S)
+    cf.addConveyor({x:0, y:1}, Orientation.S)
     const lineup = new Map<string, BoardPosition>()
     lineup.set("first", {x:2,y:0})
     lineup.set("second", {x:1,y:1})

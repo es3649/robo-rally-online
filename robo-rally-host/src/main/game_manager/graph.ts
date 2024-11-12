@@ -1,4 +1,5 @@
-import { applyAbsoluteMovement, isAbsoluteMovement, Rotation, type BoardPosition, type MovementArray, type Orientation, type RotationDirection } from "../models/movement"
+import { applyAbsoluteMovement, applyOrientationStep, isAbsoluteMovement, OrientedPosition, Rotation, type AbsoluteMovement, type Movement, type BoardPosition, type MovementArray, type Orientation, type RotationDirection } from "../models/movement"
+import { MovementStatus, type MovementResult } from "./board"
 
 // TODO this will all be important for serial-loaded boards
 // class BorderedCell<T> {
@@ -53,6 +54,19 @@ export class DualKeyMap<K, V> {
         return this.data.has(k1) && (this.data.get(k1) as Map<K, V>).has(k2)
     }
 
+    public delete(k1: K, k2: K): boolean {
+        const v1 = this.data.get(k1)
+        if (v1 === undefined) {
+            return false
+        }
+
+        const deleted = v1.delete(k2)
+        if (deleted && v1.size == 0) {
+            this.data.delete(k1)
+        }
+        return deleted
+    }
+
     public clear() {
         return this.data.clear()
     }
@@ -72,12 +86,246 @@ interface MoverNode {
     activation?: number[]
 }
 
-// TODO make this a base class, and subclass it for movers and conveyors
-// conveyors can rotate where movers can't, and movers can push adjacent targets while conveyors can't
-// movers also have an activation register check, and need to disable if something passes through a wall
-// ALSO: consider making robot pushing an independent function, as we will need it when handling
-// programmed actor movement as well
-export class MoverForest {
+export class PusherForest {
+    protected nodes = new DualKeyMap<number, MoverNode[]>()
+
+    constructor() {}
+
+    /**
+     * add a pusher to the forest
+     * @param position the position of the pusher
+     * @param direction the direction that the pusher pushes in
+     * @param activation the phases in which the pusher activates
+     */
+    addPusher(position: BoardPosition, direction: Orientation, activation: number[]): void {
+        if (!this.nodes.has(position.x, position.y)) {
+            this.nodes.set(position.x, position.y, [])
+        }
+
+        this.nodes.get(position.x, position.y)?.push({
+            direction: direction,
+            activation: activation
+        })
+    }
+
+    /**
+     * clear all data from the forest
+     */
+    public clear(): void {
+        this.nodes.clear()
+    }
+
+    /**
+     * gets the movements of the activating pushers at this position. Only returns effects of pushers which activate at this
+     * register. If more than one activating pusher is found, it returns no movements instead
+     * @param position the position where we look up pushers for
+     * @param register the register of pushers we want to get
+     * @returns the action of the pushers activating in this register, at the given position
+     */
+    private getPusherAction(position: BoardPosition, register: number): AbsoluteMovement[] {
+        const movers = this.nodes.get(position.x, position.y)
+        let moves: AbsoluteMovement[] = []
+        if (movers == undefined || movers.length == 0) {
+            return moves
+        }
+
+        // check activation registers: given register, activation and no inclusion, we don't activate now 
+        for (const mover of movers) {
+            if (mover.activation !== undefined &&
+                    mover.activation.includes(register)) {
+                // if there's already something in here but we found another legal mover, return empty
+                // we don't mess with that crap
+                if (moves.length > 0) {
+                    return []
+                }
+
+                moves.push({
+                    direction: mover.direction,
+                    distance: 1
+                })
+            }
+        }
+
+        return moves
+    }
+
+    // TODO this setup is good, but we need working knowledge of wall locations. Some movement
+    // configurations will be legal when we take walls into account, but illegal if we don't,
+    // for example a bot being pushed past a wall when a column of bots are being pushed into that wall
+    /**
+     * Computes the action of the stored pushers on the given actors
+     * @param positions the list of actors and their positions
+     * @param register the **1-indexed** register number
+     * @param evaluator a function which can evaluate movements and determine if they run the actor into
+     *  a wall
+     */
+    public handleMovement(positions: Map<string, OrientedPosition>, register: number, evaluator: (position: OrientedPosition, moves: MovementArray) => MovementResult[]): Map<string, AbsoluteMovement[]> {
+        const resulting_positions = new DualKeyMap<number, string>()
+        const resulting_positions_by_actor = new Map<string, BoardPosition>()
+        const starting_positions = new DualKeyMap<number, string>()
+        const movement_arrays = new Map<string, AbsoluteMovement[]>()
+        const illegal_positions = new DualKeyMap<number, boolean>()
+        let cluster_number = 0
+        const cluster_membership = new Map<string, number>()
+        const clusters = new Map<number, Set<string>>()
+        console.log("using register", register)
+
+        function _invalidateCluster(cluster: number) {
+            console.log('invalidating cluster', cluster)
+            const members = clusters.get(cluster) as Set<string>
+            for (const member of members) {
+                console.log('clearing movements for', member)
+                movement_arrays.set(member, [])
+                const member_start = positions.get(member) as BoardPosition
+                illegal_positions.set(member_start.x, member_start.y, true)
+                // some movements (incl hitting walls) are unresolved when this is called
+                // or do not require the target cell to be invalidated, so there may not
+                // be a resulting position logged
+                if (resulting_positions_by_actor.has(member)) {
+                    const member_end = resulting_positions_by_actor.get(member) as BoardPosition
+                    illegal_positions.set(member_end.x, member_end.y, true)
+                    resulting_positions_by_actor.delete(member)
+                }
+            }
+        }
+
+        function _handleSpace(key: string, start: OrientedPosition,
+                actionLookup: (pos: BoardPosition, register: number) => AbsoluteMovement[],
+                push_orientation?: Orientation) {
+            // add ourselves to the current cluster
+            clusters.get(cluster_number)?.add(key)
+            cluster_membership.set(key, cluster_number)
+            console.log('evaluating actor at', start)
+
+            // get movements
+            let movements: AbsoluteMovement[]
+            if (push_orientation !== undefined) {
+                movements = [{
+                    direction: push_orientation,
+                    distance: 1
+                }]
+            } else {
+                movements = actionLookup(start, register)
+            }
+            console.log('movements are', movements)
+
+            // if there is no movement for our space, and we are not currently a member of a
+            // cluster there is nothing to do. Set our movement to nothing and carry on
+            if (movements.length == 0) {
+                movement_arrays.set(key, [])
+                return
+            } else if (push_orientation === undefined) {
+                // this is an active pusher
+                // mark this position illegal: never move into an active pusher
+                illegal_positions.set(start.x, start.y, true)
+            }
+
+            // we have got a movement
+            // evaluate our movement
+            const results = evaluator(start, movements)
+            if (results.length < 1 || results[0].status == MovementStatus.wall) {
+                // we hit a wall, so invalidate our cluster
+                console.log('hit a wall')
+                _invalidateCluster(cluster_number)
+                return
+            }
+
+            // get our resulting position
+            let pos: BoardPosition = start
+            let cleaned_movements: AbsoluteMovement[] = []
+            for (const result of results) {
+                // they should all be absolute, but just make sure. Makes TS happy too
+                if (!isAbsoluteMovement(result.movement)) continue
+                cleaned_movements.push(result.movement)
+                pos = applyAbsoluteMovement(pos, result.movement)
+            }
+            console.log('resulting position', pos)
+            // save this in the archive
+            resulting_positions_by_actor.set(key, pos)
+
+            // if we are attempting to move into an illegal space
+            if (illegal_positions.has(pos.x, pos.y)) {
+                // we can't move there
+                console.log('result is illegal')
+                movement_arrays.set(key, [])
+                resulting_positions_by_actor.delete(key)
+            } else if (resulting_positions.has(pos.x, pos.y)) {
+                // if we ended up in another resulting position
+                // set the result illegal
+                // get the cluster members which resulted in that spot
+                const collision_actor = resulting_positions.get(pos.x, pos.y) as string
+                const collision_cluster = cluster_membership.get(collision_actor) as number
+                console.log('landed in resulting position of', collision_actor)
+                resulting_positions.delete(pos.x, pos.y)
+                // invalidate all members of this cluster
+                _invalidateCluster(collision_cluster)
+                // invalidate our cluster
+                _invalidateCluster(cluster_number)
+            } else {
+                // it's all good
+                console.log('we good')
+                resulting_positions.set(pos.x, pos.y, key)
+                // keep any changes from the movement evaluator
+                movement_arrays.set(key, cleaned_movements)
+                
+                if (starting_positions.has(pos.x, pos.y)) {
+                    // propagate
+                    // get the key and position of the actor
+                    const actor = starting_positions.get(pos.x, pos.y) as string
+                    const actor_start = positions.get(actor) as OrientedPosition
+                    console.log('recursing as', actor)
+                    // recurse
+                    _handleSpace(actor, actor_start, actionLookup, movements[0].direction)
+                    
+                }
+            }
+            
+            // check if we are moving into another active pusher
+            // we do this after the cluster is formed, so we don't halt cluster formation if one of
+            // them is in a bad spot. Tail recursion for the win
+            if (actionLookup(pos, register).length > 0) {
+                console.log('moved resulted on active pusher')
+                // invalidate our own cluster
+                // note: this will also invalidate our resulting space
+                _invalidateCluster(cluster_number)
+                // check if that pusher pushed a different cluster, if so, that's a conflict
+                if (starting_positions.has(pos.x, pos.y)) {
+                    const actor = starting_positions.get(pos.x, pos.y) as string
+                    // this can't be undefined, since we are on tail recursion
+                    const dest_cluster = cluster_membership.get(actor) as number
+                    _invalidateCluster(dest_cluster)
+                }
+            }
+        }
+
+        // make a lookup table for starting positions
+        for (const [key, start] of positions.entries()) {
+            starting_positions.set(start.x, start.y, key)
+        }
+
+        
+        // for each bot
+        for (const [key, start] of positions) {
+            if (cluster_membership.has(key)) {
+                // if we are are already in a cluster, then we don't need to do anymore calculation. It
+                // was done when we were added to the cluster
+                console.log(key, 'already in cluster')
+                continue
+            }
+            
+            // we are a new cluster, add it to the list
+            cluster_number += 1
+            const members = new Set<string>()
+            clusters.set(cluster_number, members)
+            
+            _handleSpace(key, start, (pos: BoardPosition, register: number) => this.getPusherAction(pos, register))
+        }
+
+        return movement_arrays
+    }
+}
+
+export class ConveyorForest {
     protected nodes = new DualKeyMap<number, MoverNode>()
 
     constructor () {}
@@ -89,11 +337,10 @@ export class MoverForest {
      * @param rotation the rotation effect of this conveyor, in the case it pushes onto a rotating
      * conveyor
      */
-    public addMover(position: BoardPosition, direction: Orientation, rotation?:RotationDirection, activation?: number[]|undefined): void {
+    public addConveyor(position: BoardPosition, direction: Orientation, rotation?:RotationDirection): void {
         this.nodes.set(position.x, position.y, {
             direction: direction,
             rotation: rotation,
-            activation: activation
         })
     }
 
@@ -110,19 +357,12 @@ export class MoverForest {
      * @param position the starting position
      * @returns the movement applied to the position by the conveyors
      */
-    private getMoverAction(position: BoardPosition, register?: number): MovementArray {
+    private getConveyorAction(position: BoardPosition): MovementArray {
         const mover = this.nodes.get(position.x, position.y)
         // if this position is not on a conveyor
         let moves: MovementArray = []
         if (mover == undefined) {
             // take no moves
-            return moves
-        }
-
-        // check activation registers: given register, activation and no inclusion,, we don't activate now 
-        if (register !== undefined &&
-            mover.activation !== undefined &&
-            !mover.activation.includes(register)) {
             return moves
         }
 
@@ -150,14 +390,14 @@ export class MoverForest {
      * @param positions the list of all positions of actors to be conveyed (invariant)
      * @returns a list of equal length of movements corresponding to the positions in the input
      */
-    handleMovement<T extends BoardPosition>(positions: Map<string, T>, register?: number): Map<string, MovementArray> {
+    handleMovement<T extends BoardPosition>(positions: Map<string, T>): Map<string, MovementArray> {
         let resulting_positions = new DualKeyMap<number, string>()
         let movement_arrays = new Map<string, MovementArray>()
         let illegal_positions = new DualKeyMap<number, boolean>()
         // for each position
         for (const [key, start] of positions) {
             // for each position, get the conveyor action
-            const movements = this.getMoverAction(start, register)
+            const movements = this.getConveyorAction(start)
             // for each of those movements
             let pos: BoardPosition = start
             for (const movement of movements) {

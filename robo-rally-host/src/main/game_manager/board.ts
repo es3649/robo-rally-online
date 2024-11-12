@@ -1,6 +1,6 @@
 import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement, isRotation, MovementDirection } from "../models/movement"
 import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
-import { MoverForest, DualKeyMap } from "./graph"
+import { ConveyorForest, DualKeyMap, PusherForest } from "./graph"
 
 const BOARD_SIZE = 12
 
@@ -340,10 +340,10 @@ export class Board {
     // public crusher_positions: BoardPosition[] = []
     public checkpoint_map: DualKeyMap<number, number> = new DualKeyMap<number, number>()
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
-    public laser_origins: LaserPosition[] = []
-    public pusher_positions: MoverForest = new MoverForest()
-    private conveyors: MoverForest = new MoverForest()
-    private conveyors2: MoverForest = new MoverForest()
+    private laser_origins: LaserPosition[] = []
+    private pushers: PusherForest = new PusherForest()
+    private conveyors: ConveyorForest = new ConveyorForest()
+    private conveyors2: ConveyorForest = new ConveyorForest()
 
     constructor(data: BoardData) {
         // set our instance ID from the static count
@@ -578,9 +578,9 @@ export class Board {
                     const rotation: RotationDirection|undefined = this._conveyorTurnDirection(pos)
                     // make sure that this gets added to the correct forest
                     if (SpaceType.isConveyor(space.type)) {
-                        this.conveyors.addMover(pos, (space.orientation as Orientation), rotation)
+                        this.conveyors.addConveyor(pos, (space.orientation as Orientation), rotation)
                     } else {
-                        this.conveyors2.addMover(pos, (space.orientation as Orientation), rotation)
+                        this.conveyors2.addConveyor(pos, (space.orientation as Orientation), rotation)
                     }
                 }
             }
@@ -616,10 +616,10 @@ export class Board {
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a South (vertical-low) facing pusher
-                    this.pusher_positions.addMover({x:x, y:y-1}, Orientation.S, undefined, wall.lo.registers)
+                    this.pushers.addPusher({x:x, y:y-1}, Orientation.S, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add a North (vertical-high) facing pusher
-                    this.pusher_positions.addMover({x:x, y:y}, Orientation.N, undefined, wall.hi.registers)
+                    this.pushers.addPusher({x:x, y:y}, Orientation.N, wall.hi.registers)
                 }
             }
         }
@@ -651,10 +651,10 @@ export class Board {
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a West (horizontal-low) facing pusher
-                    this.pusher_positions.addMover({x:x-1, y:y}, Orientation.W, undefined, wall.lo.registers)
+                    this.pushers.addPusher({x:x-1, y:y}, Orientation.W, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add an East (horizontal-high) facing pusher
-                    this.pusher_positions.addMover({x:x, y:y}, Orientation.E, undefined, wall.hi.registers)
+                    this.pushers.addPusher({x:x, y:y}, Orientation.E, wall.hi.registers)
                 }
             }
         }
@@ -816,10 +816,12 @@ export class Board {
      * @param pos the initial position of the target
      * @returns the resulting absolute movement of activating all pushers
      */
-    public handlePush(positions: Map<string, BoardPosition>, register: number): Map<string, AbsoluteMovement[]> {
-        const ret = new Map<string, AbsoluteMovement[]>()
+    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, AbsoluteMovement[]> {
+        const movements = this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementArray) => this.movementResult(pos, moves, false))
 
-        return ret
+        // handle robots pushing
+
+        return movements
     }
 
     /**
