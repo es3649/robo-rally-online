@@ -95,7 +95,7 @@ export class PusherForest {
      * add a pusher to the forest
      * @param position the position of the pusher
      * @param direction the direction that the pusher pushes in
-     * @param activation the phases in which the pusher activates
+     * @param activation the one-indexed phases in which the pusher activates
      */
     addPusher(position: BoardPosition, direction: Orientation, activation: number[]): void {
         if (!this.nodes.has(position.x, position.y)) {

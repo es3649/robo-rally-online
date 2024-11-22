@@ -334,6 +334,19 @@ export function isRotation(mv: any): mv is Rotation {
 }
 
 /**
+ * checks whether the movement is an effective no-op, meaning a 0-degree rotation, or a movement
+ * of 0 units
+ * @param mv the movement to check
+ * @returns whether or not the movement is a no-op
+ */
+export function isNoOp(mv: Movement): boolean {
+    return (
+        (isRotation(mv) && (mv.units % 4) == 0) ||
+        (!isRotation(mv) && mv.distance == 0)
+    )
+}
+
+/**
  * operations related to an OrientedPosition. We put them in a namespace because I wanted to leave
  * OrientedPosition as an interface, not a class
  */
@@ -345,7 +358,7 @@ export namespace OrientedPosition {
      * @param hook a hook to be called after each step of movement. If it returns false, movement is interrupted
      * @returns the resulting position after applying all movements, or after halting with the hook
      */
-    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
+    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition, step: Movement) => boolean = (pos) => true): OrientedPosition {
         let ret = {...pos}
         if (isRotation(mv)) {
             ret.orientation = Orientation.rotate(ret.orientation, mv.direction, mv.units)
@@ -354,7 +367,7 @@ export namespace OrientedPosition {
             while (mvmt > 0) {
                 // perform the movement
                 ret = applyOrientationStep(ret, mv.direction)
-                if (!hook(ret)) {
+                if (!hook(ret, {direction: mv.direction, distance: 1})) {
                     return ret
                 }
                 mvmt -= 1
@@ -379,7 +392,7 @@ export namespace OrientedPosition {
             }
             while (mvmt > 0) {
                 ret = applyOrientationStep(ret, o)
-                if (!hook(ret)) {
+                if (!hook(ret, {direction: o, distance: 1})) {
                     return ret
                 }
                 mvmt -= 1
@@ -399,12 +412,12 @@ export namespace OrientedPosition {
      * movement is stopped
      * @returns the resulting position after all movements are applied
      */
-    export function applyMovements(pos: OrientedPosition, mvs: MovementArray, hook: (pos: OrientedPosition) => boolean = (pos) => true): OrientedPosition {
+    export function applyMovements(pos: OrientedPosition, mvs: MovementArray, hook: (pos: OrientedPosition, step: Movement) => boolean = (pos) => true): OrientedPosition {
         for (const mv of mvs) {
             var hook_ret: boolean = true
             // nest in a hook
-            pos = applyMovement(pos, mv, (p) => {
-                hook_ret = hook(p)
+            pos = applyMovement(pos, mv, (p, s) => {
+                hook_ret = hook(p, s)
                 return hook_ret
             })
             if (!hook_ret) {

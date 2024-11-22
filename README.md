@@ -1,9 +1,10 @@
 # RoboRally Online
 
-RoboRally Online is a Typescript implementation of the RoboRally board game, by Richard Garfield and Renegade Game Studio.
-Since the game is very programmatic in nature, and the execution phase can often be carried out algorithmically from player input, I thought an online version of the game would be super cool, so I made one.
-It's also just an excuse for me to develop my Typescript, Vuejs, and general web-dev skills.
+RoboRally Online is a Typescript/robotics implementation of the RoboRally board game, by Richard Garfield and Renegade Game Studio.
 
+One day, while playing RoboRally, I thought to myself, _"How cool would it be if the robots on the board were actual robots, and I could actually program them?"_ so I decided to make it for real.
+I started with a high-school physics knowledge of electronics, then read forums, watched videos, and bothered friends until I was able to figure out how to make it work.
+This repository contains a majority of the files and code needed to bring the project to life.
 
 **Disclaimer**: This project is not affiliated with nor endorsed by Richard Garfield nor Renegade Game Studio
 
@@ -28,7 +29,7 @@ This server serves the Player Client.
 
 ### Bot Drivers
 
-The bot drivers, in the `bot-drivers` directory, are a series of Arduino programs, designed to control robots over a Bluetooth connection managed by the host
+The bot drivers, in the `bot-drivers` directory, are a series of Arduino programs, designed to control robots over a Bluetooth connection managed by the host.
 
 ### Schematics
 
@@ -36,9 +37,9 @@ The `schematics` folder contains PCB and CAD schematics.
 
 The PCB schematics are created using KiCad to model the custom boards used inside each robot.
 For simplicity, there is one schematic to service all bots, and thus all robot features will be supported on each PCB.
-Robots which do not support a certain feature, will simply not have relevant components added, and will not have those components supported in their drivers.
+Robots which do not support a certain feature, will simply have relevant components omitted, and will not have those components supported in their drivers.
 
-CAD schematics were created in OnShape, and contain the 3D models for the robots.
+CAD schematics are created in OnShape, and contain the 3D models for the robots.
 Each of these is unique.
 
 ## Windows Setup

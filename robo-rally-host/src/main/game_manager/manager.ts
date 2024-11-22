@@ -2,12 +2,13 @@ import { Color } from "../models/player"
 import {  PlayerState, type Character, type Player, type PlayerID, type PlayerName } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
 import { GamePhase, newDamageDeck, ProgrammingCard, type RegisterArray } from '../models/game_data'
-
 import type { Board, LaserPosition } from "./board"
 import { Main2Server } from "../models/events"
-import { botAction, connectRobot, BotAction } from "../bluetooth"
+import { BotAction } from "../bluetooth"
+import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { type OrientedPosition, type MovementArray, MovementDirection } from "../models/movement"
+import { type OrientedPosition, type MovementArray, MovementDirection, type Movement, type BoardPosition } from "../models/movement"
+import { DualKeyMap, PusherForest } from "./graph"
 
 export const MAX_PLAYERS = 6
 
@@ -98,12 +99,13 @@ export class GameManager {
         }
 
         // connect the bot over bluetooth
-        connectRobot(bot.id)
+        bt.connectRobot(bot.id)
         return true
     }
 
-    private getPlayerPositions() {
+    private getInitialPlayerPositions() {
         // run through the players and get starting positions for them
+
     }
 
     /**
@@ -129,7 +131,7 @@ export class GameManager {
             if (player.colors === undefined) {
                 player.colors = Color.GRAY
             }
-            if (!connectRobot(player.character.id)) {
+            if (!bt.connectRobot(player.character.id)) {
                 return false
             }
         }
@@ -138,7 +140,7 @@ export class GameManager {
         // set the game to started
         this.started = true
 
-        this.getPlayerPositions()
+        this.getInitialPlayerPositions()
 
         return true
     }
@@ -281,6 +283,31 @@ export class GameManager {
     }
 
     /**
+     * computes the action of the moving bot on all the other actors on the map
+     * @param actor the actor who is moving around pushing people
+     * @param position the starting position of the bot which may be pushing others around
+     * @param movements the movements that this actor will be taking
+     */
+    private getBotPushes(actor: string, position: OrientedPosition, movements: MovementArray): Map<string, MovementArray> {
+        // populate data stores
+        const positions = new Map<string, BoardPosition>()
+        const actors = new DualKeyMap<number, string>()
+        const pushes = new Map<string, MovementArray>()
+        for (const [actor, pos] of this.player_positions.entries()) {
+            positions.set(actor, pos)
+            actors.set(pos.x, pos.y, actor)
+        }
+
+        // TODO the best move here is to extend the pusher forest to accommodate this as well.
+        // we'll just instantiate a pusher forest with the single push and go from there
+
+        const forest = new PusherForest()
+        forest.addPusher(position, position.orientation, [1])
+
+        return forest.handleMovement(positions, 1, )
+    }
+
+    /**
      * run the logic of the activation phase
      */
     private activationPhase() {
@@ -297,7 +324,7 @@ export class GameManager {
             const player = this.players.get(player_id)
             if (player === undefined || player.character === undefined) return
             // send the action to the bot
-            botAction(player.character.id, BotAction.SHUTDOWN)
+            bt.botAction(player.character.id, BotAction.SHUTDOWN)
         })
 
         // TODO set shutdown players in the renderer
@@ -319,14 +346,26 @@ export class GameManager {
 
                 // convert the card into a series of movements
                 const movements = this.resolveRegister(index, program, player.id)
-                // preprocess the action using the board data; create a modified movement array if needed
+                // preprocess the action using the board data; create a modified movement
+                // array if needed
 
-                // verify that the execution of the movement array is legal from the current position
-                    // i.e.: (no walls in the way of any movements)
-                // discover any pushing of other bots
+                // determine pushes and board obstacles
+                // for each movement
+                    // get the cleaned version (per board hazards)
+                    // apply pushes from this single cleaned movement
+                    // update the actor's positions based on any pushing
+
+                for (const [player_id, push] of pushes.entries()) {
+                    if (push.length > 0) {
+                        bt.setMovement(player_id, push)
+                    }
+                }
 
                 // execute the action(s)
-                
+                // TODO later, make the player a Partial for early game, and convert to a full object
+                // at game time so these aren't theoretically undefined
+                bt.setMovement(player.character?.id as string, movements)
+                bt.unlatchMovements()
             })
 
             // execute actions related to board events

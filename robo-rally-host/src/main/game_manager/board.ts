@@ -321,7 +321,7 @@ export enum MovementStatus {
 }
 
 export type MovementResult = {
-    movement: Movement
+    movement: Movement[]
     status: MovementStatus
 }
 
@@ -577,10 +577,14 @@ export class Board {
                     const pos: BoardPosition = {x:x, y:y}
                     const rotation: RotationDirection|undefined = this._conveyorTurnDirection(pos)
                     // make sure that this gets added to the correct forest
-                    if (SpaceType.isConveyor(space.type)) {
-                        this.conveyors.addConveyor(pos, (space.orientation as Orientation), rotation)
+                    const o = space.orientation as Orientation
+                    const cell = getWalls(this, {x:x, y:y})
+                    // if there is a wall in the direction of the conveyor, then the conveyor is
+                    // effectively useless. Don't add it to the conveyor forest
+                    if (SpaceType.isConveyor(space.type) && !cell.wall(o)) {
+                        this.conveyors.addConveyor(pos, o, rotation)
                     } else {
-                        this.conveyors2.addConveyor(pos, (space.orientation as Orientation), rotation)
+                        this.conveyors2.addConveyor(pos, o, rotation)
                     }
                 }
             }
@@ -808,12 +812,10 @@ export class Board {
         return this.laser_origins
     }
 
-    // push events should be able to be executed simultaneously. This may require a data catch to
-    // prevent multiple push events from interacting, which I think shouldn't be allowed (else we
-    // can daisy chain them like conveyors?)
     /**
      * Computes the resulting movement on a target in the given position by the activation of 
-     * @param pos the initial position of the target
+     * @param positions the initial positions of the targets
+     * @param register the register in which we are activating pushers
      * @returns the resulting absolute movement of activating all pushers
      */
     public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, AbsoluteMovement[]> {
