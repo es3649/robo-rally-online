@@ -1,10 +1,13 @@
 #include <SPI.h>
 #include <SdFat.h>
 #include "MCP_DAC.h"
+#include "MFRC522.h"
 
 // pin for chip select
 #define DAC_CS_Pin 9
 #define SD_CS_Pin 10
+#define MFRC_CS_Pin 7
+#define MFRC_RST_Pin 6
 // pins for motor control
 #define MTR_CLK_PIN 1
 #define MTR_ENABLE_PIN 0
@@ -25,6 +28,7 @@
 SdFat SD;
 MCP4901 DAC;
 File playback;
+MFRC522 rifd(MFRC_CS_Pin, MFRC_RST_Pin);
 
 /**
  * player_state manages a state machine for the player logic
@@ -126,6 +130,11 @@ void laserStep() {
   }
 }
 
+/**
+ * a byte array to hold RFID reads
+ */
+uint8_t nuidPICC[4];
+
 void setup() {
   // put your setup code here, to run once:
   pinMode(MTR_CLK_PIN, OUTPUT);
@@ -155,6 +164,9 @@ void setup() {
   DAC.setGain();
   // Serial.println(DAC.getSPIspeed());
   Serial.println("initialized");
+
+  // set up the RFID reader
+  MFRC.PCD_Init();
 
   // loadFile("shutdown0.wav");
 
