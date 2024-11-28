@@ -818,7 +818,7 @@ export class Board {
      * @param register the register in which we are activating pushers
      * @returns the resulting absolute movement of activating all pushers
      */
-    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, MovementFrame[]> {
+    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, MovementFrame> {
         const movements = this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementFrame) => this.movementResult(pos, moves))
 
         // handle robots pushing

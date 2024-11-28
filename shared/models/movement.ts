@@ -375,7 +375,7 @@ export namespace OrientedPosition {
      * @param hook a hook to be called after each step of movement. If it returns false, movement is interrupted
      * @returns the resulting position after applying all movements, or after halting with the hook
      */
-    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition, step: Movement) => boolean = (pos) => true): OrientedPosition {
+    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition, step: Movement) => boolean = (pos, step) => true): OrientedPosition {
         let ret = {...pos}
         if (isRotation(mv)) {
             ret.orientation = Orientation.rotate(ret.orientation, mv.direction, mv.units)

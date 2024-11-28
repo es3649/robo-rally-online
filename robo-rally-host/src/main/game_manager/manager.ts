@@ -7,7 +7,7 @@ import { Main2Server } from "../models/events"
 import { BotAction } from "../bluetooth"
 import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { type OrientedPosition, type MovementArray, MovementDirection, type Movement, type BoardPosition, MovementFrame } from "../models/movement"
+import { type MovementArray, MovementDirection, type Movement, type BoardPosition, MovementFrame, OrientedPosition, isRotation } from "../models/movement"
 import { DualKeyMap, PusherForest } from "./graph"
 
 export const MAX_PLAYERS = 6
@@ -258,7 +258,7 @@ export class GameManager {
         
         // pushers
         const pushed = this.board.handlePush(this.player_positions, register)
-        this.executeFrames(pushed)
+        this.executeFrame(pushed)
 
         // crushers
         console.warn("crushers are not implemented")
@@ -292,23 +292,50 @@ export class GameManager {
      * @param position the starting position of the bot which may be pushing others around
      * @param movements the movements that this actor will be taking
      */
-    private getBotPushes(position: OrientedPosition, movements: MovementFrame[]): Map<string, MovementFrame[]> {
+    private getBotPushes(actor: PlayerID, position: OrientedPosition, movements: MovementFrame[]): Map<string, MovementFrame[]> {
         // populate data stores
         const positions = new Map<string, OrientedPosition>()
-        const actors = new DualKeyMap<number, string>()
-        const pushes = new Map<string, MovementArray>()
+        // const actors = new DualKeyMap<number, string>()
+        const pushes = new Map<string, MovementFrame[]>()
         for (const [actor, pos] of this.player_positions.entries()) {
+            // set initial values for positions and pushes
             positions.set(actor, pos)
-            actors.set(pos.x, pos.y, actor)
+            // actors.set(pos.x, pos.y, actor)
+            pushes.set(actor, [])
         }
+
+        let working: OrientedPosition = {...position}
 
         // TODO the best move here is to extend the pusher forest to accommodate this as well.
         // we'll just instantiate a pusher forest with the single push and go from there
+        for (const movement of movements) {
+            if (isRotation(movement)) {
+                // apply the rotation to the working position
+                working = OrientedPosition.applyMovement(working, movement)
+                // set no movement for other actors
+                for (const [id, moves] of pushes.entries()) {
+                    if (id == actor) {
+                        moves.push(movement)
+                    } else {
+                        moves.push(undefined)
+                    }
+                }
+                continue
+            }
 
-        const forest = new PusherForest()
-        forest.addPusher(position, position.orientation, [1])
+            // create a new pusher forest with this push
+            const forest = new PusherForest()
+            forest.addPusher(working, working.orientation, [1])
+            const results = forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).movementResult(pos, moves))
 
-        return forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).movementResult(pos, moves))
+            // for each actor in the result
+            for (const [id, result] of results.entries()) {
+                // add the result to the pushes
+                pushes.get(id)?.push(result)
+            }
+        }
+
+        return pushes
     }
 
     /**
@@ -356,7 +383,7 @@ export class GameManager {
                 // array if needed
 
                 // determine pushes and board obstacles
-                const pushes = this.getBotPushes(position, movements)
+                const pushes = this.getBotPushes(player.id, position, movements)
                 // for each movement
                     // get the cleaned version (per board hazards)
                     // apply pushes from this single cleaned movement
