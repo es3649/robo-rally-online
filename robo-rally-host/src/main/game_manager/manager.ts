@@ -7,7 +7,7 @@ import { Main2Server } from "../models/events"
 import { BotAction } from "../bluetooth"
 import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { type OrientedPosition, type MovementArray, MovementDirection, type Movement, type BoardPosition } from "../models/movement"
+import { type OrientedPosition, type MovementArray, MovementDirection, type Movement, type BoardPosition, MovementFrame } from "../models/movement"
 import { DualKeyMap, PusherForest } from "./graph"
 
 export const MAX_PLAYERS = 6
@@ -202,7 +202,11 @@ export class GameManager {
         this.shutdowns.clear()
     }
 
-    private executeMovements(movements: Map<string, MovementArray>): void {
+    private executeFrame(movement: Map<string, MovementFrame>): void {
+        // todo
+    }
+
+    private executeFrames(movements: Map<string, MovementFrame[]>): void {
         // check if the movement is legal
         // if so, execute it
         // update the local player position
@@ -242,19 +246,19 @@ export class GameManager {
 
         // conveyor-2s
         const conv2 = this.board.handleConveyor2(this.player_positions)
-        this.executeMovements(conv2)
+        this.executeFrames(conv2)
         
         // conveyors
         const conv = this.board.handleConveyor(this.player_positions)
-        this.executeMovements(conv)
+        this.executeFrames(conv)
 
         // gears
         const gears = this.board.handleGear(this.player_positions)
-        this.executeMovements(gears)
+        this.executeFrames(gears)
         
         // pushers
         const pushed = this.board.handlePush(this.player_positions, register)
-        this.executeMovements(pushed)
+        this.executeFrames(pushed)
 
         // crushers
         console.warn("crushers are not implemented")
@@ -288,9 +292,9 @@ export class GameManager {
      * @param position the starting position of the bot which may be pushing others around
      * @param movements the movements that this actor will be taking
      */
-    private getBotPushes(actor: string, position: OrientedPosition, movements: MovementArray): Map<string, MovementArray> {
+    private getBotPushes(position: OrientedPosition, movements: MovementFrame[]): Map<string, MovementFrame[]> {
         // populate data stores
-        const positions = new Map<string, BoardPosition>()
+        const positions = new Map<string, OrientedPosition>()
         const actors = new DualKeyMap<number, string>()
         const pushes = new Map<string, MovementArray>()
         for (const [actor, pos] of this.player_positions.entries()) {
@@ -304,7 +308,7 @@ export class GameManager {
         const forest = new PusherForest()
         forest.addPusher(position, position.orientation, [1])
 
-        return forest.handleMovement(positions, 1, )
+        return forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).movementResult(pos, moves))
     }
 
     /**
@@ -344,12 +348,15 @@ export class GameManager {
                     return
                 }
 
+                const position = this.player_positions.get(player.id) as OrientedPosition
                 // convert the card into a series of movements
-                const movements = this.resolveRegister(index, program, player.id)
+                const resolved = this.resolveRegister(index, program, player.id)
+                const movements = MovementFrame.fromMovementArray(position, resolved)
                 // preprocess the action using the board data; create a modified movement
                 // array if needed
 
                 // determine pushes and board obstacles
+                const pushes = this.getBotPushes(position, movements)
                 // for each movement
                     // get the cleaned version (per board hazards)
                     // apply pushes from this single cleaned movement
@@ -458,6 +465,7 @@ export class GameManager {
                 card = deck.drawCard()
             } while (card.action != ProgrammingCard.spam)
             // discard the card, it wasn't actually in the register
+            // any spam drawn don't have to be discarded
             deck.discard(card)
             return this.resolveRegister(register, program, player_id, card)
         }

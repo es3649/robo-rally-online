@@ -204,6 +204,15 @@ export class Rotation {
 }
 
 /**
+ * an extension of the rotation class which represents a single, 90-degree turn
+ */
+export class Turn extends Rotation {
+    constructor(direction: RotationDirection) {
+        super(direction, 1)
+    }
+}
+
+/**
  * the directions a movement can be in
  */
 export enum MovementDirection {
@@ -216,7 +225,7 @@ export enum MovementDirection {
 /**
  * a movement of a robot relative to its orientation
  */
-export type RelativeMovement = {
+export interface RelativeMovement {
     direction: MovementDirection,
     distance: number
 }
@@ -225,9 +234,17 @@ export type RelativeMovement = {
  * a movement of a robot relative to the board (usually when forcibly moved)
  * these movements are orientation agnostic
  */
-export type AbsoluteMovement = {
+export interface AbsoluteMovement {
     direction: Orientation,
     distance: number
+}
+
+/**
+ * an absolute movement which 
+ */
+export type AbsoluteStep = {
+    direction: Orientation,
+    distance: 1
 }
 
 /**
@@ -363,17 +380,17 @@ export namespace OrientedPosition {
         if (isRotation(mv)) {
             ret.orientation = Orientation.rotate(ret.orientation, mv.direction, mv.units)
         } else if (isAbsoluteMovement(mv)) {
-            let mvmt = mv.distance
-            while (mvmt > 0) {
+            let movement = mv.distance
+            while (movement > 0) {
                 // perform the movement
                 ret = applyOrientationStep(ret, mv.direction)
                 if (!hook(ret, {direction: mv.direction, distance: 1})) {
                     return ret
                 }
-                mvmt -= 1
+                movement -= 1
             }
         } else if (isRelativeMovement(mv)) {
-            let mvmt = mv.distance
+            let movement = mv.distance
             // convert the relative movement direction to an absolute one
             let o: Orientation
             switch (mv.direction) {
@@ -390,12 +407,12 @@ export namespace OrientedPosition {
                     o = Orientation.rotate(ret.orientation, RotationDirection.CCW)
                     break
             }
-            while (mvmt > 0) {
+            while (movement > 0) {
                 ret = applyOrientationStep(ret, o)
                 if (!hook(ret, {direction: o, distance: 1})) {
                     return ret
                 }
-                mvmt -= 1
+                movement -= 1
             }
         } else {
             console.error(mv)
@@ -425,5 +442,101 @@ export namespace OrientedPosition {
             }
         }
         return pos
+    }
+}
+
+/**
+ * We need to store the actions which will be sent over bluetooth, but they need to be
+ * synchronized in a specific way. We need to be able to send a SINGLE movement (one rotation
+ * or one step of movement), and these all need to be activated simultaneously. If one bot is 
+ * not sent an action, or if a collection of actions are sent at once for one actor, we need
+ * to reconcile the action frames to make sure that the synchronization of the movements is
+ * correct and sensical
+ */
+export type MovementFrame = Turn|AbsoluteStep|undefined
+export namespace MovementFrame {
+    /**
+     * converts a non-relative movement to an equivalent array of MovementFrames
+     * @param movement the movement to convert
+     * @returns an array of MovementFrames
+     */
+    export function fromNonRelativeMovement(movement: AbsoluteMovement|Rotation): MovementFrame[] {
+        const framed: MovementFrame[] = []
+        if (isAbsoluteMovement(movement)) {
+            for (let i = 0; i < movement.distance; i++) {
+                framed.push({
+                    direction: movement.direction,
+                    distance: 1
+                })
+            }
+        } else if (isRotation(movement)) {
+            for (let i = 0; i < movement.units; i++) {
+                framed.push(new Turn(movement.direction))
+            }
+        }
+        return framed
+    }
+
+    /**
+     * converts a single movement to an array of action frames
+     * @param movement the movement to convert to frames
+     */
+    export function fromMovement(pos: OrientedPosition, movement: Movement): MovementFrame[] {
+        const framed: MovementFrame[] = []
+        // translate absolute movement: this is easiest
+        if (isRelativeMovement(movement)) {
+            let o: Orientation
+            switch (movement.direction) {
+                case MovementDirection.Forward:
+                    o = pos.orientation
+                    break
+                case MovementDirection.Right:
+                    o = Orientation.rotate(pos.orientation, RotationDirection.CW)
+                    break
+                case MovementDirection.Back:
+                    o = Orientation.rotate(pos.orientation, RotationDirection.CW, 2)
+                    break
+                case MovementDirection.Left:
+                    o = Orientation.rotate(pos.orientation, RotationDirection.CCW)
+                    break
+            }
+            for (let i = 0; i < movement.distance; i++) {
+                framed.push({
+                    direction: o,
+                    distance: 1
+                })
+            }
+            return framed
+        }
+
+        // leave this to the other function
+        return fromNonRelativeMovement(movement)
+    }
+    
+    /**
+     * Converts a list of movements to MovementFrames
+     * @param pos the position for converting RelativeMovements
+     * @param movements the list of movements to convert
+     * @returns a converted list of action frames
+     */
+    export function fromMovementArray(pos: OrientedPosition, movements: MovementArray): MovementFrame[] {
+        const converted: MovementFrame[] = []
+        for (const movement of movements) {
+            converted.concat(fromMovement(pos, movement))
+        }
+        return converted
+    }
+
+    /**
+     * converts a list of absolute movements or rotations to MovementFrames
+     * @param movements the list of rotations or absolute movements to convert
+     * @returns the converted movements
+     */
+    export function fromNonRelativeMovements(movements: (AbsoluteMovement|Rotation)[]): MovementFrame[] {
+        const converted: MovementFrame[] = []
+        for (const movement of movements) {
+            converted.concat(fromNonRelativeMovement(movement))
+        }
+        return converted
     }
 }

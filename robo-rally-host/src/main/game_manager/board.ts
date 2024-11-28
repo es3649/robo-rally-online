@@ -1,4 +1,4 @@
-import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement, isRotation, MovementDirection } from "../models/movement"
+import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement, isRotation, MovementDirection, MovementFrame } from "../models/movement"
 import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
 import { ConveyorForest, DualKeyMap, PusherForest } from "./graph"
 
@@ -321,7 +321,7 @@ export enum MovementStatus {
 }
 
 export type MovementResult = {
-    movement: Movement[]
+    movement: MovementFrame
     status: MovementStatus
 }
 
@@ -672,7 +672,7 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor2(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
+    public handleConveyor2(positions: Map<string, BoardPosition>): Map<string, MovementFrame[]> {
         // call handle conveyance twice because handle conveyance only handles one step
         let movements_1 = this.conveyors2.handleMovement(positions)
         let mid_positions = new Map<string, BoardPosition>()
@@ -680,7 +680,7 @@ export class Board {
         for (const key of movements_1.keys()) {
             let new_pos: BoardPosition = positions.get(key) as BoardPosition
 
-            movements_1.get(key)?.forEach((value: Movement) => {
+            movements_1.get(key)?.forEach((value: MovementFrame) => {
                 if (isAbsoluteMovement(value)) {
                     new_pos = applyOrientationStep(new_pos, value.direction)
                 }
@@ -691,10 +691,10 @@ export class Board {
         // egt the second set of movements
         const movements_2 = this.conveyors2.handleMovement(mid_positions)
 
-        const ret = new Map<string, MovementArray>()
+        const ret = new Map<string, MovementFrame[]>()
         for (const key of positions.keys()) {
             // concatenate the two movement arrays and set it in the return map
-            ret.set(key, (movements_1.get(key) as MovementArray).concat(movements_2.get(key) as MovementArray))
+            ret.set(key, (movements_1.get(key) as MovementFrame[]).concat(movements_2.get(key) as MovementFrame[]))
         }
 
         return ret
@@ -708,7 +708,7 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor(positions: Map<string, BoardPosition>): Map<string, MovementArray> {
+    public handleConveyor(positions: Map<string, BoardPosition>): Map<string, MovementFrame[]> {
         return this.conveyors.handleMovement(positions)
     }
 
@@ -818,8 +818,8 @@ export class Board {
      * @param register the register in which we are activating pushers
      * @returns the resulting absolute movement of activating all pushers
      */
-    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, AbsoluteMovement[]> {
-        const movements = this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementArray) => this.movementResult(pos, moves, false))
+    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, MovementFrame[]> {
+        const movements = this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementFrame) => this.movementResult(pos, moves))
 
         // handle robots pushing
 
@@ -836,136 +836,55 @@ export class Board {
      * updated movement is paired with a status for that movement, indicating whether it was ok, hit a 
      * wall, or ended in a pit
      */
-    public movementResult(position: OrientedPosition, movements: MovementArray, pit_on_end_only: boolean = false): MovementResult[] {
-        const result: MovementResult[] = []
+    public movementResult(position: OrientedPosition, movement: MovementFrame): MovementResult {
 
-        for (const movement of movements) {
-
-            // rotations should always be legal, as well as 0-distance movements
-            if (isRotation(movement) || movement.distance == 0) {
-                result.push({
-                    movement: movement,
-                    status: MovementStatus.ok
-                })
-                continue
+        // rotations should always be legal, as well as 0-distance movements
+        if (movement === undefined || isRotation(movement)) {
+            return {
+                movement: movement,
+                status: MovementStatus.ok
             }
-            
-            let direction: Orientation = Orientation.N
-            if (isAbsoluteMovement(movement)) {
-                direction = movement.direction
-            } else {
-                // movement is relative movement
-                switch (movement.direction) {
-                    case MovementDirection.Forward:
-                        direction = position.orientation
-                        break
-                    case MovementDirection.Right:
-                        direction = Orientation.rotate(position.orientation, RotationDirection.CW)
-                        break
-                    case MovementDirection.Left:
-                        direction = Orientation.rotate(position.orientation, RotationDirection.CCW)
-                        break
-                    case MovementDirection.Back:
-                        direction = Orientation.flip(position.orientation)
-                        break
-                }
-            }
-            
-            let distance = movement.distance
-            // I don't think that this should happen, but it's pretty easy to deal with
-            if (distance < 0) {
-                distance = -distance
-                direction = Orientation.flip(direction)
-            }
-
-            // distance will be at least 1, try to leave this cell
-
-            let cell = getWalls(this, position)
-            
-            let steps = 0
-            const flipped = Orientation.flip(direction)
-            let working: BoardPosition = position
-            // check legality of movement in that direction
-            while (steps < distance) {
-                // check cell exit
-                if (cell.wall(direction)) {
-                    // then we move 0
-                    result.push({
-                        movement: {
-                            direction: direction,
-                            distance: steps
-                        },
-                        status: MovementStatus.wall
-                    })
-                    break
-                }
-
-                // step forward
-                working = applyOrientationStep(working, direction)
-
-                // check entry
-                cell = getWalls(this, working)
-                if (cell.wall(flipped)) {
-                    result.push({
-                        movement: {
-                            direction: direction,
-                            distance: steps
-                        },
-                        status: MovementStatus.wall
-                    })
-                    break
-                }
-
-                // increase steps, we made it onto the cell
-                steps += 1
-
-                // check the cell status (on board/ is pit)
-                if (!this._onBoard(working)) {
-                    result.push({
-                        movement: {
-                            direction: direction,
-                            distance: steps
-                        },
-                        status: MovementStatus.pit
-                    })
-                    break
-                }
-                
-                // at the end we must check pits, as well as each step when we check pits each step
-                if (steps == distance || !pit_on_end_only) {
-                    if (this.data.spaces[working.x][working.y].type == SpaceType.PIT) {
-                        // this is a pit, and we check pits on each step
-                        result.push({
-                            movement: {
-                                direction: direction,
-                                distance: steps
-                            },
-                            status: MovementStatus.pit
-                        })
-                        // we automatically terminate on pit if checked each step
-                        break
-                    }
-
-                    
-                }
-
-                if (steps == distance) {
-                    // else, not a pit, this is the last iteration: the movement is OK as written
-                    result.push({
-                        movement: {
-                            direction: direction,
-                            distance: distance
-                        },
-                        status: MovementStatus.ok
-                        
-                    })
-                }
-                // we're good, bo to the next loop step and try to exit the cell there
-                // if we're still moving
+        }
+        
+        // 
+        let direction = movement.direction
+        let cell = getWalls(this, position)
+        let working: BoardPosition = position
+        // check legality of movement in that direction
+        // check cell exit
+        if (cell.wall(direction)) {
+            // then we move 0
+            return {
+                movement: {
+                    direction: direction,
+                    distance: 1
+                },
+                status: MovementStatus.wall
             }
         }
 
-        return result
+        // step forward
+        working = applyOrientationStep(working, direction)
+
+        // check the cell status (on board/ is pit)
+        if (!this._onBoard(working) || this.data.spaces[working.x][working.y].type == SpaceType.PIT) {
+            return {
+                movement: {
+                    direction: direction,
+                    distance: 1
+                },
+                status: MovementStatus.pit
+            }
+        }
+        
+        return {
+            movement: {
+                direction: direction,
+                distance: 1
+            },
+            status: MovementStatus.ok
+            
+        }
     }
 
     /**

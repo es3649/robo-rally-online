@@ -1,5 +1,5 @@
 import { Bluez } from "blauzahn";
-import type { Movement, MovementArray } from "./models/movement";
+import type { MovementFrame } from "./models/movement";
 import type { CharacterID } from "./models/player"
 
 export namespace BotAction {
@@ -13,20 +13,12 @@ export type BotAction = typeof BotAction.FIRE_LASER |
     typeof BotAction.SHUTDOWN |
     typeof BotAction.POWER_UP
 
-/**
- * We need to store the actions which will be sent over bluetooth, but they need to be
- * synchronized in a specific way. We need to be able to send a SINGLE movement (one rotation
- * or one step of movement), and these all need to be activated simultaneously. If one bot is 
- * not sent an action, or if a collection of actions are sent at once for one actor, we need
- * to reconcile the action frames to make sure that the synchronization of the movements is
- * correct and sensical
- */
-export type ActionFrame = {
-    movement: Movement,
-    action: BotAction 
-}
-
 const connections = new Map<CharacterID, any>()
+
+export interface ActionFrame {
+    movement: MovementFrame,
+    action: BotAction
+}
 
 /**
  * initiate or validate bluetooth connection to a robot
@@ -44,7 +36,7 @@ export function connectRobot(name: string): boolean {
  * @param botID the id of the bot to send the command to
  * @param movement the movements the bot should perform
  */
-export function setMovement(botID: CharacterID, movement: MovementArray): void {
+export function setMovement(botID: CharacterID, movement: MovementFrame[]): void {
     console.log(`sending ${movement.length} movements to ${botID}`)
     console.warn('NOT IMPLEMENTED')
 }
