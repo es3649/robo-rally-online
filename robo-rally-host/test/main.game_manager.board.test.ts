@@ -1,6 +1,6 @@
 import { expect, test } from '@jest/globals'
 import { Board, BoardData, isValidBoardData, LaserPosition, MovementStatus, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
-import { AbsoluteMovement, BoardPosition, isAbsoluteMovement, isRotation, MovementArray, MovementDirection, Orientation, OrientedPosition, Rotation, RotationDirection } from '../src/main/models/movement'
+import { AbsoluteMovement, BoardPosition, isAbsoluteMovement, isRotation, MovementArray, MovementDirection, MovementFrame, Orientation, OrientedPosition, Rotation, RotationDirection } from '../src/main/models/movement'
 import { DualKeyMap } from '../src/main/game_manager/graph'
 
 const sample_board: BoardData = {
@@ -439,7 +439,7 @@ test('Board.handleConveyor2', () => {
     expect(handled.has('first')).toBeTruthy()
     expect(handled.has('second')).toBeTruthy()
     expect(handled.get('first').length).toBe(4)
-    expect(handled.get('second').length).toBe(0)
+    expect(handled.get('second').length).toBe(4)
     const movements = handled.get('first') as MovementArray
     expect(isAbsoluteMovement(movements[0])).toBeTruthy()
     expect(movements[0].direction).toBe(Orientation.S)
@@ -449,6 +449,10 @@ test('Board.handleConveyor2', () => {
     expect(movements[2].direction).toBe(Orientation.W)
     expect(isRotation(movements[3])).toBeTruthy()
     expect(movements[3].direction).toBe(RotationDirection.CCW)
+    const movements_2 = handled.get('second') as MovementFrame[]
+    for (let i = 0; i < 4; i ++) {
+        expect(movements_2[i]).toBeUndefined()
+    }
 })
 
 test('Board.handleConveyor', () => {
@@ -461,7 +465,8 @@ test('Board.handleConveyor', () => {
     expect(handled.size).toBe(2)
     expect(handled.has('first')).toBeTruthy()
     expect(handled.has('second')).toBeTruthy()
-    expect(handled.get('first').length).toBe(0)
+    expect(handled.get('first').length).toBe(1)
+    expect(handled.get('first')[0]).toBeUndefined()
     expect(handled.get('second').length).toBe(1)
     expect(handled.get('second')[0].direction).toBe(Orientation.S)
 })

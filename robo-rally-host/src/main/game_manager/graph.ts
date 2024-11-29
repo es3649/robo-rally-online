@@ -461,6 +461,6 @@ export class ConveyorForest {
             }
 
         }
-        return movement_arrays
+        return MovementFrame.pad(movement_arrays)
     }
 }

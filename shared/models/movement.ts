@@ -539,4 +539,28 @@ export namespace MovementFrame {
         }
         return converted
     }
+
+    /**
+     * pad the values of a map to the same length
+     * @param moves a map of any kay to movement frame arrays
+     * @returns the same map, but each value is guaranteed to have the same length
+     */
+    export function pad<T>(moves: Map<T, MovementFrame[]>): Map<T, MovementFrame[]> {
+        let max_len = 0
+        for (const movements of moves.values()) {
+            // get the max movement for padding
+            if (movements.length > max_len) {
+                max_len = movements.length
+            }
+        }
+
+        // pad the lists
+        for (const movements of moves.values()) {
+            while (movements.length < max_len) {
+                movements.push(undefined)
+            }
+        }
+
+        return moves
+    }
 }

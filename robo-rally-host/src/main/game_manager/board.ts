@@ -677,7 +677,7 @@ export class Board {
         let movements_1 = this.conveyors2.handleMovement(positions)
         let mid_positions = new Map<string, BoardPosition>()
         // apply the movements to the positions in the array to get the next round of positions
-        for (const key of movements_1.keys()) {
+        for (const [key, frames] of movements_1.entries()) {
             let new_pos: BoardPosition = positions.get(key) as BoardPosition
 
             movements_1.get(key)?.forEach((value: MovementFrame) => {
@@ -819,11 +819,10 @@ export class Board {
      * @returns the resulting absolute movement of activating all pushers
      */
     public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, MovementFrame> {
-        const movements = this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementFrame) => this.movementResult(pos, moves))
-
+        
         // handle robots pushing
-
-        return movements
+        
+        return this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementFrame) => this.movementResult(pos, moves))
     }
 
     /**

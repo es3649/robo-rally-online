@@ -385,9 +385,11 @@ export class GameManager {
                 // determine pushes and board obstacles
                 const pushes = this.getBotPushes(player.id, position, movements)
                 // for each movement
+                for (const [actor, push] of pushes) {
                     // get the cleaned version (per board hazards)
                     // apply pushes from this single cleaned movement
                     // update the actor's positions based on any pushing
+                }
 
                 for (const [player_id, push] of pushes.entries()) {
                     if (push.length > 0) {
