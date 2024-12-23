@@ -1,5 +1,5 @@
 import { Color } from "../models/player"
-import {  PlayerState, type Character, type Player, type PlayerID, type PlayerName } from "../models/player"
+import {  PlayerState, type Character, type PartialPlayer, type Player, type PlayerID, type PlayerName } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
 import { GamePhase, newDamageDeck, ProgrammingCard, type RegisterArray } from '../models/game_data'
 import type { Board, LaserPosition } from "./board"
@@ -7,8 +7,9 @@ import { Main2Server } from "../models/events"
 import { BotAction } from "../bluetooth"
 import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { type MovementArray, MovementDirection, type Movement, type BoardPosition, MovementFrame, OrientedPosition, isRotation } from "../models/movement"
+import { MovementDirection, type Movement, isRotation, Orientation } from "../models/movement"
 import { DualKeyMap, PusherForest } from "./graph"
+import { applyAbsoluteMovement, applyRotation, MovementArray, MovementFrame, type OrientedPosition } from "./move_processors"
 
 export const MAX_PLAYERS = 6
 
@@ -19,6 +20,7 @@ export const MAX_PLAYERS = 6
 export class GameManager {
     private started: boolean = false
     private players = new Map<PlayerID,Player>() // maps player names to players
+    private setup_players = new Map<PlayerID, PartialPlayer>()
     private decks = new Map<PlayerID, DeckManager>()
     private damage_deck = new DeckManager(newDamageDeck())
     private programs = new Map<PlayerID, RegisterArray|undefined>()
@@ -54,7 +56,7 @@ export class GameManager {
             return false
         }
         // build the player object
-        const player: Player = {
+        const player: PartialPlayer = {
             name: player_name,
             id: player_id,
             // get a default color for the player
@@ -65,7 +67,7 @@ export class GameManager {
         this.player_states.set(player_id, new PlayerState(player_name, this.players.size))
         
         // add this player to our registry
-        this.players.set(player_id, player)
+        this.setup_players.set(player_id, player)
         this.decks.set(player_id, new DeckManager())
         this.programs.set(player_id, undefined)
         // return the conn details to the caller
@@ -124,7 +126,7 @@ export class GameManager {
         }
 
         // validate all players and bot connections
-        for (const player of this.players.values()) {
+        for (const [id, player] of this.setup_players.entries()) {
             if (player.character === undefined) {
                 return false
             }
@@ -134,6 +136,7 @@ export class GameManager {
             if (!bt.connectRobot(player.character.id)) {
                 return false
             }
+            this.players.set(id, player as Player)
         }
         // add the players to the programs
         this.resetPrograms()
@@ -311,7 +314,7 @@ export class GameManager {
         for (const movement of movements) {
             if (isRotation(movement)) {
                 // apply the rotation to the working position
-                working = OrientedPosition.applyMovement(working, movement)
+                working = applyRotation(working, movement)
                 // set no movement for other actors
                 for (const [id, moves] of pushes.entries()) {
                     if (id == actor) {
@@ -326,7 +329,7 @@ export class GameManager {
             // create a new pusher forest with this push
             const forest = new PusherForest()
             forest.addPusher(working, working.orientation, [1])
-            const results = forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).movementResult(pos, moves))
+            const results = forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).getMovementResult(pos, moves))
 
             // for each actor in the result
             for (const [id, result] of results.entries()) {
@@ -378,7 +381,7 @@ export class GameManager {
                 const position = this.player_positions.get(player.id) as OrientedPosition
                 // convert the card into a series of movements
                 const resolved = this.resolveRegister(index, program, player.id)
-                const movements = MovementFrame.fromMovementArray(position, resolved)
+                const movements =  MovementFrame.fromMovement(resolved, position)
                 // preprocess the action using the board data; create a modified movement
                 // array if needed
 
@@ -423,7 +426,7 @@ export class GameManager {
      * @param actions the list of cards in the register, should have length 2
      * @returns the resulting movement of performing both actions
      */
-    private handle2CardMovement(actions: ProgrammingCard[]): MovementArray {
+    private handle2CardMovement(actions: ProgrammingCard[]): Movement[] {
         // be sure that the two actions are move forward, and either rotate left or right
         let has_fwd = false
         let has_right = false
@@ -467,9 +470,10 @@ export class GameManager {
      */
     private resolveRegister(register: number, program: RegisterArray, player_id: PlayerID, card: ProgrammingCard|undefined=undefined): MovementArray {
         const actions: ProgrammingCard[] = program[register]
+        const o = this.player_positions.get(player_id)?.orientation as Orientation
         // if there is no program for some reason, or the player is on shutdown, take no actions
         if (actions.length == 0 || this.shutdowns.has(player_id)) {
-            return []
+            return MovementArray.fromMovements([], o)
         }
 
         // if there are more than 2 cards, that's a serious issue
@@ -479,7 +483,7 @@ export class GameManager {
 
         // this should be the crab-legs option
         if (actions.length == 2) {
-            return this.handle2CardMovement(program[register])
+            return MovementArray.fromMovements(this.handle2CardMovement(program[register]), o)
         }
 
         // if we were not given a card, pull from the program
@@ -528,6 +532,6 @@ export class GameManager {
 
         // it's a regular card 
         const result = ProgrammingCard.toMovement(card)
-        return result === undefined ? [] : [result]
+        return MovementArray.fromMovements(result === undefined ? [] : [result], o)
     }
 }

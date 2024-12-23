@@ -49,13 +49,14 @@ export declare type Character = {
 export declare type PlayerName = string
 export declare type PlayerID = string
 
-export declare type Player = {
+export declare type PartialPlayer = {
     name: PlayerName,
     id: PlayerID,
     character?: Character,
     // conn?: undefined,
     colors?: Color.Set
 }
+export declare type Player = Required<PartialPlayer>
 
 export class PlayerState {
     priority: number

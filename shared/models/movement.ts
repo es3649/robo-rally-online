@@ -94,18 +94,6 @@ export namespace Orientation {
 }
 export type Orientation = "N" | "E" | "S" | "W"
 
-export interface BoardPosition {
-    x: number,
-    y: number
-}
-
-/**
- * an oriented board position: that is, both a position and a facing
- */
-export interface OrientedPosition extends BoardPosition {
-    orientation: Orientation
-}
-
 /**
  * the directions in which one can rotate
  */
@@ -204,15 +192,6 @@ export class Rotation {
 }
 
 /**
- * an extension of the rotation class which represents a single, 90-degree turn
- */
-export class Turn extends Rotation {
-    constructor(direction: RotationDirection) {
-        super(direction, 1)
-    }
-}
-
-/**
  * the directions a movement can be in
  */
 export enum MovementDirection {
@@ -240,18 +219,9 @@ export interface AbsoluteMovement {
 }
 
 /**
- * an absolute movement which 
- */
-export type AbsoluteStep = {
-    direction: Orientation,
-    distance: 1
-}
-
-/**
  * defines a list of movements or rotations to be taken sequentially
  */
 export type Movement = (RelativeMovement | AbsoluteMovement | Rotation)
-export type MovementArray = Movement[]
 
 /**
  * Test if an object is an AbsoluteMovement
@@ -267,55 +237,6 @@ export function isAbsoluteMovement(mv: any): mv is AbsoluteMovement {
         return true
     }
     return false
-}
-
-/**
- * steps the position by one step in the direction indicate by the orientation
- * @param position the starting position
- * @param orientation the orientation in which to step the position
- */
-export function applyOrientationStep<T extends BoardPosition>(pos: T, orientation: Orientation): T {
-    let x = pos.x
-    let y = pos.y
-    switch (orientation) {
-        case Orientation.N:
-            y += 1
-            break
-        case Orientation.E:
-            x += 1
-            break
-        case Orientation.S:
-            y -= 1
-            break
-        case Orientation.W:
-            x -= 1
-            break
-    }
-    // return the items to the result, only modifying x and y
-    return {...pos, x: x, y: y}
-}
-
-/**
- * gets the effect of an absolute movement on a position, returning the updated position
- * @param pos the starting position
- * @param movement the movement to apply
- * @returns the resulting position
- */
-export function applyAbsoluteMovement<T extends BoardPosition>(pos: T, movement: AbsoluteMovement): BoardPosition {
-    let ret_pos = pos
-    let direction = movement.direction
-    let distance = movement.distance
-
-    // handle negative distances
-    if (distance < 0) {
-        distance *= -1
-        direction = Orientation.flip(direction)
-    }
-    // just step 
-    for (let i = 0; i < distance; i++) {
-        ret_pos = applyOrientationStep(ret_pos, direction)
-    }
-    return ret_pos
 }
 
 /**
@@ -361,206 +282,4 @@ export function isNoOp(mv: Movement): boolean {
         (isRotation(mv) && (mv.units % 4) == 0) ||
         (!isRotation(mv) && mv.distance == 0)
     )
-}
-
-/**
- * operations related to an OrientedPosition. We put them in a namespace because I wanted to leave
- * OrientedPosition as an interface, not a class
- */
-export namespace OrientedPosition {
-    /**
-     * applies a movement object to the position
-     * @param pos the starting position
-     * @param mv the movement to perform
-     * @param hook a hook to be called after each step of movement. If it returns false, movement is interrupted
-     * @returns the resulting position after applying all movements, or after halting with the hook
-     */
-    export function applyMovement(pos: OrientedPosition, mv: Movement, hook:(pos: OrientedPosition, step: Movement) => boolean = (pos, step) => true): OrientedPosition {
-        let ret = {...pos}
-        if (isRotation(mv)) {
-            ret.orientation = Orientation.rotate(ret.orientation, mv.direction, mv.units)
-        } else if (isAbsoluteMovement(mv)) {
-            let movement = mv.distance
-            while (movement > 0) {
-                // perform the movement
-                ret = applyOrientationStep(ret, mv.direction)
-                if (!hook(ret, {direction: mv.direction, distance: 1})) {
-                    return ret
-                }
-                movement -= 1
-            }
-        } else if (isRelativeMovement(mv)) {
-            let movement = mv.distance
-            // convert the relative movement direction to an absolute one
-            let o: Orientation
-            switch (mv.direction) {
-                case MovementDirection.Forward:
-                    o = ret.orientation
-                    break
-                case MovementDirection.Right:
-                    o = Orientation.rotate(ret.orientation, RotationDirection.CW)
-                    break
-                case MovementDirection.Back:
-                    o = Orientation.rotate(ret.orientation, RotationDirection.CW, 2)
-                    break
-                case MovementDirection.Left:
-                    o = Orientation.rotate(ret.orientation, RotationDirection.CCW)
-                    break
-            }
-            while (movement > 0) {
-                ret = applyOrientationStep(ret, o)
-                if (!hook(ret, {direction: o, distance: 1})) {
-                    return ret
-                }
-                movement -= 1
-            }
-        } else {
-            console.error(mv)
-            throw new Error("Given Movement object was not recognized as a type")
-        }
-        return ret
-    }
-
-    /**
-     * 
-     * @param pos the starting position before movements are applied
-     * @param mvs the list of movements to take
-     * @param hook a hook which is called after each single square of movement. If it returns false at any time,
-     * movement is stopped
-     * @returns the resulting position after all movements are applied
-     */
-    export function applyMovements(pos: OrientedPosition, mvs: MovementArray, hook: (pos: OrientedPosition, step: Movement) => boolean = (pos) => true): OrientedPosition {
-        for (const mv of mvs) {
-            var hook_ret: boolean = true
-            // nest in a hook
-            pos = applyMovement(pos, mv, (p, s) => {
-                hook_ret = hook(p, s)
-                return hook_ret
-            })
-            if (!hook_ret) {
-                return pos
-            }
-        }
-        return pos
-    }
-}
-
-/**
- * We need to store the actions which will be sent over bluetooth, but they need to be
- * synchronized in a specific way. We need to be able to send a SINGLE movement (one rotation
- * or one step of movement), and these all need to be activated simultaneously. If one bot is 
- * not sent an action, or if a collection of actions are sent at once for one actor, we need
- * to reconcile the action frames to make sure that the synchronization of the movements is
- * correct and sensical
- */
-export type MovementFrame = Turn|AbsoluteStep|undefined
-export namespace MovementFrame {
-    /**
-     * converts a non-relative movement to an equivalent array of MovementFrames
-     * @param movement the movement to convert
-     * @returns an array of MovementFrames
-     */
-    export function fromNonRelativeMovement(movement: AbsoluteMovement|Rotation): MovementFrame[] {
-        const framed: MovementFrame[] = []
-        if (isAbsoluteMovement(movement)) {
-            for (let i = 0; i < movement.distance; i++) {
-                framed.push({
-                    direction: movement.direction,
-                    distance: 1
-                })
-            }
-        } else if (isRotation(movement)) {
-            for (let i = 0; i < movement.units; i++) {
-                framed.push(new Turn(movement.direction))
-            }
-        }
-        return framed
-    }
-
-    /**
-     * converts a single movement to an array of action frames
-     * @param movement the movement to convert to frames
-     */
-    export function fromMovement(pos: OrientedPosition, movement: Movement): MovementFrame[] {
-        const framed: MovementFrame[] = []
-        // translate absolute movement: this is easiest
-        if (isRelativeMovement(movement)) {
-            let o: Orientation
-            switch (movement.direction) {
-                case MovementDirection.Forward:
-                    o = pos.orientation
-                    break
-                case MovementDirection.Right:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CW)
-                    break
-                case MovementDirection.Back:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CW, 2)
-                    break
-                case MovementDirection.Left:
-                    o = Orientation.rotate(pos.orientation, RotationDirection.CCW)
-                    break
-            }
-            for (let i = 0; i < movement.distance; i++) {
-                framed.push({
-                    direction: o,
-                    distance: 1
-                })
-            }
-            return framed
-        }
-
-        // leave this to the other function
-        return fromNonRelativeMovement(movement)
-    }
-    
-    /**
-     * Converts a list of movements to MovementFrames
-     * @param pos the position for converting RelativeMovements
-     * @param movements the list of movements to convert
-     * @returns a converted list of action frames
-     */
-    export function fromMovementArray(pos: OrientedPosition, movements: MovementArray): MovementFrame[] {
-        const converted: MovementFrame[] = []
-        for (const movement of movements) {
-            converted.concat(fromMovement(pos, movement))
-        }
-        return converted
-    }
-
-    /**
-     * converts a list of absolute movements or rotations to MovementFrames
-     * @param movements the list of rotations or absolute movements to convert
-     * @returns the converted movements
-     */
-    export function fromNonRelativeMovements(movements: (AbsoluteMovement|Rotation)[]): MovementFrame[] {
-        const converted: MovementFrame[] = []
-        for (const movement of movements) {
-            converted.concat(fromNonRelativeMovement(movement))
-        }
-        return converted
-    }
-
-    /**
-     * pad the values of a map to the same length
-     * @param moves a map of any kay to movement frame arrays
-     * @returns the same map, but each value is guaranteed to have the same length
-     */
-    export function pad<T>(moves: Map<T, MovementFrame[]>): Map<T, MovementFrame[]> {
-        let max_len = 0
-        for (const movements of moves.values()) {
-            // get the max movement for padding
-            if (movements.length > max_len) {
-                max_len = movements.length
-            }
-        }
-
-        // pad the lists
-        for (const movements of moves.values()) {
-            while (movements.length < max_len) {
-                movements.push(undefined)
-            }
-        }
-
-        return moves
-    }
 }

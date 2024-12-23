@@ -1,6 +1,7 @@
-import { Orientation, RotationDirection, Rotation, applyOrientationStep, type Movement, isAbsoluteMovement, isRotation, MovementDirection, MovementFrame } from "../models/movement"
-import { type AbsoluteMovement, type BoardPosition, OrientedPosition, type MovementArray } from "../models/movement"
-import { ConveyorForest, DualKeyMap, PusherForest } from "./graph"
+import { Orientation, RotationDirection, Rotation, isAbsoluteMovement, isRotation } from "../models/movement"
+import type { PlayerID } from "../models/player"
+import { DualKeyMap, MovementForest } from "./graph"
+import { applyOrientationStep, MovementArrayWithResults, MovementFrame, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
 
 const BOARD_SIZE = 12
 
@@ -211,8 +212,8 @@ class WallArray {
     public horizontal_walls: Wall[][]
     public vertical_walls: Wall[][]
 
-    constructor(horiz: Wall[][], vert: Wall[][]) {
-        this.horizontal_walls = horiz,
+    constructor(horizontal: Wall[][], vert: Wall[][]) {
+        this.horizontal_walls = horizontal,
         this.vertical_walls = vert
     }
 }
@@ -258,7 +259,7 @@ export function isValidBoardData(obj:any): obj is BoardData {
         return false
     }
 
-    // run dimension checks for spaces, vert & horiz walls
+    // run dimension checks for spaces, vert & horizontal walls
     if (
         obj.spaces.length !== obj.x_dim ||
         obj.walls.horizontal_walls.length !== obj.x_dim ||
@@ -313,18 +314,6 @@ export type PusherPosition = {
     registers: number[]
 }
 
-
-export enum MovementStatus {
-    wall,
-    pit,
-    ok
-}
-
-export type MovementResult = {
-    movement: MovementFrame
-    status: MovementStatus
-}
-
 /**
  * A full board object. It contains the raw board data, as well as some processed data which
  * will make processing board events more straightforward
@@ -341,9 +330,9 @@ export class Board {
     public checkpoint_map: DualKeyMap<number, number> = new DualKeyMap<number, number>()
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
     private laser_origins: LaserPosition[] = []
-    private pushers: PusherForest = new PusherForest()
-    private conveyors: ConveyorForest = new ConveyorForest()
-    private conveyors2: ConveyorForest = new ConveyorForest()
+    private pushers: (MovementForest|undefined)[] = []
+    private conveyors: MovementForest = new MovementForest(false)
+    private conveyors2: MovementForest = new MovementForest(false)
 
     constructor(data: BoardData) {
         // set our instance ID from the static count
@@ -548,6 +537,25 @@ export class Board {
     }
 
     /**
+     * adds a new pusher to the array of pushers. It also manages the pushers array length, and
+     * contents to make sure that we add to real MoverForests.
+     * @param position the position to add the pusher
+     * @param direction the direction in which the pusher pushes
+     * @param registers the 1-indexed registers on which the pushers activate
+     */
+    private _addPusher(position: BoardPosition, direction: Orientation, registers: number[]) {
+        for (const register of registers) {
+            const zeroed = register - 1
+            // if there is not an instantiated mover here
+            if (this.pushers[zeroed] == undefined) {
+                // instantiate a mover
+                this.pushers[zeroed] = new MovementForest()
+            }
+            this.pushers[zeroed].addMover(position, direction)
+        }
+    }
+
+    /**
      * Build the data structures associated with the board in memory. This means tracing out paths
      * traversable by conveyor, and listing other component types
      */
@@ -558,6 +566,7 @@ export class Board {
         this.checkpoint_map = new DualKeyMap<number, number>()
         this.conveyors.clear()
         this.conveyors2.clear()
+        this.pushers = [undefined, undefined, undefined, undefined, undefined]
         // run over the board and add each component to its list
         for (var x = 0; x < this.data.spaces.length; x++) {
             for (var y = 0; y < this.data.spaces[x].length; y++) {
@@ -582,9 +591,9 @@ export class Board {
                     // if there is a wall in the direction of the conveyor, then the conveyor is
                     // effectively useless. Don't add it to the conveyor forest
                     if (SpaceType.isConveyor(space.type) && !cell.wall(o)) {
-                        this.conveyors.addConveyor(pos, o, rotation)
+                        this.conveyors.addMover(pos, o, rotation)
                     } else {
-                        this.conveyors2.addConveyor(pos, o, rotation)
+                        this.conveyors2.addMover(pos, o, rotation)
                     }
                 }
             }
@@ -620,10 +629,10 @@ export class Board {
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a South (vertical-low) facing pusher
-                    this.pushers.addPusher({x:x, y:y-1}, Orientation.S, wall.lo.registers)
+                    this._addPusher({x:x, y:y-1}, Orientation.S, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add a North (vertical-high) facing pusher
-                    this.pushers.addPusher({x:x, y:y}, Orientation.N, wall.hi.registers)
+                    this._addPusher({x:x, y:y}, Orientation.N, wall.hi.registers)
                 }
             }
         }
@@ -655,10 +664,10 @@ export class Board {
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a West (horizontal-low) facing pusher
-                    this.pushers.addPusher({x:x-1, y:y}, Orientation.W, wall.lo.registers)
+                    this._addPusher({x:x-1, y:y}, Orientation.W, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add an East (horizontal-high) facing pusher
-                    this.pushers.addPusher({x:x, y:y}, Orientation.E, wall.hi.registers)
+                    this._addPusher({x:x, y:y}, Orientation.E, wall.hi.registers)
                 }
             }
         }
@@ -672,9 +681,9 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor2(positions: Map<string, BoardPosition>): Map<string, MovementFrame[]> {
+    public handleConveyor2(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, MovementArrayWithResults> {
         // call handle conveyance twice because handle conveyance only handles one step
-        let movements_1 = this.conveyors2.handleMovement(positions)
+        let movements_1 = this.conveyors2.handleMovement(positions, this.getMovementResult)
         let mid_positions = new Map<string, BoardPosition>()
         // apply the movements to the positions in the array to get the next round of positions
         for (const [key, frames] of movements_1.entries()) {
@@ -689,9 +698,9 @@ export class Board {
         }
 
         // egt the second set of movements
-        const movements_2 = this.conveyors2.handleMovement(mid_positions)
+        const movements_2 = this.conveyors2.handleMovement(mid_positions, this.getMovementResult)
 
-        const ret = new Map<string, MovementFrame[]>()
+        const ret = new Map<PlayerID, MovementArrayWithResults>()
         for (const key of positions.keys()) {
             // concatenate the two movement arrays and set it in the return map
             ret.set(key, (movements_1.get(key) as MovementFrame[]).concat(movements_2.get(key) as MovementFrame[]))
@@ -708,22 +717,26 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor(positions: Map<string, BoardPosition>): Map<string, MovementFrame[]> {
-        return this.conveyors.handleMovement(positions)
+    public handleConveyor(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, MovementArrayWithResults> {
+        return this.conveyors.handleMovement(positions, this.getMovementResult)
     }
 
-    // gear events can all be executed simultaneously
-    public handleGear(positions: Map<string, BoardPosition>): Map<string, Rotation[]> {
-        const ret = new Map<string, Rotation[]>()
+    /**
+     * computes the rotation of any actors by gear tiles on the board
+     * @param positions the positions of the actors
+     * @returns the list of rotations which are applied by gear spaces on the board
+     */
+    public handleGear(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, Turn[]> {
+        const ret = new Map<PlayerID, Turn[]>()
         // check each entry
         for (const [key, pos] of positions.entries()) {
             let res: Rotation[] = []
             const space = this.data.spaces[pos.x][pos.y]
             // check if it's a gear
             if (space.type === SpaceType.GEAR_L) {
-                res.push(new Rotation(RotationDirection.CCW, 1))
+                res.push(new Turn(RotationDirection.CCW))
             } else if (space.type === SpaceType.GEAR_R) {
-                res.push(new Rotation(RotationDirection.CW, 1))
+                res.push(new Turn(RotationDirection.CW))
             }
             // set the result
             ret.set(key, res)
@@ -740,9 +753,9 @@ export class Board {
      * @param inclusive_positions do lasers also hit the space they shoot from?
      * @return a list of damage values corresponding to the entries in targets
      */
-    public handleLaserPaths(laser_origins: LaserPosition[], targets: Map<string, BoardPosition>, inclusive_positions:boolean=false): Map<string, number> {
+    public handleLaserPaths(laser_origins: LaserPosition[], targets: Map<PlayerID, BoardPosition>, inclusive_positions:boolean=false): Map<PlayerID, number> {
         // create a mapping to simplify the world a little
-        const damages = new Map<string, number>()
+        const damages = new Map<PlayerID, number>()
         const actor_positions = new DualKeyMap<number, string>()
         for (const [target, position] of targets.entries()) {
             damages.set(target, 0)
@@ -818,30 +831,31 @@ export class Board {
      * @param register the register in which we are activating pushers
      * @returns the resulting absolute movement of activating all pushers
      */
-    public handlePush(positions: Map<string, OrientedPosition>, register: number): Map<string, MovementFrame> {
+    public handlePush(positions: Map<PlayerID, OrientedPosition>, register: number): Map<PlayerID, MovementArrayWithResults> {
         
         // handle robots pushing
+        if (this.pushers[register] == undefined) {
+            return new Map<PlayerID, MovementArrayWithResults>()
+        }
         
-        return this.pushers.handleMovement(positions, register + 1, (pos: OrientedPosition, moves: MovementFrame) => this.movementResult(pos, moves))
+        return this.pushers[register].handleMovement(positions, this.getMovementResult)
     }
 
     /**
      * Checks the legality of the given movements, and updates those which are not legal
      * @param position the starting position for the movement array
      * @param movements the list of movements to execute
-     * @param pit_on_end_only if this is true, we only check for pits on the final step. This means that
-     * movements over pits will be ignored
      * @returns an updated list of movements, cutting short those which end at walls or in pits. Each
      * updated movement is paired with a status for that movement, indicating whether it was ok, hit a 
      * wall, or ended in a pit
      */
-    public movementResult(position: OrientedPosition, movement: MovementFrame): MovementResult {
+    public getMovementResult(position: OrientedPosition, movement: MovementFrame): MovementResult {
 
         // rotations should always be legal, as well as 0-distance movements
         if (movement === undefined || isRotation(movement)) {
             return {
                 movement: movement,
-                status: MovementStatus.ok
+                status: MovementStatus.OK
             }
         }
         
@@ -858,7 +872,7 @@ export class Board {
                     direction: direction,
                     distance: 1
                 },
-                status: MovementStatus.wall
+                status: MovementStatus.WALL
             }
         }
 
@@ -872,7 +886,7 @@ export class Board {
                     direction: direction,
                     distance: 1
                 },
-                status: MovementStatus.pit
+                status: MovementStatus.PIT
             }
         }
         
@@ -881,7 +895,7 @@ export class Board {
                 direction: direction,
                 distance: 1
             },
-            status: MovementStatus.ok
+            status: MovementStatus.OK
             
         }
     }
