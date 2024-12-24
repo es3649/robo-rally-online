@@ -7,9 +7,9 @@ import { Main2Server } from "../models/events"
 import { BotAction } from "../bluetooth"
 import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { MovementDirection, type Movement, isRotation, Orientation } from "../models/movement"
-import { DualKeyMap, PusherForest } from "./graph"
-import { applyAbsoluteMovement, applyRotation, MovementArray, MovementFrame, type OrientedPosition } from "./move_processors"
+import { MovementDirection, type Movement, isRotation, Orientation, isAbsoluteMovement, Rotation } from "../models/movement"
+import { DualKeyMap, MovementForest } from "./graph"
+import { applyAbsoluteMovement, applyRotation, MovementArray, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, type MovementResult, type OrientedPosition } from "./move_processors"
 
 export const MAX_PLAYERS = 6
 
@@ -205,14 +205,37 @@ export class GameManager {
         this.shutdowns.clear()
     }
 
-    private executeFrame(movement: Map<string, MovementFrame>): void {
-        // todo
+    private updatePositions(actor: PlayerID, result: MovementResult) {
+        if (!this.player_positions.has(actor)) {
+            console.warn('attempted to move', actor, 'while they have no position')
+            return
+        }
+        let pos = this.player_positions.get(actor) as OrientedPosition
+
+        if (result.movement === undefined) {
+            return
+        }
+
+        if (isAbsoluteMovement(result.movement)) {
+            pos = applyAbsoluteMovement(pos, result.movement)
+        } else if (isRotation(result.movement)) {
+            pos = applyRotation(pos, result.movement)
+        }
+
+        // here is the status
+        if (result.status == MovementStatus.PIT) {
+            // we should be set as a shutdown and our position unset
+            this.shutdowns.add(actor)
+            this.player_positions.delete(actor)
+        }
     }
 
-    private executeFrames(movements: Map<string, MovementFrame[]>): void {
-        // check if the movement is legal
-        // if so, execute it
-        // update the local player position
+    private executeFrames(movements: Map<PlayerID, MovementArrayWithResults>, update_positions: boolean=true): void {
+        // trigger any status-related conditions
+        // only trigger once per event (only hit a wall once)
+        // any pit actions should cause the bot to be deactivated and its positions to be removed
+        // re-balance the lengths again
+        // send the frames to bt
     }
 
     private dealDamage(damages: Map<string, number>, register: number) {
@@ -261,7 +284,7 @@ export class GameManager {
         
         // pushers
         const pushed = this.board.handlePush(this.player_positions, register)
-        this.executeFrame(pushed)
+        this.executeFrames(pushed)
 
         // crushers
         console.warn("crushers are not implemented")
@@ -295,50 +318,38 @@ export class GameManager {
      * @param position the starting position of the bot which may be pushing others around
      * @param movements the movements that this actor will be taking
      */
-    private getBotPushes(actor: PlayerID, position: OrientedPosition, movements: MovementFrame[]): Map<string, MovementFrame[]> {
+    private getBotPushes(actor: PlayerID, position: OrientedPosition, movement: MovementFrame): Map<PlayerID, MovementResult> {
         // populate data stores
-        const positions = new Map<string, OrientedPosition>()
-        // const actors = new DualKeyMap<number, string>()
-        const pushes = new Map<string, MovementFrame[]>()
-        for (const [actor, pos] of this.player_positions.entries()) {
-            // set initial values for positions and pushes
-            positions.set(actor, pos)
-            // actors.set(pos.x, pos.y, actor)
-            pushes.set(actor, [])
-        }
-
-        let working: OrientedPosition = {...position}
+        const ret = new Map<PlayerID, MovementResult>()
 
         // TODO the best move here is to extend the pusher forest to accommodate this as well.
         // we'll just instantiate a pusher forest with the single push and go from there
-        for (const movement of movements) {
-            if (isRotation(movement)) {
-                // apply the rotation to the working position
-                working = applyRotation(working, movement)
-                // set no movement for other actors
-                for (const [id, moves] of pushes.entries()) {
-                    if (id == actor) {
-                        moves.push(movement)
-                    } else {
-                        moves.push(undefined)
-                    }
-                }
-                continue
-            }
+        if (isRotation(movement)) {
+            // apply the rotation to the working position
+            // just return the single movement, turns are always legal
+            ret.set(actor, {
+                movement: movement,
+                status: MovementStatus.OK,
+            })
+            return ret
+        }
 
-            // create a new pusher forest with this push
-            const forest = new PusherForest()
-            forest.addPusher(working, working.orientation, [1])
-            const results = forest.handleMovement(positions, 1, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).getMovementResult(pos, moves))
+        // create a new pusher forest with this push
+        const forest = new MovementForest()
+        forest.addMover(position, position.orientation)
+        const results = forest.handleMovement(this.player_positions, (pos: OrientedPosition, moves: MovementFrame) => (this.board as Board).getMovementResult(pos, moves))
 
-            // for each actor in the result
-            for (const [id, result] of results.entries()) {
-                // add the result to the pushes
-                pushes.get(id)?.push(result)
+        // for each actor in the result
+        for (const [id, result] of results.entries()) {
+            // add the result to the pushes
+            // here, each result should have at most one element because we have no rotations
+            // added to the forest
+            if (result.length > 0) {
+                ret.set(id, result[0])
             }
         }
 
-        return pushes
+        return ret
     }
 
     /**
@@ -381,30 +392,49 @@ export class GameManager {
                 const position = this.player_positions.get(player.id) as OrientedPosition
                 // convert the card into a series of movements
                 const resolved = this.resolveRegister(index, program, player.id)
-                const movements =  MovementFrame.fromMovement(resolved, position)
-                // preprocess the action using the board data; create a modified movement
-                // array if needed
+                const cleaners = new Map<PlayerID, MovementArrayResultsBuilder>()
+                
+                // process the action and compute pushes simultaneously
+                for (const movement of resolved) {
+                    // translate this movement to movement frames
+                    const absolutized = MovementArray.fromMovements(movement, position.orientation)
+                    // compute the result of each movement frame using a mover forest
+                    for (let i = 0; i < absolutized.frames.length; i++) {
+                        // get the results of the movement
+                        const frame = absolutized.frames[i]
+                        
+                        if (frame === undefined) {
+                            // this shouldn't happen, but we'll check it
+                            continue
+                        }
 
-                // determine pushes and board obstacles
-                const pushes = this.getBotPushes(player.id, position, movements)
-                // for each movement
-                for (const [actor, push] of pushes) {
-                    // get the cleaned version (per board hazards)
-                    // apply pushes from this single cleaned movement
-                    // update the actor's positions based on any pushing
-                }
-
-                for (const [player_id, push] of pushes.entries()) {
-                    if (push.length > 0) {
-                        bt.setMovement(player_id, push)
+                        // frame is an AbsoluteStep
+                        const results = this.getBotPushes(player.id, position, frame)
+                        for (const [actor, result] of results.entries()) {
+                            let builder = cleaners.get(actor)
+                            if (builder === undefined) {
+                                builder = new MovementArrayResultsBuilder()
+                                cleaners.set(actor, builder)
+                                builder.padMovementToLength(i)
+                            }
+                            builder.addFrame(result.movement, result.status, !!result.pushed)
+                            // update the positions
+                            this.updatePositions(actor, result)
+                        }
+                    }
+                    
+                    // end the movement in each builder
+                    for (const builder of cleaners.values()) {
+                        builder.endMovement()
                     }
                 }
 
-                // execute the action(s)
-                // TODO later, make the player a Partial for early game, and convert to a full object
-                // at game time so these aren't theoretically undefined
-                bt.setMovement(player.character?.id as string, movements)
-                bt.unlatchMovements()
+                const cleaned = new Map<PlayerID, MovementArrayWithResults>()
+                for (const [actor, builder] of cleaners.entries()) {
+                    cleaned.set(actor, builder.finish())
+                }
+
+                this.executeFrames(cleaned, false)
             })
 
             // execute actions related to board events
@@ -468,12 +498,12 @@ export class GameManager {
      * @param player_id the id of the player who owns this program
      * @returns an array of movements to be taken
      */
-    private resolveRegister(register: number, program: RegisterArray, player_id: PlayerID, card: ProgrammingCard|undefined=undefined): MovementArray {
+    private resolveRegister(register: number, program: RegisterArray, player_id: PlayerID, card: ProgrammingCard|undefined=undefined): Movement[] {
         const actions: ProgrammingCard[] = program[register]
         const o = this.player_positions.get(player_id)?.orientation as Orientation
         // if there is no program for some reason, or the player is on shutdown, take no actions
         if (actions.length == 0 || this.shutdowns.has(player_id)) {
-            return MovementArray.fromMovements([], o)
+            return []
         }
 
         // if there are more than 2 cards, that's a serious issue
@@ -483,7 +513,7 @@ export class GameManager {
 
         // this should be the crab-legs option
         if (actions.length == 2) {
-            return MovementArray.fromMovements(this.handle2CardMovement(program[register]), o)
+            return this.handle2CardMovement(program[register])
         }
 
         // if we were not given a card, pull from the program
@@ -532,6 +562,6 @@ export class GameManager {
 
         // it's a regular card 
         const result = ProgrammingCard.toMovement(card)
-        return MovementArray.fromMovements(result === undefined ? [] : [result], o)
+        return result === undefined ? [] : [result]
     }
 }

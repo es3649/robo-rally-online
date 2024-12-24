@@ -44,6 +44,7 @@ export enum MovementStatus {
 export type MovementResult = {
     movement: MovementFrame
     status: MovementStatus
+    pushed?: boolean
 }
 
 /**
@@ -101,7 +102,7 @@ export function applyAbsoluteMovement<T extends BoardPosition>(pos: T, movement:
  * @param rotation the rotation to apply
  * @returns the resulting position
  */
-export function applyRotation(pos: OrientedPosition, rotation: Rotation): OrientedPosition{
+export function applyRotation(pos: OrientedPosition, rotation: Rotation): OrientedPosition {
     return {
         x: pos.x,
         y: pos.y,
@@ -242,10 +243,14 @@ export class MovementArray {
     public frames: MovementFrame[]
     public movement_boundaries: MovementBoundary[]
 
-    static fromMovements(movements: Movement[], starting_orientation: Orientation): MovementArray {
+    static fromMovements(movements: Movement|Movement[], starting_orientation: Orientation): MovementArray {
         // initialize the property arrays
         let movement_boundaries = []
         let frames: MovementFrame[] = []
+        // make movements an array if it isn't
+        if (!Array.isArray(movements)) {
+            movements = [movements]
+        }
         // count the number of frames we've seen
         let frame_count = 0
         for (const move of movements) {
@@ -280,6 +285,10 @@ export class MovementArray {
         this.movement_boundaries = boundaries
     }
 
+    get length(): number {
+        return this.frames.length
+    }
+
     /**
      * Appends a movement to the 
      * @param movement the movement to add to the FrameArray
@@ -301,13 +310,24 @@ export class MovementArrayWithResults extends MovementArray {
     public results: MovementStatus[]
     public pushed: boolean[]
 
+    static fromSingleFrame(frame: MovementFrame, result: MovementStatus=MovementStatus.OK, pushed: boolean=false) {
+        return new MovementArrayWithResults([frame],
+            [{start:0, end: 1}],
+            [result],
+            [pushed]
+        )
+    }
+
     constructor(frames: MovementFrame[], bounds: MovementBoundary[], results: MovementStatus[], pushed: boolean[]) {
         super(frames, bounds)
         this.results = results
         this.pushed = pushed
     }
 }
-    
+
+/**
+ * a builder class for MovementArrayWithResults
+ */
 export class MovementArrayResultsBuilder {
     protected frames: MovementFrame[] = []
     protected movement_boundaries: MovementBoundary[] = []
@@ -331,6 +351,14 @@ export class MovementArrayResultsBuilder {
         })
         // reset the start of the current movement
         this.cur_movement_start = this.frames.length
+    }
+
+    padMovementToLength(length: number) {
+        while (this.frames.length - this.cur_movement_start < length) {
+            this.frames.push(undefined)
+            this.results.push(MovementStatus.OK)
+            this.pushed.push(false)
+        }
     }
     
     finish() {

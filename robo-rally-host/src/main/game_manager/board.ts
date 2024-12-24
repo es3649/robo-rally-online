@@ -1,7 +1,7 @@
 import { Orientation, RotationDirection, Rotation, isAbsoluteMovement, isRotation } from "../models/movement"
 import type { PlayerID } from "../models/player"
 import { DualKeyMap, MovementForest } from "./graph"
-import { applyOrientationStep, MovementArrayWithResults, MovementFrame, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
+import { applyOrientationStep, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
 
 const BOARD_SIZE = 12
 
@@ -681,29 +681,80 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor2(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, MovementArrayWithResults> {
+    public handleConveyor2(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
         // call handle conveyance twice because handle conveyance only handles one step
         let movements_1 = this.conveyors2.handleMovement(positions, this.getMovementResult)
-        let mid_positions = new Map<string, BoardPosition>()
-        // apply the movements to the positions in the array to get the next round of positions
-        for (const [key, frames] of movements_1.entries()) {
-            let new_pos: BoardPosition = positions.get(key) as BoardPosition
+        let mid_positions = new Map<string, OrientedPosition>()
+        const ret_builder = new Map<PlayerID, MovementArrayResultsBuilder>()
 
-            movements_1.get(key)?.forEach((value: MovementFrame) => {
-                if (isAbsoluteMovement(value)) {
-                    new_pos = applyOrientationStep(new_pos, value.direction)
-                }
-            })
-            mid_positions.set(key, new_pos)
+        // get the max len to use for padding out movements
+        let max_len_1 = 0
+        for (const frames of movements_1.values()) {
+            if (frames.length > max_len_1) {
+                max_len_1 = frames.length
+            }
         }
 
-        // egt the second set of movements
+        // apply the movements to the positions in the array to get the next round of positions
+        for (const [key, frames] of movements_1.entries()) {
+            let new_pos: OrientedPosition = positions.get(key) as OrientedPosition
+            const builder = new MovementArrayResultsBuilder()
+            let remove = false
+            
+            for (const frame of frames) {
+                // update the position
+                if (isAbsoluteMovement(frame.movement)) {
+                    new_pos = applyOrientationStep(new_pos, frame.movement.direction)
+                }
+                // add the frame to the builder
+                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
+                // if we end on a pit, break our movement, we don't continue
+                if (frame.status == MovementStatus.PIT) {
+                    remove = true
+                    break
+                }
+            }
+
+            // set the updated position, unless we were removed (we aren't counted in movements anymore)
+            if (!remove) {
+                mid_positions.set(key, new_pos)
+            }
+
+            // pad out the result builder
+            builder.padMovementToLength(max_len_1)
+            ret_builder.set(key, builder)
+        }
+
+        // get the second set of movements
         const movements_2 = this.conveyors2.handleMovement(mid_positions, this.getMovementResult)
 
+        // get the max length of a movements_2 array
+        let max_len_2 = 0
+        for (const frames of movements_2.values()) {
+            if (frames.length > max_len_2) {
+                max_len_2 = frames.length
+            }
+        }
+
+        // define the return value
         const ret = new Map<PlayerID, MovementArrayWithResults>()
-        for (const key of positions.keys()) {
-            // concatenate the two movement arrays and set it in the return map
-            ret.set(key, (movements_1.get(key) as MovementFrame[]).concat(movements_2.get(key) as MovementFrame[]))
+
+        // run over the results and continue to update the builders
+        for (const [key, frames] of movements_2.entries()) {
+            let builder = ret_builder.get(key)
+            if (builder === undefined) {
+                builder = new MovementArrayResultsBuilder()
+                builder.padMovementToLength(max_len_1)
+                ret_builder.set(key, builder)
+            }
+
+            // extend the builder
+            for (const frame of frames) {
+                builder.addFrame(frame.movement, frame.status, !!frame.status)
+            }
+
+            builder.padMovementToLength(max_len_2)
+            ret.set(key, builder.finish())
         }
 
         return ret
@@ -717,8 +768,32 @@ export class Board {
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
-    public handleConveyor(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, MovementArrayWithResults> {
-        return this.conveyors.handleMovement(positions, this.getMovementResult)
+    public handleConveyor(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
+        const results = this.conveyors.handleMovement(positions, this.getMovementResult)
+
+        // get the max length of any frame array so we can pad out to this length later
+        let max_len = 0
+        for (const frames of results.values()) {
+            if (frames.length > max_len) {
+                max_len = frames.length
+            }
+        }
+
+        // prepare a map of builders 
+        const ret = new Map<PlayerID, MovementArrayWithResults>()
+        for (const [actor, frames] of results.entries()) {
+            // set up a builder
+            const builder = new MovementArrayResultsBuilder()
+            // add the frames
+            for (const frame of frames) {
+                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
+            }
+            // pad it out and finish it
+            builder.padMovementToLength(max_len)
+            ret.set(actor, builder.finish())
+        }
+
+        return ret
     }
 
     /**
@@ -726,20 +801,17 @@ export class Board {
      * @param positions the positions of the actors
      * @returns the list of rotations which are applied by gear spaces on the board
      */
-    public handleGear(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, Turn[]> {
-        const ret = new Map<PlayerID, Turn[]>()
+    public handleGear(positions: Map<PlayerID, BoardPosition>): Map<PlayerID, MovementArrayWithResults> {
+        const ret = new Map<PlayerID, MovementArrayWithResults>()
         // check each entry
         for (const [key, pos] of positions.entries()) {
-            let res: Rotation[] = []
             const space = this.data.spaces[pos.x][pos.y]
             // check if it's a gear
             if (space.type === SpaceType.GEAR_L) {
-                res.push(new Turn(RotationDirection.CCW))
+                ret.set(key, MovementArrayWithResults.fromSingleFrame(new Turn(RotationDirection.CCW)))
             } else if (space.type === SpaceType.GEAR_R) {
-                res.push(new Turn(RotationDirection.CW))
+                ret.set(key, MovementArrayWithResults.fromSingleFrame(new Turn(RotationDirection.CW)))
             }
-            // set the result
-            ret.set(key, res)
         }
 
         return ret
@@ -832,13 +904,34 @@ export class Board {
      * @returns the resulting absolute movement of activating all pushers
      */
     public handlePush(positions: Map<PlayerID, OrientedPosition>, register: number): Map<PlayerID, MovementArrayWithResults> {
+        const ret = new Map<PlayerID, MovementArrayWithResults>()
         
         // handle robots pushing
         if (this.pushers[register] == undefined) {
-            return new Map<PlayerID, MovementArrayWithResults>()
+            return ret
         }
         
-        return this.pushers[register].handleMovement(positions, this.getMovementResult)
+        const result = this.pushers[register].handleMovement(positions, this.getMovementResult)
+
+        // get the max_len for padding
+        let max_len = 0
+        for (const frames of result.values()) {
+            if (frames.length > max_len) {
+                max_len = frames.length
+            }
+        }
+
+        for (const [key, frames] of result.entries()) {
+            const builder = new MovementArrayResultsBuilder()
+
+            for (const frame of frames) {
+                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
+            }
+            builder.padMovementToLength(max_len)
+            ret.set(key, builder.finish())
+        }
+
+        return ret
     }
 
     /**
