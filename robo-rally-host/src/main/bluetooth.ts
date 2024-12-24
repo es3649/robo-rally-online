@@ -1,6 +1,6 @@
 import { Bluez } from "blauzahn";
-import type { MovementFrame } from "./models/movement";
 import type { CharacterID } from "./models/player"
+import type { MovementFrame } from "./game_manager/move_processors";
 
 export namespace BotAction {
     export const FIRE_LASER = "laser"

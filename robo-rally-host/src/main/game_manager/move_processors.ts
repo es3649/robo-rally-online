@@ -178,20 +178,6 @@ export namespace MovementFrame {
         // leave this to the other function
         return fromNonRelativeMovement(movement)
     }
-    
-    /**
-     * Converts a list of movements to MovementFrames
-     * @param pos the position for converting RelativeMovements
-     * @param movements the list of movements to convert
-     * @returns a converted list of action frames
-     */
-    // export function fromMovementArray(pos: OrientedPosition, movements: Movement[]): MovementFrame[] {
-    //     const converted: MovementFrame[] = []
-    //     for (const movement of movements) {
-    //         converted.concat(fromMovement(pos, movement))
-    //     }
-    //     return converted
-    // }
 
     /**
      * converts a list of absolute movements or rotations to MovementFrames
@@ -288,22 +274,6 @@ export class MovementArray {
     get length(): number {
         return this.frames.length
     }
-
-    /**
-     * Appends a movement to the 
-     * @param movement the movement to add to the FrameArray
-     * @param starting_orientation the orientation to use for translating relative movements
-     * @returns the number of movement frames added to the array
-     */
-    // append(movement: Movement, starting_orientation: Orientation): number {
-    //     const new_frames = MovementFrame.fromMovement(movement, starting_orientation)
-    //     this.movement_boundaries.push({
-    //         start: this.movement_boundaries.length,
-    //         end: this.movement_boundaries.length + new_frames.length - 1
-    //     })
-    //     this.frames = this.frames.concat(new_frames)
-    //     return new_frames.length
-    // }
 }
 
 export class MovementArrayWithResults extends MovementArray {

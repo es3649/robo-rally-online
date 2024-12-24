@@ -1,5 +1,5 @@
 import type { Player } from "./player"
-import { MovementDirection, RotationDirection, type MovementArray, Rotation, type Movement } from "./movement"
+import { MovementDirection, RotationDirection, Rotation, type Movement } from "./movement"
 
 
 export declare type GameAction = {
@@ -28,14 +28,14 @@ export namespace ProgrammingCard {
     export declare interface ActionChoice {
         prompt: string
         options: string[]
-        choice: (option: string) => MovementArray
+        choice: (option: string) => Movement[]
     }
     export declare interface Haywire {
         text: string,
-        actions: MovementArray | ActionChoice
+        actions: Movement[] | ActionChoice
         special?(...args: any): any // this should be used for 
     }
-    export function isActionChoice(obj:MovementArray | ActionChoice): obj is ActionChoice {
+    export function isActionChoice(obj:Movement[] | ActionChoice): obj is ActionChoice {
         const choice = obj as ActionChoice
         return choice.prompt != undefined && choice.options != undefined && choice.choice != undefined
     }
@@ -259,7 +259,7 @@ export function newDamageDeck(): ProgrammingCard[] {
             actions: {
                 prompt: "Choose a direction",
                 options: ['Right', 'Left'],
-                choice(option: string): MovementArray {
+                choice(option: string): Movement[] {
                     switch (option) {
                         case "Right":
                             return [new Rotation(RotationDirection.CW, 1)]
@@ -290,8 +290,8 @@ export function newDamageDeck(): ProgrammingCard[] {
             actions: {
                 prompt: "Rotation",
                 options: ["None", "Left", "U-Turn", "Right"],
-                choice(option:string): MovementArray {
-                    let moves: MovementArray = []
+                choice(option:string): Movement[] {
+                    let moves: Movement[] = []
                     switch (option) {
                         case "None":
                             break
@@ -331,7 +331,7 @@ export function newDamageDeck(): ProgrammingCard[] {
             actions: {
                 prompt: "Pay energy",
                 options: ['0','1','2','3','4','5','6','7','8'],
-                choice(option: string): MovementArray {
+                choice(option: string): Movement[] {
                     try {
                         const energy = Math.round(parseInt(option))
                         if (energy < 0 || energy > 8) {
@@ -386,7 +386,7 @@ export function newDamageDeck(): ProgrammingCard[] {
             actions: {
                 prompt: "Movement direction",
                 options: ["Left", "Right"],
-                choice(option: string): MovementArray {
+                choice(option: string): Movement[] {
                     switch (option) {
                         case "Left":
                             return [{
