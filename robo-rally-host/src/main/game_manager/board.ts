@@ -676,14 +676,16 @@ export class Board {
     /**
      * computes movements for each position resulting from the actions of the 2-step conveyors. The
      * return array will be the same size as the input array, and each entry should be applied to the
-     * position at the same index in the input
+     * position at the same index in the input. All outputs will either be empty, or the same non-zero
+     * length.
      * @param positions the starting positions of the actors to act upon
      * @returns the movements to be applied by the conveyors in a list, placed in the same order as
      * the positions in the input
      */
     public handleConveyor2(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
         // call handle conveyance twice because handle conveyance only handles one step
-        let movements_1 = this.conveyors2.handleMovement(positions, this.getMovementResult)
+        const evaluator = (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move)
+        let movements_1 = this.conveyors2.handleMovement(positions, evaluator)
         let mid_positions = new Map<string, OrientedPosition>()
         const ret_builder = new Map<PlayerID, MovementArrayResultsBuilder>()
 
@@ -697,6 +699,10 @@ export class Board {
 
         // apply the movements to the positions in the array to get the next round of positions
         for (const [key, frames] of movements_1.entries()) {
+            // we don't need to log it if there's no movement
+            if (frames.length == 0) {
+                continue
+            }
             let new_pos: OrientedPosition = positions.get(key) as OrientedPosition
             const builder = new MovementArrayResultsBuilder()
             let remove = false
@@ -726,7 +732,7 @@ export class Board {
         }
 
         // get the second set of movements
-        const movements_2 = this.conveyors2.handleMovement(mid_positions, this.getMovementResult)
+        const movements_2 = this.conveyors2.handleMovement(mid_positions, evaluator)
 
         // get the max length of a movements_2 array
         let max_len_2 = 0
@@ -742,9 +748,19 @@ export class Board {
         // run over the results and continue to update the builders
         for (const [key, frames] of movements_2.entries()) {
             let builder = ret_builder.get(key)
+            // if there's nothing, no need to log
+            if (frames.length == 0) {
+                // unless we already have something, then pad out to length
+                if (builder !== undefined) {
+                    builder.padMovementToLength(max_len_2)
+                }
+                continue
+            }
+            // if the builder was empty
             if (builder === undefined) {
                 builder = new MovementArrayResultsBuilder()
                 builder.padMovementToLength(max_len_1)
+                builder.endMovement()
                 ret_builder.set(key, builder)
             }
 
@@ -769,7 +785,8 @@ export class Board {
      * the positions in the input
      */
     public handleConveyor(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
-        const results = this.conveyors.handleMovement(positions, this.getMovementResult)
+        const results = this.conveyors.handleMovement(positions, 
+            (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move))
 
         // get the max length of any frame array so we can pad out to this length later
         let max_len = 0
@@ -782,6 +799,10 @@ export class Board {
         // prepare a map of builders 
         const ret = new Map<PlayerID, MovementArrayWithResults>()
         for (const [actor, frames] of results.entries()) {
+            if (frames.length == 0) {
+                // no need to set an action if there are no frames
+                continue
+            }
             // set up a builder
             const builder = new MovementArrayResultsBuilder()
             // add the frames
@@ -911,7 +932,9 @@ export class Board {
             return ret
         }
         
-        const result = this.pushers[register].handleMovement(positions, this.getMovementResult)
+        const result = this.pushers[register].handleMovement(positions, 
+            (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move)
+        )
 
         // get the max_len for padding
         let max_len = 0

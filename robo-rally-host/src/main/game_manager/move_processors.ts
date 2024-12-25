@@ -1,11 +1,7 @@
 import { isAbsoluteMovement, isRelativeMovement, isRotation, MovementDirection, Orientation, Rotation, RotationDirection } from "../models/movement"
 import type { AbsoluteMovement, Movement } from "../models/movement"
 
-/**
- * These are the types of movements we want to deal with here
- */
-export type NonRelativeMovement = (AbsoluteMovement | Rotation)
-
+// this is an orientation-agnostic position on the board. the Oriented position extends it
 export interface BoardPosition {
     x: number,
     y: number
@@ -125,7 +121,7 @@ export namespace MovementFrame {
      * @param movement the movement to convert
      * @returns an array of MovementFrames
      */
-    export function fromNonRelativeMovement(movement: NonRelativeMovement): MovementFrame[] {
+    export function fromNonRelativeMovement(movement: AbsoluteMovement | Rotation): MovementFrame[] {
         const framed: MovementFrame[] = []
         if (isAbsoluteMovement(movement)) {
             for (let i = 0; i < movement.distance; i++) {
@@ -178,43 +174,6 @@ export namespace MovementFrame {
         // leave this to the other function
         return fromNonRelativeMovement(movement)
     }
-
-    /**
-     * converts a list of absolute movements or rotations to MovementFrames
-     * @param movements the list of rotations or absolute movements to convert
-     * @returns the converted movements
-     */
-    export function fromNonRelativeMovements(movements: NonRelativeMovement[]): MovementFrame[] {
-        const converted: MovementFrame[] = []
-        for (const movement of movements) {
-            converted.concat(fromNonRelativeMovement(movement))
-        }
-        return converted
-    }
-
-    /**
-     * pad the values of a map to the same length
-     * @param moves a map of any kay to movement frame arrays
-     * @returns the same map, but each value is guaranteed to have the same length
-     */
-    export function pad<T>(moves: Map<T, MovementFrame[]>): Map<T, MovementFrame[]> {
-        let max_len = 0
-        for (const movements of moves.values()) {
-            // get the max movement for padding
-            if (movements.length > max_len) {
-                max_len = movements.length
-            }
-        }
-
-        // pad the lists
-        for (const movements of moves.values()) {
-            while (movements.length < max_len) {
-                movements.push(undefined)
-            }
-        }
-
-        return moves
-    }
 }
 
 /**
@@ -225,58 +184,9 @@ type MovementBoundary = {
     end: number
 }
 
-export class MovementArray {
+export class MovementArrayWithResults {
     public frames: MovementFrame[]
     public movement_boundaries: MovementBoundary[]
-
-    static fromMovements(movements: Movement|Movement[], starting_orientation: Orientation): MovementArray {
-        // initialize the property arrays
-        let movement_boundaries = []
-        let frames: MovementFrame[] = []
-        // make movements an array if it isn't
-        if (!Array.isArray(movements)) {
-            movements = [movements]
-        }
-        // count the number of frames we've seen
-        let frame_count = 0
-        for (const move of movements) {
-            const start = frame_count
-            // convert the movement to frames
-            const new_frames = MovementFrame.fromMovement(move, starting_orientation)
-            // update the new number of frames we have
-            frame_count += new_frames.length
-            // point the start to the first new frame, and the end to the last new frame
-            movement_boundaries.push({
-                start: start,
-                end: frame_count
-            })
-            // add the new frames to our internal listing
-            new_frames.forEach((value: MovementFrame) => frames.push(value))
-        }
-
-        return new MovementArray(frames, movement_boundaries)
-    }
-
-    static blankOfSameSize(other: MovementArray) {
-        let frames: MovementFrame[] = []
-        while (frames.length < other.frames.length) {
-            frames.push(undefined)
-        }
-        // slice created a deep copy
-        return new MovementArray(frames, other.movement_boundaries.slice())
-    }
-
-    protected constructor(frames: MovementFrame[], boundaries: MovementBoundary[]) {
-        this.frames = frames
-        this.movement_boundaries = boundaries
-    }
-
-    get length(): number {
-        return this.frames.length
-    }
-}
-
-export class MovementArrayWithResults extends MovementArray {
     public results: MovementStatus[]
     public pushed: boolean[]
 
@@ -289,9 +199,14 @@ export class MovementArrayWithResults extends MovementArray {
     }
 
     constructor(frames: MovementFrame[], bounds: MovementBoundary[], results: MovementStatus[], pushed: boolean[]) {
-        super(frames, bounds)
+        this.frames = frames
+        this.movement_boundaries = bounds
         this.results = results
         this.pushed = pushed
+    }
+
+    get length(): number {
+        return this.frames.length
     }
 }
 

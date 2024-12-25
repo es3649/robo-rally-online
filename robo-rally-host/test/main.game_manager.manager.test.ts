@@ -34,6 +34,7 @@ test('GameManager.addPlayer', () => {
     expect(gm.addPlayer('Paul', '005')).toBeTruthy()
     // using the same name again should be fine
     expect(gm.addPlayer('Paul', '006')).toBeTruthy()
+    // this should be the 7th player, so we should get false by overflow check
     expect(gm.addPlayer('James', '007')).toBeFalsy()
 
     // we should not be able to overwrite a player using the same ID

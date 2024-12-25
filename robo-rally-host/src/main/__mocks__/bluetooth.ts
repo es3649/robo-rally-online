@@ -1,10 +1,10 @@
 import type { BotAction } from "../bluetooth";
-import type { MovementArray } from "../models/movement";
+import type { MovementFrame } from "../game_manager/move_processors";
 import type { CharacterID } from "../models/player";
 
 export type MoveBotCall = {
     botID: CharacterID,
-    movement: MovementArray
+    movement: MovementFrame
 }
 
 export type BotActionCall = {
@@ -23,7 +23,7 @@ export function connectRobot(name: string): boolean {
     return connectRobot_return
 }
 
-export function moveBot(botID: CharacterID, movement: MovementArray): void {
+export function moveBot(botID: CharacterID, movement: MovementFrame): void {
     moveBot_calls.push({
         botID: botID,
         movement: movement

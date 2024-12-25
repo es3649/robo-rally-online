@@ -358,7 +358,7 @@ export class MovementForest {
             const members = new Set<PlayerID>()
             clusters.set(cluster_number, members)
 
-            _handleSpace(key, start, this.getMovementAction)
+            _handleSpace(key, start, (pos: BoardPosition) => this.getMovementAction(pos))
         }
 
         return movement_frames

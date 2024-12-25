@@ -7,9 +7,9 @@ import { Main2Server } from "../models/events"
 import { BotAction } from "../bluetooth"
 import * as bt from '../bluetooth'
 import { DeckManager } from "./deck_manager"
-import { MovementDirection, type Movement, isRotation, Orientation, isAbsoluteMovement, Rotation } from "../models/movement"
-import { DualKeyMap, MovementForest } from "./graph"
-import { applyAbsoluteMovement, applyRotation, MovementArray, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, type MovementResult, type OrientedPosition } from "./move_processors"
+import { MovementDirection, type Movement, isRotation, Orientation, isAbsoluteMovement } from "../models/movement"
+import { MovementForest } from "./graph"
+import { applyAbsoluteMovement, applyRotation, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, type MovementResult, type OrientedPosition } from "./move_processors"
 
 export const MAX_PLAYERS = 6
 
@@ -52,7 +52,7 @@ export class GameManager {
         }
         // don't allow adding more than max players
         // don't allow duplicate player IDs
-        if (this.players.size >= MAX_PLAYERS || this.players.has(player_id)) {
+        if (this.setup_players.size >= MAX_PLAYERS || this.setup_players.has(player_id)) {
             return false
         }
         // build the player object
@@ -60,11 +60,11 @@ export class GameManager {
             name: player_name,
             id: player_id,
             // get a default color for the player
-            colors: Color.by_number(this.players.size)
+            colors: Color.by_number(this.setup_players.size)
         }
         
         // set the players initial state
-        this.player_states.set(player_id, new PlayerState(player_name, this.players.size))
+        this.player_states.set(player_id, new PlayerState(player_name, this.setup_players.size))
         
         // add this player to our registry
         this.setup_players.set(player_id, player)
@@ -397,11 +397,11 @@ export class GameManager {
                 // process the action and compute pushes simultaneously
                 for (const movement of resolved) {
                     // translate this movement to movement frames
-                    const absolutized = MovementArray.fromMovements(movement, position.orientation)
+                    const absolutized = MovementFrame.fromMovement(movement, position.orientation)
                     // compute the result of each movement frame using a mover forest
-                    for (let i = 0; i < absolutized.frames.length; i++) {
+                    for (let i = 0; i < absolutized.length; i++) {
                         // get the results of the movement
-                        const frame = absolutized.frames[i]
+                        const frame = absolutized[i]
                         
                         if (frame === undefined) {
                             // this shouldn't happen, but we'll check it

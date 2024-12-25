@@ -1,5 +1,5 @@
 import { anyRegisterEmpty, newDamageDeck, newRegisterArray, newStandardDeck, ProgrammingCard, type RegisterArray } from '../src/main/models/game_data'
-import { isRelativeMovement, isRotation, MovementDirection, Rotation, RotationDirection, type MovementArray, type RelativeMovement } from '../src/main/models/movement'
+import { isRelativeMovement, isRotation, Movement, MovementDirection, Rotation, RotationDirection, type RelativeMovement } from '../src/main/models/movement'
 import { expect, jest, test } from '@jest/globals'
 
 test('ProgrammingCard.isActionChoice/isHaywire', () => {
@@ -16,7 +16,7 @@ test('ProgrammingCard.isActionChoice/isHaywire', () => {
         actions: {
             options: ['a', 'b'],
             prompt: "These are your options",
-            choice: (options:string): MovementArray => []
+            choice: (options:string): Movement[] => []
         },
         special: () => "ur mom"
     }

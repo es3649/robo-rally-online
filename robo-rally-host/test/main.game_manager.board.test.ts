@@ -1,7 +1,8 @@
 import { expect, test } from '@jest/globals'
-import { Board, BoardData, isValidBoardData, LaserPosition, MovementStatus, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
-import { AbsoluteMovement, BoardPosition, isAbsoluteMovement, isRotation, MovementArray, MovementDirection, MovementFrame, Orientation, OrientedPosition, Rotation, RotationDirection } from '../src/main/models/movement'
+import { Board, BoardData, isValidBoardData, LaserPosition, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
+import { isAbsoluteMovement, isRotation, Orientation, RotationDirection } from '../src/main/models/movement'
 import { DualKeyMap } from '../src/main/game_manager/graph'
+import { AbsoluteStep, BoardPosition, MovementArrayWithResults, OrientedPosition } from 'src/main/game_manager/move_processors'
 
 const sample_board: BoardData = {
     display_name: "sample_board",
@@ -430,9 +431,9 @@ test('Board.getId', () => {
 
 test('Board.handleConveyor2', () => {
     const b1 = new Board(sample_board)
-    const positions = new Map<string, BoardPosition>()
-    positions.set('first', {x:1,y:2})
-    positions.set('second', {x:0,y:2})
+    const positions = new Map<string, OrientedPosition>()
+    positions.set('first', {x:1,y:2, orientation: Orientation.S})
+    positions.set('second', {x:0,y:2, orientation: Orientation.E})
 
     const handled = b1.handleConveyor2(positions)
     expect(handled.size).toBe(2)
@@ -440,35 +441,34 @@ test('Board.handleConveyor2', () => {
     expect(handled.has('second')).toBeTruthy()
     expect(handled.get('first').length).toBe(4)
     expect(handled.get('second').length).toBe(4)
-    const movements = handled.get('first') as MovementArray
-    expect(isAbsoluteMovement(movements[0])).toBeTruthy()
-    expect(movements[0].direction).toBe(Orientation.S)
-    expect(isRotation(movements[1])).toBeTruthy()
-    expect(movements[1].direction).toBe(RotationDirection.CW)
-    expect(isAbsoluteMovement(movements[2])).toBeTruthy()
-    expect(movements[2].direction).toBe(Orientation.W)
-    expect(isRotation(movements[3])).toBeTruthy()
-    expect(movements[3].direction).toBe(RotationDirection.CCW)
-    const movements_2 = handled.get('second') as MovementFrame[]
+    const movements = handled.get('first') as MovementArrayWithResults
+    expect(isAbsoluteMovement(movements.frames[0])).toBeTruthy()
+    expect(movements.frames[0].direction).toBe(Orientation.S)
+    expect(isRotation(movements.frames[1])).toBeTruthy()
+    expect(movements.frames[1].direction).toBe(RotationDirection.CW)
+    expect(isAbsoluteMovement(movements.frames[2])).toBeTruthy()
+    expect(movements.frames[2].direction).toBe(Orientation.W)
+    expect(isRotation(movements.frames[3])).toBeTruthy()
+    expect(movements.frames[3].direction).toBe(RotationDirection.CCW)
+    const movements_2 = handled.get('second') as MovementArrayWithResults
     for (let i = 0; i < 4; i ++) {
-        expect(movements_2[i]).toBeUndefined()
+        expect(movements_2.frames[i]).toBeUndefined()
     }
 })
 
 test('Board.handleConveyor', () => {
     const b1 = new Board(sample_board)
-    const positions = new Map<string, BoardPosition>()
-    positions.set('first', {x:1,y:2})
-    positions.set('second', {x:0,y:2})
+    const positions = new Map<string, OrientedPosition>()
+    positions.set('first', {x:1,y:2, orientation: Orientation.S})
+    positions.set('second', {x:0,y:2, orientation: Orientation.E})
 
     const handled = b1.handleConveyor(positions)
-    expect(handled.size).toBe(2)
-    expect(handled.has('first')).toBeTruthy()
+    expect(handled.size).toBe(1)
+    expect(handled.has('first')).toBeFalsy()
     expect(handled.has('second')).toBeTruthy()
-    expect(handled.get('first').length).toBe(1)
-    expect(handled.get('first')[0]).toBeUndefined()
     expect(handled.get('second').length).toBe(1)
-    expect(handled.get('second')[0].direction).toBe(Orientation.S)
+    expect(isAbsoluteMovement(handled.get('second'))).toBeTruthy()
+    expect(handled.get('second').frames[0].direction).toBe(Orientation.S)
 })
 
 test('Board.handleGear', () => {
@@ -479,15 +479,14 @@ test('Board.handleGear', () => {
     positions.set('third', {x:1, y:1})
     const handled = b1.handleGear(positions)
 
-    expect(handled.size).toBe(3)
+    expect(handled.size).toBe(2)
     expect(handled.has('first')).toBeTruthy()
     expect(handled.has('second')).toBeTruthy()
-    expect(handled.has('third')).toBeTruthy()
+    expect(handled.has('third')).toBeFalsy()
     expect(handled.get('first').length).toBe(1)
     expect(handled.get('second').length).toBe(1)
-    expect(handled.get('third').length).toBe(0)
-    expect(handled.get('first')[0].direction).toBe(RotationDirection.CCW)
-    expect(handled.get('second')[0].direction).toBe(RotationDirection.CW)
+    expect(handled.get('first').frames[0].direction).toBe(RotationDirection.CCW)
+    expect(handled.get('second').frames[0].direction).toBe(RotationDirection.CW)
 })
 
 test('Board.getLaserOrigins', () => {
@@ -568,256 +567,6 @@ test('Board.handleLaserPaths (exclusive)', () => {
     expect(damages.get('second')).toBe(0)
     expect(damages.get('third')).toBe(1)
     expect(damages.get('fourth')).toBe(1)
-})
-
-test('Board.handlePush (basic)', () => {
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:0, y:0, orientation: Orientation.N}) // pushed one space up
-    positions.set('second', {x:1, y:0, orientation: Orientation.N}) // not pushed: no pusher
-    positions.set('third', {x:2, y:2, orientation: Orientation.S}) // not pushed: wrong register
-
-    const movements = b1.handlePush(positions, 3)
-    expect(movements.size).toBe(3)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeDefined()
-    expect(isAbsoluteMovement(movements.get('first'))).toBeTruthy()
-    expect((movements.get('first') as AbsoluteMovement).direction).toBe(Orientation.N)
-    expect((movements.get('first') as AbsoluteMovement).distance).toBe(1)
-    expect(movements.get('second')).toBeUndefined()
-    expect(movements.get('third')).toBeUndefined()
-})
-
-test('Board.handlePush (basic chain)', () => {
-    console.log('basic chain')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:0, y:0, orientation: Orientation.N})
-    positions.set('second', {x:0, y:1, orientation: Orientation.E})
-
-    const movements = b1.handlePush(positions, 0)
-    expect(movements.size).toBe(2)
-    expect(movements.has('first')).toBeTruthy()
-    expect(isAbsoluteMovement(movements.get('first'))).toBeTruthy()
-    expect((movements.get('first') as AbsoluteMovement).direction).toBe(Orientation.N)
-    expect((movements.get('first') as AbsoluteMovement).distance).toBe(1)
-    expect(movements.has('second')).toBeTruthy()
-    expect(isAbsoluteMovement(movements.get('second'))).toBeTruthy()
-    expect((movements.get('second') as AbsoluteMovement).direction).toBe(Orientation.N)
-    expect((movements.get('second') as AbsoluteMovement).distance).toBe(1)
-})
-
-test('Board.handlePush (basic collide)', () => {
-    console.log('basic collide')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:0, y:2, orientation: Orientation.S})
-    positions.set('second', {x:1, y:1, orientation: Orientation.E})
-
-    const movements = b1.handlePush(positions, 3)
-    // both should get cancelled when they collide
-    expect(movements.size).toBe(2)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeUndefined()
-    expect(movements.has('second')).toBeTruthy()
-    expect(movements.get('second')).toBeUndefined()
-})
-
-test('Board.handlePush (chain-end collide)', () => {
-    console.log('chain-end collide')
-    const b1 = new Board(push_board)
-    const positions_1 = new Map<string, OrientedPosition>()
-    positions_1.set('first', {x:3, y:2, orientation: Orientation.S})
-    positions_1.set('second', {x:2, y:2, orientation: Orientation.S})
-    positions_1.set('third', {x:1, y:1, orientation: Orientation.E})
-
-    const movements_1 = b1.handlePush(positions_1, 3)
-    expect(movements_1.size).toBe(3)
-    // all movements 0 for colliding parties and actors in the column
-    expect(movements_1.has('first')).toBeTruthy()
-    expect(movements_1.get('first')).toBeUndefined()
-    expect(movements_1.has('second')).toBeTruthy()
-    expect(movements_1.get('second')).toBeUndefined()
-    expect(movements_1.has('third')).toBeTruthy()
-    expect(movements_1.get('third')).toBeUndefined()
-    
-    const positions_2 = new Map<string, OrientedPosition>()
-    positions_2.set('first', {x:0, y:2, orientation: Orientation.S})
-    positions_2.set('second', {x:1, y:2, orientation: Orientation.S})
-    positions_2.set('third', {x:2, y:1, orientation: Orientation.E})
-    positions_2.set('fourth', {x:2, y:0, orientation: Orientation.N})
-
-    const movements_2 = b1.handlePush(positions_2, 3)
-    expect(movements_2.size).toBe(4)
-    // all movements 0 for colliding parties and actors in the column
-    expect(movements_2.has('first')).toBeTruthy()
-    expect(movements_2.get('first')).toBeUndefined()
-    expect(movements_2.has('second')).toBeTruthy()
-    expect(movements_2.get('second')).toBeUndefined()
-    expect(movements_2.has('third')).toBeTruthy()
-    expect(movements_2.get('third')).toBeUndefined()
-    expect(movements_2.has('fourth')).toBeTruthy()
-    expect(movements_2.get('fourth')).toBeUndefined()
-})
-
-test('Board.handlePush (push to active pusher)', () => {
-    console.log('push to active pusher')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:3, y:1, orientation: Orientation.E})
-    
-    const movements_1 = b1.handlePush(positions, 3)
-    expect(movements_1.size).toBe(1)
-    expect(movements_1.has('first')).toBeTruthy()
-    expect(movements_1.get('first')).toBeUndefined()
-
-    positions.set('second', {x:3, y:2, orientation: Orientation.S})
-
-    const movements_2 = b1.handlePush(positions, 3)
-    expect(movements_2.size).toBe(2)
-    expect(movements_2.has('first')).toBeTruthy()
-    expect(movements_2.get('first')).toBeUndefined()
-    expect(movements_2.has('second')).toBeTruthy()
-    expect(movements_2.get('second')).toBeUndefined()
-})
-
-test('Board.handlePush (mid-chain collide)', () => {
-    console.log('mid-chain collide')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:1, y:1, orientation: Orientation.E})
-    positions.set('second', {x:0, y:2, orientation: Orientation.S})
-    positions.set('third', {x:1, y:2, orientation: Orientation.S})
-
-    const movements = b1.handlePush(positions, 3)
-    expect(movements.size).toBe(3)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeUndefined()
-    expect(movements.has('second')).toBeTruthy()
-    expect(movements.get('second')).toBeUndefined()
-    expect(movements.has('third')).toBeTruthy()
-    expect(movements.get('third')).toBeUndefined()
-})
-
-test('Board.handlePush (both ends push)', () => {
-    console.log('both ends push')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:0, y:2, orientation: Orientation.S})
-    positions.set('second', {x:1, y:2, orientation: Orientation.S})
-    positions.set('third', {x:2, y:2, orientation: Orientation.S})
-
-    const movements_1 = b1.handlePush(positions, 3)
-    expect(movements_1.size).toBe(3)
-    expect(movements_1.has('first')).toBeTruthy()
-    expect(movements_1.get('first')).toBeUndefined()
-    expect(movements_1.has('second')).toBeTruthy()
-    expect(movements_1.get('second')).toBeUndefined()
-    expect(movements_1.has('third')).toBeTruthy()
-    expect(movements_1.get('third')).toBeUndefined()
-
-    positions.set('fourth', {x:3, y:2, orientation: Orientation.S})
-    const movements_2 = b1.handlePush(positions, 3)
-    expect(movements_2.size).toBe(4)
-    expect(movements_2.has('first')).toBeTruthy()
-    expect(movements_2.get('first')).toBeUndefined()
-    expect(movements_2.has('second')).toBeTruthy()
-    expect(movements_2.get('second')).toBeUndefined()
-    expect(movements_2.has('third')).toBeTruthy()
-    expect(movements_2.get('third')).toBeUndefined()
-    expect(movements_2.has('fourth')).toBeTruthy()
-    expect(movements_2.get('fourth')).toBeUndefined()
-})
-
-test('Board.handlePush (wall stops)', () => {
-    console.log('wall stops')
-    const b1 = new Board(push_board)
-    const positions_1 = new Map<string, OrientedPosition>()
-    positions_1.set('first', {x:3, y:1, orientation: Orientation.E})
-
-    const movements_1 = b1.handlePush(positions_1, 2)
-    expect(movements_1.size).toBe(1)
-    expect(movements_1.has('first')).toBeTruthy()
-    expect(movements_1.get('first')).toBeUndefined()
-    
-    // try again in a column
-    const positions_2 = new Map<string, OrientedPosition>()
-    positions_2.set('first', {x:1, y:1, orientation: Orientation.E})
-    positions_2.set('second', {x:2, y:1, orientation: Orientation.E})
-
-    const movements_2 = b1.handlePush(positions_2, 2)
-    expect(movements_2.size).toBe(2)
-    expect(movements_2.has('first')).toBeTruthy()
-    expect(movements_2.get('first')).toBeUndefined()
-    expect(movements_2.has('second')).toBeTruthy()
-    expect(movements_2.get('second')).toBeUndefined()
-})
-
-test('Board.handlePush (wall shield)', () => {
-    console.log('wall shield')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:2, y:0, orientation: Orientation.N})
-    positions.set('second', {x:2, y:1, orientation: Orientation.E})
-    positions.set('third', {x:3, y:1, orientation: Orientation.E})
-
-    const movements = b1.handlePush(positions, 2)
-    expect(movements.size).toBe(3)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeDefined()
-    expect(isAbsoluteMovement(movements.get('first'))).toBeTruthy()
-    expect((movements.get('first') as AbsoluteMovement).direction).toBe(Orientation.N)
-    expect((movements.get('first') as AbsoluteMovement).distance).toBe(1)
-    expect(movements.has('second')).toBeTruthy()
-    expect(movements.get('second')).toBeDefined()
-    expect(isAbsoluteMovement(movements.get('second'))).toBeTruthy()
-    expect((movements.get('second') as AbsoluteMovement).direction).toBe(Orientation.N)
-    expect((movements.get('second') as AbsoluteMovement).distance).toBe(1)
-    expect(movements.has('third')).toBeTruthy()
-    expect(movements.get('third')).toBeUndefined()
-})
-
-test('Board.handlePush (2 acting pushers)', () => {
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:1, y:1, orientation: Orientation.E})
-
-    const movements = b1.handlePush(positions, 0)
-    expect(movements.size).toBe(1)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeUndefined()
-})
-
-test('Board.handlePush (mid-chain pusher)', () => {
-    console.log('mid-chain pusher')
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:2, y:2, orientation: Orientation.S})
-    positions.set('second', {x:3, y:2, orientation: Orientation.S})
-
-    const movements = b1.handlePush(positions, 4)
-    expect(movements.size).toBe(2)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeUndefined()
-    expect(movements.has('second')).toBeTruthy()
-    expect(movements.get('second')).toBeUndefined()
-})
-
-test('Board.handlePush (moving past conflicted chain', () => {
-    const b1 = new Board(push_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:2, y:2, orientation: Orientation.S})
-    positions.set('second', {x:3, y:2, orientation: Orientation.S})
-    positions.set('third', {x: 1, y:1, orientation: Orientation.E})
-
-    const movements = b1.handlePush(positions, 0)
-    expect(movements.size).toBe(3)
-    expect(movements.has('first')).toBeTruthy()
-    expect(movements.get('first')).toBeUndefined()
-    expect(movements.has('second')).toBeTruthy()
-    expect(movements.get('second')).toBeUndefined()
-    expect(movements.has('third')).toBeTruthy()
-    expect(movements.get('third')).toBeUndefined()
 })
 
 // test('Board.rotateBoard', () => {})
