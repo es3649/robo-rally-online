@@ -1,4 +1,4 @@
-import { isAbsoluteMovement, type Orientation, type RotationDirection } from "../models/movement"
+import { isAbsoluteMovement, isNoOp, type Orientation, type RotationDirection } from "../models/movement"
 import { type PlayerID } from "../models/player"
 import { applyAbsoluteMovement, MovementStatus, Turn, type AbsoluteStep, type BoardPosition, type MovementFrame, type MovementResult, type OrientedPosition } from "./move_processors"
 
@@ -102,6 +102,11 @@ export class MovementForest {
     protected nodes = new DualKeyMap<number, MoverNode[]>()
     protected allow_push: boolean
 
+    /**
+     * constructs a new MovementForest
+     * @param allow_push controls the behavior of pushes when handling movement. See the notes in the
+     * handleMovement method for more details
+     */
     constructor (allow_push:boolean = true) {
         this.allow_push = allow_push
     }
@@ -148,6 +153,24 @@ export class MovementForest {
         return moves
     }
 
+    /**
+     * computes the action of the moves in the forest on the actors, including secondary movements induced
+     * by pushes. It also cancels movements when conflicts are detected, including multiple actors being
+     * pushed into the same space, or actors being pushed into active movement sources.
+     * 
+     * If allow_push is set on the class, then when one pusher moves an actor into another actor, this
+     * actor will be forced to move as well, and the movements will be propagates as far as they are legal.
+     * It will also stop movement of any actor if they move into another active mover.
+     * 
+     * If allow push is not set, then moving into another active mover will not trigger a cancellation of
+     * the movement, and moving into another actor, will not trigger that actor to move. If that actor is
+     * on a mover, it will move as well, and the movements will be cancelled together if the latter is
+     * determined to be illegal, otherwise, the first will be cancelled if the second actor is not on an
+     * active mover.
+     * @param positions a mapping of actorIDs to their positions
+     * @param evaluator a function accepting a position and a movement, and returns the result of that action
+     * @returns a map of actor IDs to action of other movements on those actors
+     */
     handleMovement(positions: Map<PlayerID, OrientedPosition>,
             evaluator: (position: OrientedPosition, moves: MovementFrame) => MovementResult): Map<PlayerID, MovementResult[]> {
         // prepare a bunch of lookup tables
@@ -309,14 +332,29 @@ export class MovementForest {
                         // get the key and position of the actor
                         const actor = starting_positions.get(pos.x, pos.y) as PlayerID
                         const actor_start = positions.get(actor) as OrientedPosition
-                        console.log('recursing as', actor)
+                        console.log('push-recursing as', actor)
                         // recurse
                         _handleSpace(actor, actor_start, actionLookup, cleaned_movement.direction)
                     } else {
                         // pushes are not allowed
                         // propagate anyway, add the actor
                         console.log('reached a push action, but pushing is not allowed')
-                        console.warn('TODO: handle this case')
+                        const dest_lookup = actionLookup(pos)
+                        if (!isNoOp(dest_lookup[0]) || !isNoOp(dest_lookup[1])) {
+                            // then the actor in the target space will likely be moving as well
+                            // don't indicate this as a push, but propagate the movement and consider
+                            // them to be in the same cluster as us, so we all succeed or get canceled
+                            // together
+                            const actor = starting_positions.get(pos.x, pos.y) as PlayerID
+                            const actor_start = positions.get(actor) as OrientedPosition
+                            console.log('no-push-recursing as', actor)
+                            _handleSpace(actor, actor_start, actionLookup)
+                        } else {
+                            // the target is stationary, and we cannot move there
+                            // invalidate our cluster
+                            console.log('moved into stationary actor in', pos)
+                            _invalidateCluster(cluster_number)
+                        }
                     }
                 }
             }
@@ -324,8 +362,10 @@ export class MovementForest {
             // check if we are moving into an active motion source
             // we do this after the cluster is formed so we don't halt cluster formation if one of
             // them is in a bad spot. Tail recursion for the win
-            if (actionLookup(pos) !== undefined) {
-                console.log('moved onto an active motion source')
+            // we also don't worry about this lookup if we aren't allowing pushing
+            const dest_lookup = actionLookup(pos)
+            if (allow_push && !isNoOp(dest_lookup[0]) || !isNoOp(dest_lookup[2])) {
+                console.log('moved onto an active motion source:', pos)
                 // invalidate our own cluster
                 // note: this will invalidate our resulting space
                 _invalidateCluster(cluster_number)
@@ -349,7 +389,7 @@ export class MovementForest {
             if (cluster_membership.has(key)) {
                 // if we are already in a cluster, then we don't need to do anymore calculation. It
                 // was done when we were added to the cluster
-                console.timeLog(key, 'already in cluster')
+                console.log(key, 'already in cluster')
                 continue
             }
 
@@ -361,7 +401,16 @@ export class MovementForest {
             _handleSpace(key, start, (pos: BoardPosition) => this.getMovementAction(pos))
         }
 
-        return movement_frames
+        // trim the results, we don't want to even have entries for actors who resulted in no movement
+        // TODO we may need to pad here as well
+        const ret = new Map<PlayerID, MovementResult[]>()
+        for (const [key, results] of movement_frames.entries()) {
+            if (results.length != 0) {
+                ret.set(key, results)
+            }
+        }
+
+        return ret
     }
 
     clear(): void {
