@@ -198,7 +198,19 @@ export class MovementForest {
             }
             for (const member of members) {
                 console.log('clearing movements for', member)
-                movement_frames.set(member, [])
+                // check what is stored
+                const result = movement_frames.get(member)
+                // if it's a wall strike, keep it, otherwise, nuke it
+                if (result !== undefined && result.length > 0 && result[0].status === MovementStatus.WALL) {
+                    console.log("leaving wall strike")
+                    movement_frames.set(member, [{
+                        movement: undefined,
+                        status: MovementStatus.WALL,
+                        pushed: result[0].pushed
+                    }])
+                } else {
+                    movement_frames.set(member, [])
+                }
                 const member_start = positions.get(member) as BoardPosition
                 illegal_positions.set(member_start.x, member_start.y, true)
                 // some movements (including hitting walls) are unresolved when this is called
@@ -210,6 +222,30 @@ export class MovementForest {
                     resulting_positions_by_actor.delete(member)
                 }
             }
+        }
+
+        function _moveCluster(cur: number, dest: number) {
+            console.log('moving cluster', cur, 'to cluster', dest)
+            const cur_cluster = clusters.get(cur)
+            let dest_cluster = clusters.get(dest)
+            // if the cluster is empty or not defined, there's nothing to do
+            if (cur_cluster === undefined || cur_cluster.size == 0) {
+                return
+            }
+            // if this cluster hasn't been defined yet, create it, but idk why we're moving here
+            if (dest_cluster === undefined) {
+                dest_cluster = new Set<string>()
+                clusters.set(dest, dest_cluster)
+            }
+
+            // set the actor's membership to the new cluster, and add them to the cluster
+            for (const actor of cur_cluster) {
+                cluster_membership.set(actor, dest)
+                dest_cluster.add(actor)
+            }
+
+            // delete the current cluster
+            clusters.delete(cur)
         }
 
         const allow_push = this.allow_push
@@ -250,9 +286,9 @@ export class MovementForest {
             if (movements[0] == undefined) {
                 movement_frames.set(key, [])
                 return
-            } else if (push_orientation === undefined) {
-                // this is an active pusher
-                // mark this position as illegal: never move into an active pusher
+            } else if (push_orientation === undefined && allow_push) {
+                // this is an active pusher; mark this position as illegal:
+                // never move into an active mover while pushing is allowed
                 illegal_positions.set(start.x, start.y, true)
             }
 
@@ -267,6 +303,11 @@ export class MovementForest {
                 // do not process any rotation, the entire movement is cancelled
                 console.log('hit a wall')
                 _invalidateCluster(cluster_number)
+                // save the fact that we hit a wall, and set pushed correctly
+                // wall strikes are important, even if movement is cancelled
+                result.pushed = push_orientation !== undefined
+                console.log('setting wall-strike result:', result)
+                movement_frames.set(key, [result])
                 return
             }
 
@@ -346,9 +387,19 @@ export class MovementForest {
                             // them to be in the same cluster as us, so we all succeed or get canceled
                             // together
                             const actor = starting_positions.get(pos.x, pos.y) as PlayerID
-                            const actor_start = positions.get(actor) as OrientedPosition
-                            console.log('no-push-recursing as', actor)
-                            _handleSpace(actor, actor_start, actionLookup)
+                            // check the actors cluster containment. If there is one, this actor has
+                            // already moved. Since they aren't marked illegal, their movement was legit,
+                            // so we want to move ourselves to their cluster, so we get cancelled in the
+                            // case their movement is later determined to be illegal
+                            if (cluster_membership.has(actor)) {
+                                _moveCluster(cluster_number, cluster_membership.get(actor) as number)
+                            } else {
+                                // this actor hasn't been moved yet, so recurse on them, but don't recurse
+                                // like causing a push
+                                const actor_start = positions.get(actor) as OrientedPosition
+                                console.log('no-push-recursing as', actor)
+                                _handleSpace(actor, actor_start, actionLookup)
+                            }
                         } else {
                             // the target is stationary, and we cannot move there
                             // invalidate our cluster

@@ -316,7 +316,7 @@ test('MovementForest.handleMovement (conveyor: wall shield)', () => {
     const lineup = new Map<string, OrientedPosition>()
     lineup.set('first', {x:2, y:0, orientation: Orientation.S})
     lineup.set('second', {x:1, y:0, orientation: Orientation.E})
-    lineup.set('third', {x:1, y:2, orientation: Orientation.W})
+    lineup.set('third', {x:1, y:1, orientation: Orientation.W})
 
     const result = cf.handleMovement(lineup, curry_evaluator([
         {x:1, y:1, orientation: Orientation.E}
@@ -557,7 +557,7 @@ test('MovementForest.handleMovement (pusher: both ends push)', () => {
 })
 
 test('MovementForest.handleMovement (pusher: wall stops)', () => {
-    console.log('wall stops')
+    console.log('pusher: wall stops')
     const positions_1 = new Map<string, OrientedPosition>()
     positions_1.set('first', {x:3, y:1, orientation: Orientation.E})
 
@@ -585,15 +585,15 @@ test('MovementForest.handleMovement (pusher: wall stops)', () => {
     expect(movements_2.has('first')).toBeFalsy()
     expect(movements_2.has('second')).toBeTruthy()
     expect(movements_2.get('second').length).toBeDefined()
-    expect(movements_1.get('second').length).toBe(1)
-    expect(movements_1.get('second')[0].movement).toBeUndefined()
-    expect(movements_1.get('second')[0].status).toBeDefined()
-    expect(movements_1.get('second')[0].status).toBe(MovementStatus.WALL)
-    expect(movements_1.get('second')[0].pushed).toBeTruthy()
+    expect(movements_2.get('second').length).toBe(1)
+    expect(movements_2.get('second')[0].movement).toBeUndefined()
+    expect(movements_2.get('second')[0].status).toBeDefined()
+    expect(movements_2.get('second')[0].status).toBe(MovementStatus.WALL)
+    expect(movements_2.get('second')[0].pushed).toBeTruthy()
 })
 
 test('MovementForest.handleMovement (pusher: wall shield)', () => {
-    console.log('wall shield')
+    console.log('pusher: wall shield')
     const positions = new Map<string, OrientedPosition>()
     positions.set('first', {x:2, y:0, orientation: Orientation.N})
     positions.set('second', {x:2, y:1, orientation: Orientation.E})
@@ -620,7 +620,7 @@ test('MovementForest.handleMovement (pusher: wall shield)', () => {
     expect(movements.get('second').length).toBeDefined()
     expect(movements.get('second').length).toBe(1)
     expect(movements.get('second')[0].movement).toBeDefined()
-    expect(isAbsoluteMovement(movements.get('second'))).toBeTruthy()
+    expect(isAbsoluteMovement(movements.get('second')[0].movement)).toBeTruthy()
     expect((movements.get('second')[0].movement as AbsoluteStep).direction).toBe(Orientation.N)
     expect((movements.get('second')[0].movement as AbsoluteStep).distance).toBe(1)
     expect(movements.get('second')[0].status).toBeDefined()
