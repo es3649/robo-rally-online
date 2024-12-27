@@ -766,7 +766,7 @@ export class Board {
 
             // extend the builder
             for (const frame of frames) {
-                builder.addFrame(frame.movement, frame.status, !!frame.status)
+                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
             }
 
             builder.padMovementToLength(max_len_2)

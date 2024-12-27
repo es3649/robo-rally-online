@@ -2,7 +2,7 @@ import { expect, test } from '@jest/globals'
 import { Board, BoardData, isValidBoardData, LaserPosition, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
 import { isAbsoluteMovement, isRotation, Orientation, RotationDirection } from '../src/main/models/movement'
 import { DualKeyMap } from '../src/main/game_manager/graph'
-import { AbsoluteStep, BoardPosition, MovementArrayWithResults, OrientedPosition } from 'src/main/game_manager/move_processors'
+import { BoardPosition, MovementArrayWithResults, MovementStatus, OrientedPosition } from '../src/main/game_manager/move_processors'
 
 const sample_board: BoardData = {
     display_name: "sample_board",
@@ -436,12 +436,12 @@ test('Board.handleConveyor2', () => {
     positions.set('second', {x:0,y:2, orientation: Orientation.E})
 
     const handled = b1.handleConveyor2(positions)
-    expect(handled.size).toBe(2)
+    expect(handled.size).toBe(1)
     expect(handled.has('first')).toBeTruthy()
-    expect(handled.has('second')).toBeTruthy()
-    expect(handled.get('first').length).toBe(4)
-    expect(handled.get('second').length).toBe(4)
+    expect(handled.has('second')).toBeFalsy()
     const movements = handled.get('first') as MovementArrayWithResults
+    expect(movements.length).toBe(4)
+    expect(movements.frames[0]).toBeDefined()
     expect(isAbsoluteMovement(movements.frames[0])).toBeTruthy()
     expect(movements.frames[0].direction).toBe(Orientation.S)
     expect(isRotation(movements.frames[1])).toBeTruthy()
@@ -450,9 +450,19 @@ test('Board.handleConveyor2', () => {
     expect(movements.frames[2].direction).toBe(Orientation.W)
     expect(isRotation(movements.frames[3])).toBeTruthy()
     expect(movements.frames[3].direction).toBe(RotationDirection.CCW)
-    const movements_2 = handled.get('second') as MovementArrayWithResults
-    for (let i = 0; i < 4; i ++) {
-        expect(movements_2.frames[i]).toBeUndefined()
+
+    expect(movements.movement_boundaries).toBeDefined()
+    expect(movements.movement_boundaries.length).toBeDefined()
+    expect(movements.movement_boundaries.length).toBe(1)
+    expect(movements.movement_boundaries[0].start).toBeDefined()
+    expect(movements.movement_boundaries[0].start).toBe(0)
+    expect(movements.movement_boundaries[0].end).toBeDefined()
+    expect(movements.movement_boundaries[0].end).toBe(4)
+
+    for (let i = 0; i < 4; i++) {
+        console.log(i)
+        expect(movements.pushed[i]).toBeFalsy()
+        expect(movements.results[i]).toBe(MovementStatus.OK)
     }
 })
 
@@ -467,8 +477,11 @@ test('Board.handleConveyor', () => {
     expect(handled.has('first')).toBeFalsy()
     expect(handled.has('second')).toBeTruthy()
     expect(handled.get('second').length).toBe(1)
-    expect(isAbsoluteMovement(handled.get('second'))).toBeTruthy()
+    expect(isAbsoluteMovement(handled.get('second').frames[0])).toBeTruthy()
     expect(handled.get('second').frames[0].direction).toBe(Orientation.S)
+    expect(handled.get('second').pushed[0]).toBeFalsy()
+    expect(handled.get('second').results[0]).toBe(MovementStatus.OK)
+
 })
 
 test('Board.handleGear', () => {

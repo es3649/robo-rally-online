@@ -29,6 +29,7 @@ export class GameManager {
     private board: Board|undefined
     private player_states = new Map<string, PlayerState>()
     private player_positions = new Map<PlayerID, OrientedPosition>()
+    private priority_lock: boolean = false
     private readonly M2SSender: Sender<Main2Server>
 
     /**
@@ -38,6 +39,7 @@ export class GameManager {
     constructor(sender: Sender<Main2Server>) {
         this.M2SSender = sender
         this.started = false
+        this.priority_lock = false
     }
 
     /**
@@ -358,7 +360,7 @@ export class GameManager {
     private activationPhase() {
         // serious logic happens here
         // begin with the priority player, and run through the registers, performing actions
-        let players_in_priority: (Player)[] = []
+        const players_in_priority: Player[] = []
         this.players.forEach((player: Player, _: string) => {
             const state = this.player_states.get(player.name) as PlayerState
             players_in_priority.splice(state.priority, 0, player)
@@ -443,6 +445,8 @@ export class GameManager {
 
         // reset their programs
         this.resetPrograms()
+        // update priority
+        this.updatePriority()
         // update the phase
         const message: Main2ServerMessage<GamePhase> = {
             name: Main2Server.PHASE_UPDATE,
@@ -563,5 +567,26 @@ export class GameManager {
         // it's a regular card 
         const result = ProgrammingCard.toMovement(card)
         return result === undefined ? [] : [result]
+    }
+
+    /**
+     * runs through the players and decrement their priority. If that player's priority is 0,
+     * then set it to max instead
+     */
+    private updatePriority() {
+        // if we got priority locked, then unlock and don't update
+        if (this.priority_lock) {
+            this.priority_lock = false
+            return
+        }
+
+        for (const state of this.player_states.values()) {
+            if (state.priority == 0) {
+                // set the old first person to the last position
+                state.priority = this.player_states.size - 1
+            } else {
+                state.priority = state.priority - 1
+            }
+        }
     }
 }
