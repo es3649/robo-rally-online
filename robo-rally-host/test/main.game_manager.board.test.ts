@@ -1,5 +1,5 @@
 import { expect, test } from '@jest/globals'
-import { Board, BoardData, isValidBoardData, LaserPosition, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
+import { Board, BoardData, getWalls, isValidBoardData, LaserPosition, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
 import { isAbsoluteMovement, isRotation, Orientation, RotationDirection } from '../src/main/models/movement'
 import { DualKeyMap } from '../src/main/game_manager/graph'
 import { BoardPosition, MovementArrayWithResults, MovementStatus, OrientedPosition } from '../src/main/game_manager/move_processors'
@@ -34,6 +34,43 @@ const sample_board: BoardData = {
             {type: SpaceType.GEAR_L},
             {cover: {number: 2}},
             {type: SpaceType.GEAR_R}
+        ]
+    ] as Space[][]
+}
+
+const sample_board2: BoardData = {
+    display_name: "sample_board2",
+    x_dim: 3,
+    y_dim: 4,
+    walls: {
+        horizontal_walls: [
+            [null, null, null, null, null],
+            [null, null, null, null, null],
+            [null, null, null, null, null]
+        ] as Wall[][],
+        vertical_walls: [
+            [null, null, null, null],
+            [null, null, null, null],
+            [null, null, null, null],
+            [null, null, null, null]
+        ] as Wall[][]
+    },
+    spaces: [
+        [
+            {type: SpaceType.CONVEYOR_L, orientation: Orientation.E},
+            {type: SpaceType.CONVEYOR_F, orientation: Orientation.S},
+            {type: SpaceType.CONVEYOR2_F, orientation: Orientation.E},
+            {type: SpaceType.CONVEYOR2_F, orientation: Orientation.E}
+        ],[
+            {type: SpaceType.CONVEYOR_LF, orientation: Orientation.E},
+            {type: SpaceType.CONVEYOR_F, orientation: Orientation.S},
+            {type: SpaceType.CONVEYOR2_F, orientation: Orientation.E},
+            {type: SpaceType.CONVEYOR2_F, orientation: Orientation.E}
+        ],[
+            {type: SpaceType.PIT},
+            {type: SpaceType.CONVEYOR_F, orientation: Orientation.S},
+            {type: SpaceType.CONVEYOR2_R, orientation: Orientation.S},
+            {type: SpaceType.PIT}
         ]
     ] as Space[][]
 }
@@ -417,17 +454,16 @@ test('isValidBoardData (wrong list lengths)', () => {
 
 test('isValidBoardData (test data)', () => {
     expect(isValidBoardData(sample_board)).toBeTruthy()
+    expect(isValidBoardData(sample_board2)).toBeTruthy()
+    expect(isValidBoardData(push_board)).toBeTruthy()
 })
 
-// test('Board.constructor', () => {})
 test('Board.getId', () => {
     const b1 = new Board(sample_board)
     const b2 = new Board(sample_board)
     // IDs should be incrementing
     expect(b2.getId() - b1.getId()).toBe(1)
 })
-
-// test('Board.rebuildComponentData', () => {})
 
 test('Board.handleConveyor2', () => {
     const b1 = new Board(sample_board)
@@ -464,6 +500,56 @@ test('Board.handleConveyor2', () => {
         expect(movements.pushed[i]).toBeFalsy()
         expect(movements.results[i]).toBe(MovementStatus.OK)
     }
+})
+
+test('Board.handleConveyor2 (correct lengths)', () => {
+    console.log('conveyor lengths')
+    const b = new Board(sample_board2)
+    const positions_1 = new Map<string, OrientedPosition>()
+    positions_1.set('first', {x:1, y:2, orientation: Orientation.N})
+    positions_1.set('second', {x:2, y:2, orientation: Orientation.W})
+    
+    const handled = b.handleConveyor2(positions_1)
+    expect(handled.size).toBe(2)
+    expect(handled.has('first')).toBeTruthy()
+    expect(handled.has('second')).toBeTruthy()
+    
+    // this one only moved once, so it shouldn't have a second frame, but the other
+    // does, so it should wait while the other moves
+    // on the second, it will fail to push the other actor, and thus be stopped
+    const movements1 = handled.get('first') as MovementArrayWithResults
+    expect(movements1.length).toBe(2)
+    expect(movements1.frames[0]).toBeDefined()
+    expect(movements1.frames[1]).toBeDefined()
+    
+    // should have a frame for the movement and for the rotation onto the new conveyor
+    // there should be no action from the second conveyor activation because it is now
+    // on a conveyor 1
+    const movements2 = handled.get('second') as MovementArrayWithResults
+    expect(movements2.length).toBe(2)
+    expect(movements2.frames[0]).toBeDefined()
+    expect(movements2.frames[1]).toBeUndefined()
+
+    const positions_2 = new Map<string, OrientedPosition>()
+    positions_2.set('first', {x:0, y:3, orientation: Orientation.N})
+    positions_2.set('second', {x:1, y:3, orientation: Orientation.W})
+
+    // case for one actor falling into a pit
+    const handled_2 = b.handleConveyor2(positions_2)
+    expect(handled_2.size).toBe(2)
+    expect(handled_2.has('first')).toBeTruthy()
+    expect(handled_2.has('second')).toBeTruthy()
+
+    const movements_a = handled.get('first') as MovementArrayWithResults
+    expect(movements_a.length).toBe(2)
+    expect(movements_a.frames[0]).toBeDefined()
+    expect(movements_a.frames[1]).toBeDefined()
+    
+    // should have a frame for the first movement and no frame after falling into the pit
+    const movements_b = handled.get('second') as MovementArrayWithResults
+    expect(movements_b.length).toBe(2)
+    expect(movements_b.frames[0]).toBeDefined()
+    expect(movements_b.frames[1]).toBeUndefined()
 })
 
 test('Board.handleConveyor', () => {
@@ -584,4 +670,29 @@ test('Board.handleLaserPaths (exclusive)', () => {
 
 // test('Board.rotateBoard', () => {})
 
-// test('getWalls', () => {})
+test('getWalls', () => {
+    const pb = new Board(push_board)
+    const sb = new Board(sample_board)
+
+    const r1 = getWalls(pb, {x:3, y:1})
+    expect(r1).toBeDefined()
+    expect(r1.n).toBeUndefined()
+    expect(r1.s).toBeDefined()
+    expect(r1.e).toBeDefined()
+    expect(r1.w).toBeDefined()
+
+    // this cell has no walls
+    const r2 = getWalls(pb, {x:1, y:2})
+    expect(r2).toBeDefined()
+    expect(r2.n).toBeUndefined()
+    expect(r2.e).toBeUndefined()
+    expect(r2.s).toBeUndefined()
+    expect(r2.w).toBeUndefined()
+
+    const r3 = getWalls(sb, {x:2, y:2})
+    expect(r3).toBeDefined()
+    expect(r3.n).toBeUndefined()
+    expect(r3.w).toBeUndefined()
+    expect(r3.s).toBeDefined()
+    expect(r3.e).toBeDefined()
+})

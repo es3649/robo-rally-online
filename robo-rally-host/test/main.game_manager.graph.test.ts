@@ -9,6 +9,7 @@ cf.addMover({x:0,y:0}, Orientation.E)
 cf.addMover({x:1,y:0}, Orientation.E, RotationDirection.CCW)
 cf.addMover({x:2,y:0}, Orientation.N)
 cf.addMover({x:1, y:1}, Orientation.E)
+cf.addMover({x:1, y:2}, Orientation.N)
 
 const pf0 = new MovementForest()
 pf0.addMover({x:0, y:0}, Orientation.N)
@@ -41,14 +42,15 @@ function dummy_evaluator(position: OrientedPosition, move: MovementFrame): Movem
 }
 
 /**
- * Curries an evaluator which denies specific movements due to walls
+ * Curries an evaluator which denies specific movements due to the specified status. defaults to WALL
  * @param illegal a list of spaces and orientations (collected as an OrientedPosition object)
  * in which it is not allowable for an actor to move out of that space.
- * @returns an evaluator function which returns undefined movement and WALL status precisely
+ * @param status the status to return when the given movement matches one of the specified ones
+ * @returns an evaluator function which returns undefined movement and the given status precisely
  * when the provided position and AbsoluteStep direction are equal to one of the elements of
  * the illegal array. If there is not a match, it returns the move with OK status
  */
-function curry_evaluator(illegal: OrientedPosition[]): (position: OrientedPosition, move: MovementFrame) => MovementResult {
+function curry_evaluator(illegal: OrientedPosition[], status: MovementStatus = MovementStatus.WALL): (position: OrientedPosition, move: MovementFrame) => MovementResult {
     function evaluator(position: OrientedPosition, move: MovementFrame): MovementResult {
         for (const configuration of illegal) {
             if (!isAbsoluteMovement(move)) {
@@ -58,9 +60,17 @@ function curry_evaluator(illegal: OrientedPosition[]): (position: OrientedPositi
                 position.y == configuration.y &&
                 move.direction == configuration.orientation
             ) {
-                return {
-                    movement: undefined,
-                    status: MovementStatus.WALL
+                if (status == MovementStatus.WALL) {
+
+                    return {
+                        movement: undefined,
+                        status: status
+                    }
+                } else {
+                    return {
+                        movement: move,
+                        status: status
+                    }
                 }
             }
         }
@@ -391,6 +401,25 @@ test('MovementForest.handleMovement (conveyor: multiple pushing to collision)', 
     expect(res_lineup.get('fourth')[0].pushed).toBeFalsy()
 })
 
+test('MovementForest.handleMovement (conveyor: pit)', () => {
+    console.log('conveyor: pit')
+    const lineup = new Map<string, OrientedPosition>()
+    lineup.set('first', {x:1, y:2, orientation: Orientation.W})
+    const res_lineup = cf.handleMovement(lineup, curry_evaluator([{x:1, y:2, orientation: Orientation.N}], MovementStatus.PIT))
+
+    expect(res_lineup.size).toBe(1)
+    expect(res_lineup.has('first')).toBeTruthy()
+    expect(res_lineup.get('first').length).toBeDefined()
+    expect(res_lineup.get('first').length).toBe(1)
+    expect(res_lineup.get('first')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(res_lineup.get('first')[0].movement)).toBeTruthy()
+    expect((res_lineup.get('first')[0].movement as AbsoluteMovement).direction).toBe(Orientation.N)
+    expect((res_lineup.get('first')[0].movement as AbsoluteMovement).distance).toBe(1)
+    expect(res_lineup.get('first')[0].status).toBeDefined()
+    expect(res_lineup.get('first')[0].status).toBe(MovementStatus.PIT)
+    expect(res_lineup.get('first')[0].pushed).toBeFalsy()
+})
+
 test('MovementForest.handleMovement (pusher: basic)', () => {
 
     const positions = new Map<string, OrientedPosition>()
@@ -675,4 +704,35 @@ test('MovementForest.handleMovement (pusher: moving past conflicted chain)', () 
     // expect(movements.get('second')).toBeUndefined()
     // expect(movements.has('third')).toBeTruthy()
     // expect(movements.get('third')).toBeUndefined()
+})
+
+test('MovementForest.handleMovement (pusher: pit)', () => {
+    console.log('pusher: pit')
+    const lineup = new Map<string, OrientedPosition>()
+    lineup.set('first', {x:1, y:2, orientation: Orientation.W})
+    lineup.set('second', {x:1, y:1, orientation: Orientation.S})
+    const res_lineup = pf3.handleMovement(lineup, curry_evaluator([{x:1, y:2, orientation: Orientation.N}], MovementStatus.PIT))
+
+    expect(res_lineup.size).toBe(2)
+    expect(res_lineup.has('first')).toBeTruthy()
+    expect(res_lineup.get('first').length).toBeDefined()
+    expect(res_lineup.get('first').length).toBe(1)
+    expect(res_lineup.get('first')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(res_lineup.get('first')[0].movement)).toBeTruthy()
+    expect((res_lineup.get('first')[0].movement as AbsoluteMovement).direction).toBe(Orientation.N)
+    expect((res_lineup.get('first')[0].movement as AbsoluteMovement).distance).toBe(1)
+    expect(res_lineup.get('first')[0].status).toBeDefined()
+    expect(res_lineup.get('first')[0].status).toBe(MovementStatus.PIT)
+    expect(res_lineup.get('first')[0].pushed).toBeTruthy()
+
+    expect(res_lineup.has('second')).toBeTruthy()
+    expect(res_lineup.get('second').length).toBeDefined()
+    expect(res_lineup.get('second').length).toBe(1)
+    expect(res_lineup.get('second')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(res_lineup.get('second')[0].movement)).toBeTruthy()
+    expect((res_lineup.get('second')[0].movement as AbsoluteMovement).direction).toBe(Orientation.N)
+    expect((res_lineup.get('second')[0].movement as AbsoluteMovement).distance).toBe(1)
+    expect(res_lineup.get('second')[0].status).toBeDefined()
+    expect(res_lineup.get('second')[0].status).toBe(MovementStatus.OK)
+    expect(res_lineup.get('second')[0].pushed).toBeFalsy()
 })

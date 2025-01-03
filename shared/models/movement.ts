@@ -277,8 +277,9 @@ export function isRotation(mv: any): mv is Rotation {
  * @param mv the movement to check
  * @returns whether or not the movement is a no-op
  */
-export function isNoOp(mv: Movement): boolean {
+export function isNoOp(mv: Movement|undefined): boolean {
     return (
+        (mv === undefined) ||
         (isRotation(mv) && (mv.units % 4) == 0) ||
         (!isRotation(mv) && mv.distance == 0)
     )

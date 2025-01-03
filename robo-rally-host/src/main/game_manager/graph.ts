@@ -200,12 +200,13 @@ export class MovementForest {
                 console.log('clearing movements for', member)
                 // check what is stored
                 const result = movement_frames.get(member)
-                // if it's a wall strike, keep it, otherwise, nuke it
-                if (result !== undefined && result.length > 0 && result[0].status === MovementStatus.WALL) {
+                // if it's a wall/pit strike, keep it, otherwise, nuke it
+                if (result !== undefined && result.length > 0 && 
+                    (result[0].status === MovementStatus.WALL || result[0].status === MovementStatus.PIT)) {
                     console.log("leaving wall strike")
                     movement_frames.set(member, [{
                         movement: undefined,
-                        status: MovementStatus.WALL,
+                        status: result[0].status,
                         pushed: result[0].pushed
                     }])
                 } else {
@@ -223,6 +224,7 @@ export class MovementForest {
                 }
             }
         }
+
 
         function _moveCluster(cur: number, dest: number) {
             console.log('moving cluster', cur, 'to cluster', dest)
@@ -298,15 +300,17 @@ export class MovementForest {
 
             // this will be at most an absolute movement followed by a rotation
             const result = evaluator(start, movements[0])
-            if (result === undefined || result.status == MovementStatus.WALL) {
+            if (result === undefined || result.status == MovementStatus.WALL || result.status === MovementStatus.PIT) {
                 // we hit a wall, so invalidate our cluster
                 // do not process any rotation, the entire movement is cancelled
-                console.log('hit a wall')
-                _invalidateCluster(cluster_number)
+                console.log('hit a wall/pit')
+                if (result.status !== MovementStatus.PIT) {
+                    _invalidateCluster(cluster_number)
+                }
                 // save the fact that we hit a wall, and set pushed correctly
                 // wall strikes are important, even if movement is cancelled
                 result.pushed = push_orientation !== undefined
-                console.log('setting wall-strike result:', result)
+                console.log('setting wall/pit-strike result:', result)
                 movement_frames.set(key, [result])
                 return
             }

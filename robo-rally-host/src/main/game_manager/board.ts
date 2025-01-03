@@ -178,10 +178,10 @@ export type Space = {
  * specifies the types of the walls surrounding a space and what they contain
  */
 export class SpaceBoundaries {
-    n: WallType | undefined
-    e: WallType | undefined
-    s: WallType | undefined
-    w: WallType | undefined
+    public n: WallType | undefined
+    public e: WallType | undefined
+    public s: WallType | undefined
+    public w: WallType | undefined
 
     constructor(n: WallType|undefined, e: WallType|undefined, s: WallType|undefined, w: WallType|undefined) {
         this.n = n
@@ -685,8 +685,8 @@ export class Board {
     public handleConveyor2(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
         // call handle conveyance twice because handle conveyance only handles one step
         const evaluator = (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move)
-        let movements_1 = this.conveyors2.handleMovement(positions, evaluator)
-        let mid_positions = new Map<string, OrientedPosition>()
+        const movements_1 = this.conveyors2.handleMovement(positions, evaluator)
+        const mid_positions = new Map<string, OrientedPosition>()
         const ret_builder = new Map<PlayerID, MovementArrayResultsBuilder>()
 
         // get the max len to use for padding out movements
@@ -696,17 +696,20 @@ export class Board {
                 max_len_1 = frames.length
             }
         }
+        console.log('max_len_1 is', max_len_1)
 
         // apply the movements to the positions in the array to get the next round of positions
         for (const [key, frames] of movements_1.entries()) {
             // we don't need to log it if there's no movement
             if (frames.length == 0) {
+                console.log('no phase 1 movements for', key)
                 continue
             }
             let new_pos: OrientedPosition = positions.get(key) as OrientedPosition
             const builder = new MovementArrayResultsBuilder()
             let remove = false
             
+            console.log('adding phase 1 movements for', key)
             for (const frame of frames) {
                 // update the position
                 if (isAbsoluteMovement(frame.movement)) {
@@ -741,6 +744,7 @@ export class Board {
                 max_len_2 = frames.length
             }
         }
+        console.log('max_len_2 is', max_len_2)
 
         // define the return value
         const ret = new Map<PlayerID, MovementArrayWithResults>()
@@ -750,27 +754,39 @@ export class Board {
             let builder = ret_builder.get(key)
             // if there's nothing, no need to log
             if (frames.length == 0) {
+                console.log('no phase 2 movements for', key, 'but modifying length to match')
                 // unless we already have something, then pad out to length
                 if (builder !== undefined) {
                     builder.padMovementToLength(max_len_2)
+                    ret.set(key, builder.finish())
                 }
                 continue
             }
             // if the builder was empty
             if (builder === undefined) {
+                console.log('creating empty phase 1 movements for', key, 'before logging phase 2')
                 builder = new MovementArrayResultsBuilder()
                 builder.padMovementToLength(max_len_1)
-                builder.endMovement()
                 ret_builder.set(key, builder)
             }
 
             // extend the builder
+            console.log('adding phase 2 movements for', key)
             for (const frame of frames) {
                 builder.addFrame(frame.movement, frame.status, !!frame.pushed)
             }
 
             builder.padMovementToLength(max_len_2)
             ret.set(key, builder.finish())
+        }
+
+        // extend all movers who showed up in phase one but not phase two
+        for (const [key, builder] of ret_builder) {
+            if (!movements_2.has(key)) {
+                // pad out the movement and finish it
+                builder.padMovementToLength(max_len_2)
+                ret.set(key, builder.finish())
+            }
         }
 
         return ret
@@ -1028,6 +1044,13 @@ export class Board {
     }
 }
 
+/**
+ * gets the walls on the N, E, S, and W of the given space, if any. They are returned on a SpaceBoundaries object
+ * @param board the board on which we get surrounding walls. Walls are always returned as standard walls
+ * @param pos the position whose boundaries we will get
+ * @throws if the position is not on the board
+ * @returns a SpaceBoundaries object containing the the wall data of the walls adjacent to the cell
+ */
 export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries {
     const x = pos.x
     const y = pos.y
