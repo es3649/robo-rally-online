@@ -18,18 +18,18 @@
     },
     "spaces": [
         [
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"},
-            {"type": "spawn"}
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}},
+            {"type": {"id": "aa:bb:cc:dd"}}
         ],[
             {},{},{},{},{},{},{},{},{},{},{},{}
         ],[
