@@ -1,6 +1,6 @@
-import { applyAbsoluteMovement, applyOrientationStep, applyRotation, BoardPosition, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, OrientedPosition, Turn, type AbsoluteStep } from "../src/main/game_manager/move_processors"
+import { applyAbsoluteMovement, applyOrientationStep, applyRotation, BoardPosition, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementResult, MovementStatus, OrientedPosition, Turn, type AbsoluteStep } from "../src/main/game_manager/move_processors"
 import { AbsoluteMovement, isAbsoluteMovement, isRotation, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from "../src/main/models/movement"
-import { expect, jest, test } from '@jest/globals'
+import { expect, test } from '@jest/globals'
 
 test('applyOrientationStep', () => {
     const init: BoardPosition = {x: 0, y: 0}
@@ -372,6 +372,61 @@ test('MovementResultsBuilder.finish', () => {
 
     // equality check
     expect(arr1.movement_boundaries).toEqual(arr2.movement_boundaries)
+})
+
+test('MovementMapBuilder', () => {
+    const builder = new MovementMapBuilder<string>()
+
+    const movements1 = new Map<string, MovementResult[]>()
+    movements1.set('first', [
+        {movement: {direction: Orientation.N, distance: 1}, status: MovementStatus.OK}
+    ])
+    movements1.set('second', [
+        {movement: {direction: Orientation.W, distance:1}, status: MovementStatus.OK},
+        {movement: new Turn(RotationDirection.CCW), status: MovementStatus.OK},
+    ])
+    
+    const ok1 = builder.appendMovements(movements1)
+    expect(ok1).toBeTruthy()
+    
+    const movements2 = new Map<string, MovementResult[]>()
+    movements2.set('first', [])
+    movements2.set('third', [
+        {movement: new Turn(RotationDirection.CCW), status: MovementStatus.OK},
+    ])
+    movements2.set('fourth', [])
+
+    const ok2 = builder.appendMovements(movements2)
+    expect(ok2).toBeTruthy()
+
+    const movements3 = new Map<string, MovementResult[]>()
+    movements3.set('second', [
+        {movement: {direction: Orientation.W, distance: 1}, status: MovementStatus.PIT}
+    ])
+    movements3.set('third', [
+        {movement: {direction: Orientation.W, distance:1}, status: MovementStatus.OK}
+    ])
+
+    const ok3 = builder.appendMovements(movements3)
+    expect(ok3).toBeFalsy()
+
+    const complete = builder.finish()
+    console.log(complete)
+    expect(complete).toBeDefined()
+    expect(complete.size).toBe(3)
+    const first = complete.get('first')
+    expect(first).toBeDefined()
+    expect(first.length).toBe(4)
+
+    const second = complete.get('second')
+    expect(second).toBeDefined()
+    expect(first.length).toBe(4)
+
+    const third = complete.get('third')
+    expect(third).toBeDefined()
+    expect(first.length).toBe(4)
+    // the fact that the movements and everything are correct should follow from the
+    // correctness of MovementArrayResultsBuilder
 })
 
 // NOTE we may be able to remove the movement_boundaries concept from the MovementArrays

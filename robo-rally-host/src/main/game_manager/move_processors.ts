@@ -254,3 +254,86 @@ export class MovementArrayResultsBuilder {
         return new MovementArrayWithResults(this.frames, this.movement_boundaries, this.results, this.pushed)
     }
 }
+
+export class MovementMapBuilder<Key> {
+    private working = new Map<Key, MovementArrayResultsBuilder>()
+    private len = 0
+
+    constructor() {}
+
+    /**
+     * appends a map of movement results to the internal map. I't like concatenating a map of arrays
+     * by key, so that each array gets extended by the array in the second map with the corresponding
+     * key. Padding is taken into account as well, so that if new keys appear, they will be padded out
+     * as far as the previous entries are long
+     * @param moves the movements to append to the builder
+     * @returns true if all movements added ended with OK status, false othwerise
+     */
+    appendMovements(moves: Map<Key, MovementResult[]>): boolean {
+        let all_ok = true
+        let max_len = 0
+
+        // get the max length of the moves in this batch so we know haw far to pad
+        for (const frames of moves.values()) {
+            if (frames.length > max_len) {
+                max_len = frames.length
+            }
+        }
+
+        for (const [key, frames] of moves.entries()) {
+            // get the builder for this key
+            let builder = this.working.get(key)
+
+            // if there's nothing, no need to log
+            if (frames.length == 0) {
+                // unless we already have something, then pad out to length
+                if (builder !== undefined) {
+                    builder.padMovementToLength(max_len)
+                }
+                continue
+            }
+            
+            // if there is no builder, create one and pad it out
+            if (builder === undefined) {
+                builder = new MovementArrayResultsBuilder()
+                builder.padMovementToLength(this.len)
+                this.working.set(key, builder)
+            }
+
+            // add the frame to the builder
+            for (const frame of frames) {
+                // add the frame to the builder
+                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
+                if (frame.status !== MovementStatus.OK) {
+                    all_ok = false
+                }
+            }
+
+            // pad out the result builder
+            builder.padMovementToLength(max_len)
+        }
+        
+        this.len += max_len
+        
+        // pad out any that didn't have additions this call
+        for (const [key, builder] of this.working.entries()) {
+            if (!moves.has(key)) {
+                // pad out the movement
+                builder.padMovementToLength(this.len)
+            }
+        }
+        
+        return all_ok
+    }
+
+    finish(): Map<Key, MovementArrayWithResults> {
+        const ret = new Map<Key, MovementArrayWithResults>()
+
+        // finish each of hte builders
+        for (const [key, builder] of this.working.entries()) {
+            ret.set(key, builder.finish())
+        }
+
+        return ret
+    }
+}

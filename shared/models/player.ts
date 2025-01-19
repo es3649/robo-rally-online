@@ -44,6 +44,8 @@ export declare type Character = {
     readonly id: CharacterID,
     readonly sprite_small: string,
     readonly sprite_large: string,
+    readonly color: Color.Set
+    readonly bluetooth_id: string
 }
 
 export declare type PlayerName = string
@@ -53,8 +55,6 @@ export declare type PartialPlayer = {
     name: PlayerName,
     id: PlayerID,
     character?: Character,
-    // conn?: undefined,
-    colors?: Color.Set
 }
 export declare type Player = Required<PartialPlayer>
 

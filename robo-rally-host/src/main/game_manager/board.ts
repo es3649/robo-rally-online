@@ -1,7 +1,7 @@
 import { Orientation, RotationDirection, Rotation, isAbsoluteMovement, isRotation } from "../models/movement"
 import type { PlayerID } from "../models/player"
 import { DualKeyMap, MovementForest } from "./graph"
-import { applyOrientationStep, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
+import { applyOrientationStep, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
 
 const BOARD_SIZE = 12
 
@@ -27,7 +27,10 @@ export namespace SpaceType {
     export const GEAR_L = "gear_L"         // left rotating gear
     export const PIT = "pit"            // a pit
     export const BATTERY = "battery"        // a battery space
-    export const SPAWN = "spawn"          // an initial (not respawn) point
+
+    export type SPAWN = {
+        id: string
+    }
 
     /**
      * checks if the given type is any of the 2 conveyor(1) types
@@ -77,10 +80,22 @@ export namespace SpaceType {
     export function isAnyConveyor(t: SpaceType|undefined): boolean {
         return isConveyor(t) || isConveyor2(t)
     }
+
+    /**
+     * checks if the given object is a spawn/respawn object
+     * @param obj the object to check
+     * @returns true if the object is a spawn object
+     */
+    export function isSpawn(obj: any): obj is SPAWN {
+        return (obj !== undefined &&
+            obj.id !== undefined &&
+            typeof obj.id === "string"
+        )
+    }
 }
 export type SpaceType = "conv_F" | "conv_L" | "conv_R" | "conv_RF" | "conv_LF" | "conv_LR" |
     "conv_LRF" | "conv2_F" | "conv2_L" | "conv2_R" | "conv2_RF" | "conv2_LF" | "conv2_LR" |
-    "conv2_LRF" | "gear_R" | "gear_L" | "pit" | "battery" | "spawn"
+    "conv2_LRF" | "gear_R" | "gear_L" | "pit" | "battery" | SpaceType.SPAWN
 
 /**
  * The type of a wall, having a push panel, up to three lasers, or simply being a wall
@@ -118,6 +133,26 @@ export namespace WallType {
                 return true
             default:
                 return false
+        }
+    }
+
+    /**
+     * computes the damage of a laser (if the WallType given is not a laser, the damage is 0,
+     * but this is an odd thing to check, so we log a warning also)
+     * @param type the type of the wall in question
+     * @returns the amount of damage the laser on that wall deals
+     */
+    export function getLaserDamage(type: WallType): number {
+        switch (type) {
+            case WallType.LASER:
+                return 1
+            case WallType.LASER2:
+                return 2
+            case WallType.LASER3:
+                return 3
+            default:
+                console.warn(`checking damage of non-laser type: ${type}`)
+                return 0
         }
     }
 }
@@ -160,7 +195,7 @@ export namespace SpaceCoverType {
         return false
     }
 }
-export type SpaceCoverType = "respawn" | "scrambler" | SpaceCoverType.CRUSHER | SpaceCoverType.CHECKPOINT
+export type SpaceCoverType = SpaceType.SPAWN | "scrambler" | SpaceCoverType.CRUSHER | SpaceCoverType.CHECKPOINT
 
 /**
  * a full board space. It specifies the type of the space, a cover on the space, and any
@@ -315,6 +350,11 @@ export type PusherPosition = {
 }
 
 /**
+ * this is the type of an evaluator function, it's referenced all over, so we declare a type for it
+ */
+export type Evaluator = (position: OrientedPosition, movement: MovementFrame) => MovementResult
+
+/**
  * A full board object. It contains the raw board data, as well as some processed data which
  * will make processing board events more straightforward
  */
@@ -324,15 +364,15 @@ export class Board {
     public data: BoardData
 
     // all other events are independent, and only the position matters
-    // public battery_positions: BoardPosition[] = []
-    // public scrambler_positions: BoardPosition[] = []
-    // public crusher_positions: BoardPosition[] = []
     public checkpoint_map: DualKeyMap<number, number> = new DualKeyMap<number, number>()
+    private last_checkpoint: number = 0
     // the following are indexed along the walls, so may go up to x_dim/y_dim, instead of one below these
     private laser_origins: LaserPosition[] = []
     private pushers: (MovementForest|undefined)[] = []
     private conveyors: MovementForest = new MovementForest(false)
     private conveyors2: MovementForest = new MovementForest(false)
+    private spawn_locations = new Map<string, OrientedPosition>()
+    private respawn_locations = new Map<string, OrientedPosition>()
 
     constructor(data: BoardData) {
         // set our instance ID from the static count
@@ -350,7 +390,7 @@ export class Board {
      * @param pos the position to test
      * @returns true if the position is on the board
      */
-    private _onBoard(pos: BoardPosition): boolean {
+    private onBoard(pos: BoardPosition): boolean {
         return (
             pos.x >= 0 && pos.x < this.data.x_dim &&
             pos.y >= 0 && pos.y < this.data.y_dim
@@ -467,14 +507,14 @@ export class Board {
      * @param pos the position of the space to check
      * @returns the direction in which the space rotates if it is a conveyor, else undefined
      */
-    private _conveyorTurnDirection(pos: BoardPosition): RotationDirection|undefined {
+    private conveyorTurnDirection(pos: BoardPosition): RotationDirection|undefined {
         const o = this.data.spaces[pos.x][pos.y].orientation
         if (o == undefined) {
             return
         }
         const destination_pos = applyOrientationStep(pos, o)
         const destination_space = this.data.spaces[destination_pos.x][destination_pos.y]
-        if (!this._onBoard(destination_pos) ||
+        if (!this.onBoard(destination_pos) ||
             !SpaceType.isAnyConveyor(destination_space.type))
         {
             return
@@ -522,20 +562,6 @@ export class Board {
         }
     }
 
-    private _getLaserDamage(type: WallType): number {
-        switch (type) {
-            case WallType.LASER:
-                return 1
-            case WallType.LASER2:
-                return 2
-            case WallType.LASER3:
-                return 3
-            default:
-                console.warn(`checking damage of non-laser type: ${type}`)
-                return 0
-        }
-    }
-
     /**
      * adds a new pusher to the array of pushers. It also manages the pushers array length, and
      * contents to make sure that we add to real MoverForests.
@@ -543,7 +569,7 @@ export class Board {
      * @param direction the direction in which the pusher pushes
      * @param registers the 1-indexed registers on which the pushers activate
      */
-    private _addPusher(position: BoardPosition, direction: Orientation, registers: number[]) {
+    private addPusher(position: BoardPosition, direction: Orientation, registers: number[]) {
         for (const register of registers) {
             const zeroed = register - 1
             // if there is not an instantiated mover here
@@ -560,10 +586,8 @@ export class Board {
      * traversable by conveyor, and listing other component types
      */
     private rebuildComponentData() {
-        // this.battery_positions = []
-        // this.scrambler_positions = []
-        // this.crusher_positions = []
         this.checkpoint_map = new DualKeyMap<number, number>()
+        this.last_checkpoint = 0
         this.conveyors.clear()
         this.conveyors2.clear()
         this.pushers = [undefined, undefined, undefined, undefined, undefined]
@@ -578,13 +602,19 @@ export class Board {
                 //     this.scrambler_positions.push({x:x,y:y})
                 // } else 
                 if (SpaceCoverType.isCHECKPOINT(space.cover)) {
-                    this.checkpoint_map.set(x, y, (this.data.spaces[x][y].cover as SpaceCoverType.CHECKPOINT).number)
+                    const number = (this.data.spaces[x][y].cover as SpaceCoverType.CHECKPOINT).number
+                    this.checkpoint_map.set(x, y, number)
+                    if (this.last_checkpoint < number) {
+                        this.last_checkpoint = number
+                    }
                 // } else if (this.data.spaces[x][y].type == SpaceType.BATTERY) {
                     // this.battery_positions.push({x:x, y:y})
-                } else if (SpaceType.isAnyConveyor(space.type)) {
+                }
+                
+                if (SpaceType.isAnyConveyor(space.type)) {
                     // check if it gives a rotation when it pushes
                     const pos: BoardPosition = {x:x, y:y}
-                    const rotation: RotationDirection|undefined = this._conveyorTurnDirection(pos)
+                    const rotation: RotationDirection|undefined = this.conveyorTurnDirection(pos)
                     // make sure that this gets added to the correct forest
                     const o = space.orientation as Orientation
                     const cell = getWalls(this, {x:x, y:y})
@@ -595,6 +625,14 @@ export class Board {
                     } else {
                         this.conveyors2.addMover(pos, o, rotation)
                     }
+                } else if (SpaceType.isSpawn(space.type)) {
+                    // if the space type is a spawn, then we have a legit spawn point
+                    const o = space.orientation as Orientation
+                    this.spawn_locations.set(space.type.id, {x:x, y:y, orientation: o})
+                } else if (SpaceType.isSpawn(space.cover)) {
+                    // if the space type is a spawn, then we have a legit spawn point
+                    const o = space.cover_orientation as Orientation
+                    this.respawn_locations.set(space.cover.id, {x:x, y:y, orientation: o})
                 }
             }
         }
@@ -615,7 +653,7 @@ export class Board {
                             y:y-1, 
                             orientation: Orientation.S
                         },
-                        damage: this._getLaserDamage(wall.lo)
+                        damage: WallType.getLaserDamage(wall.lo)
                     })
                 } else if (WallType.isLaser(wall.hi)) {
                     // add a North (vertical-high) facing laser
@@ -625,14 +663,14 @@ export class Board {
                             y:y, 
                             orientation: Orientation.N
                         },
-                        damage: this._getLaserDamage(wall.hi)
+                        damage: WallType.getLaserDamage(wall.hi)
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a South (vertical-low) facing pusher
-                    this._addPusher({x:x, y:y-1}, Orientation.S, wall.lo.registers)
+                    this.addPusher({x:x, y:y-1}, Orientation.S, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add a North (vertical-high) facing pusher
-                    this._addPusher({x:x, y:y}, Orientation.N, wall.hi.registers)
+                    this.addPusher({x:x, y:y}, Orientation.N, wall.hi.registers)
                 }
             }
         }
@@ -650,7 +688,7 @@ export class Board {
                             y:y, 
                             orientation: Orientation.W
                         },
-                        damage: this._getLaserDamage(wall.lo)
+                        damage: WallType.getLaserDamage(wall.lo)
                     })
                 } else if (WallType.isLaser(wall?.hi)) {
                     // add an East (horizontal-high) facing laser
@@ -660,21 +698,31 @@ export class Board {
                             y:y, 
                             orientation: Orientation.E
                         },
-                        damage: this._getLaserDamage(wall.hi)
+                        damage: WallType.getLaserDamage(wall.hi)
                     })
                 } else if (WallType.isPUSH(wall?.lo)) {
                     // add a West (horizontal-low) facing pusher
-                    this._addPusher({x:x-1, y:y}, Orientation.W, wall.lo.registers)
+                    this.addPusher({x:x-1, y:y}, Orientation.W, wall.lo.registers)
                 } else if (WallType.isPUSH(wall?.hi)) {
                     // add an East (horizontal-high) facing pusher
-                    this._addPusher({x:x, y:y}, Orientation.E, wall.hi.registers)
+                    this.addPusher({x:x, y:y}, Orientation.E, wall.hi.registers)
                 }
             }
         }
+
+        // TODO we should check that all the checkpoints are added, otherwise the game cannot end
     }
 
     /**
-     * computes movements for each position resulting from the actions of the 2-step conveyors. The
+     * gets the number of the highest-numbered checkpoint
+     * @return the max of all the checkpoint values
+     */
+    public getLastCheckpoint() {
+        return this.last_checkpoint
+    }
+
+    /**
+     * computes movements for each position resulting from a SINGLE activation of the 2-step conveyors. The
      * return array will be the same size as the input array, and each entry should be applied to the
      * position at the same index in the input. All outputs will either be empty, or the same non-zero
      * length.
@@ -683,113 +731,13 @@ export class Board {
      * the positions in the input
      */
     public handleConveyor2(positions: Map<PlayerID, OrientedPosition>): Map<PlayerID, MovementArrayWithResults> {
-        // call handle conveyance twice because handle conveyance only handles one step
-        const evaluator = (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move)
-        const movements_1 = this.conveyors2.handleMovement(positions, evaluator)
-        const mid_positions = new Map<string, OrientedPosition>()
-        const ret_builder = new Map<PlayerID, MovementArrayResultsBuilder>()
-
-        // get the max len to use for padding out movements
-        let max_len_1 = 0
-        for (const frames of movements_1.values()) {
-            if (frames.length > max_len_1) {
-                max_len_1 = frames.length
-            }
-        }
-        console.log('max_len_1 is', max_len_1)
-
-        // apply the movements to the positions in the array to get the next round of positions
-        for (const [key, frames] of movements_1.entries()) {
-            // we don't need to log it if there's no movement
-            if (frames.length == 0) {
-                console.log('no phase 1 movements for', key)
-                continue
-            }
-            let new_pos: OrientedPosition = positions.get(key) as OrientedPosition
-            const builder = new MovementArrayResultsBuilder()
-            let remove = false
-            
-            console.log('adding phase 1 movements for', key)
-            for (const frame of frames) {
-                // update the position
-                if (isAbsoluteMovement(frame.movement)) {
-                    new_pos = applyOrientationStep(new_pos, frame.movement.direction)
-                }
-                // add the frame to the builder
-                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
-                // if we end on a pit, break our movement, we don't continue
-                if (frame.status == MovementStatus.PIT) {
-                    remove = true
-                    break
-                }
-            }
-
-            // set the updated position, unless we were removed (we aren't counted in movements anymore)
-            if (!remove) {
-                mid_positions.set(key, new_pos)
-            }
-
-            // pad out the result builder
-            builder.padMovementToLength(max_len_1)
-            ret_builder.set(key, builder)
-        }
-
-        // get the second set of movements
-        const movements_2 = this.conveyors2.handleMovement(mid_positions, evaluator)
-
-        // get the max length of a movements_2 array
-        let max_len_2 = 0
-        for (const frames of movements_2.values()) {
-            if (frames.length > max_len_2) {
-                max_len_2 = frames.length
-            }
-        }
-        console.log('max_len_2 is', max_len_2)
-
-        // define the return value
-        const ret = new Map<PlayerID, MovementArrayWithResults>()
-
-        // run over the results and continue to update the builders
-        for (const [key, frames] of movements_2.entries()) {
-            let builder = ret_builder.get(key)
-            // if there's nothing, no need to log
-            if (frames.length == 0) {
-                console.log('no phase 2 movements for', key, 'but modifying length to match')
-                // unless we already have something, then pad out to length
-                if (builder !== undefined) {
-                    builder.padMovementToLength(max_len_2)
-                    ret.set(key, builder.finish())
-                }
-                continue
-            }
-            // if the builder was empty
-            if (builder === undefined) {
-                console.log('creating empty phase 1 movements for', key, 'before logging phase 2')
-                builder = new MovementArrayResultsBuilder()
-                builder.padMovementToLength(max_len_1)
-                ret_builder.set(key, builder)
-            }
-
-            // extend the builder
-            console.log('adding phase 2 movements for', key)
-            for (const frame of frames) {
-                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
-            }
-
-            builder.padMovementToLength(max_len_2)
-            ret.set(key, builder.finish())
-        }
-
-        // extend all movers who showed up in phase one but not phase two
-        for (const [key, builder] of ret_builder) {
-            if (!movements_2.has(key)) {
-                // pad out the movement and finish it
-                builder.padMovementToLength(max_len_2)
-                ret.set(key, builder.finish())
-            }
-        }
-
-        return ret
+        const results = this.conveyors2.handleMovement(positions, 
+            (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move))
+    
+        // prepare a map of builders 
+        const ret_builder = new MovementMapBuilder<PlayerID>()
+        ret_builder.appendMovements(results)
+        return ret_builder.finish()
     }
     
     /**
@@ -804,33 +752,10 @@ export class Board {
         const results = this.conveyors.handleMovement(positions, 
             (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move))
 
-        // get the max length of any frame array so we can pad out to this length later
-        let max_len = 0
-        for (const frames of results.values()) {
-            if (frames.length > max_len) {
-                max_len = frames.length
-            }
-        }
-
         // prepare a map of builders 
-        const ret = new Map<PlayerID, MovementArrayWithResults>()
-        for (const [actor, frames] of results.entries()) {
-            if (frames.length == 0) {
-                // no need to set an action if there are no frames
-                continue
-            }
-            // set up a builder
-            const builder = new MovementArrayResultsBuilder()
-            // add the frames
-            for (const frame of frames) {
-                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
-            }
-            // pad it out and finish it
-            builder.padMovementToLength(max_len)
-            ret.set(actor, builder.finish())
-        }
-
-        return ret
+        const ret_builder = new MovementMapBuilder<PlayerID>()
+        ret_builder.appendMovements(results)
+        return ret_builder.finish()
     }
 
     /**
@@ -898,7 +823,7 @@ export class Board {
             const flipped = Orientation.flip(orientation)
 
             // while the position os on the board
-            while (this._onBoard(working)) {
+            while (this.onBoard(working)) {
                 here = getWalls(this, working)
 
                 // if we hit a wall on entry, break
@@ -952,25 +877,10 @@ export class Board {
             (pos: OrientedPosition, move: MovementFrame) => this.getMovementResult(pos, move)
         )
 
-        // get the max_len for padding
-        let max_len = 0
-        for (const frames of result.values()) {
-            if (frames.length > max_len) {
-                max_len = frames.length
-            }
-        }
-
-        for (const [key, frames] of result.entries()) {
-            const builder = new MovementArrayResultsBuilder()
-
-            for (const frame of frames) {
-                builder.addFrame(frame.movement, frame.status, !!frame.pushed)
-            }
-            builder.padMovementToLength(max_len)
-            ret.set(key, builder.finish())
-        }
-
-        return ret
+        // prepare a map of builders 
+        const ret_builder = new MovementMapBuilder<PlayerID>()
+        ret_builder.appendMovements(result)
+        return ret_builder.finish()
     }
 
     /**
@@ -1012,7 +922,7 @@ export class Board {
         working = applyOrientationStep(working, direction)
 
         // check the cell status (on board/ is pit)
-        if (!this._onBoard(working) || this.data.spaces[working.x][working.y].type == SpaceType.PIT) {
+        if (!this.onBoard(working) || this.data.spaces[working.x][working.y].type == SpaceType.PIT) {
             return {
                 movement: {
                     direction: direction,
@@ -1033,14 +943,34 @@ export class Board {
     }
 
     /**
-     * Extends the board by adding another board object. This involves merging the walls
-     * along the boundary, and rebuilding the internal data model with the 
-     * @param direction the direction in which the new board will be appended
-     * @param board the board to append
-     * @param offset an offset value, if the board is not to be appended exactly to the side
+     * looks up the position of the respawn point given its ID
+     * @param id the id of the respawn point to look up
+     * @returns the orientation and position of the respawn location
      */
-    public extend(direction: Orientation, board: Board, offset:number=0) {
-        // append the existing board in the given orientation
+    public getRespawnLocation(id: string): OrientedPosition|undefined {
+        return this.respawn_locations.get(id)
+    }
+    
+    /**
+     * looks up the position of the spawn point given its ID
+     * @param id the id of the spawn point to look up
+     * @returns the orientation and position of the spawn location
+     */
+    public getSpawnLocation(id: string): OrientedPosition|undefined {
+        return this.spawn_locations.get(id)
+    }
+
+    /**
+     * checks if the given position on the board is a battery
+     * @param position the position to check
+     */
+    public isBatteryPosition(position: BoardPosition): boolean {
+        if (!this.onBoard(position)) {
+            return false
+        }
+
+        const space = this.data.spaces[position.x][position.y]
+        return space.type === SpaceType.BATTERY
     }
 }
 

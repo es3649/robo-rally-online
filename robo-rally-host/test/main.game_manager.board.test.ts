@@ -69,7 +69,7 @@ const sample_board2: BoardData = {
         ],[
             {type: SpaceType.PIT},
             {type: SpaceType.CONVEYOR_F, orientation: Orientation.S},
-            {type: SpaceType.CONVEYOR2_R, orientation: Orientation.S},
+            {type: SpaceType.CONVEYOR2_R, orientation: Orientation.S, cover: {number: 1}},
             {type: SpaceType.PIT}
         ]
     ] as Space[][]
@@ -95,10 +95,10 @@ const push_board: BoardData = {
         ]
     },
     spaces: [
-        [{},{},{}],
-        [{},{},{}],
-        [{},{},{}],
-        [{},{},{}]
+        [{type: {id: "aa:bb:cc:dd"}, orientation: Orientation.N},{cover:{number: 3}},{}],
+        [{cover: {number: 1}},{},{}],
+        [{},{type: {id: "bb:cc:dd:ee"}, orientation: Orientation.W},{}],
+        [{cover:{number:2}},{},{cover: {id: "aa:bb:cc:dd"}, cover_orientation: Orientation.S}]
     ]
 }
 
@@ -124,7 +124,7 @@ test('SpaceType.isConveyor', () => {
     expect(SpaceType.isConveyor(SpaceType.GEAR_L)).toBeFalsy()
     expect(SpaceType.isConveyor(SpaceType.PIT)).toBeFalsy()
     expect(SpaceType.isConveyor(SpaceType.BATTERY)).toBeFalsy()
-    expect(SpaceType.isConveyor(SpaceType.SPAWN)).toBeFalsy()
+    expect(SpaceType.isConveyor({id: "aa:bb:cc:dd"} as SpaceType.SPAWN)).toBeFalsy()
 })
 
 test('SpaceType.isConveyor2', () => {
@@ -150,7 +150,7 @@ test('SpaceType.isConveyor2', () => {
     expect(SpaceType.isConveyor2(SpaceType.GEAR_L)).toBeFalsy()
     expect(SpaceType.isConveyor2(SpaceType.PIT)).toBeFalsy()
     expect(SpaceType.isConveyor2(SpaceType.BATTERY)).toBeFalsy()
-    expect(SpaceType.isConveyor2(SpaceType.SPAWN)).toBeFalsy()
+    expect(SpaceType.isConveyor2({id: "aa:bb:cc:dd"} as SpaceType.SPAWN)).toBeFalsy()
 })
 
 test('SpaceType.isAnyConveyor', () => {
@@ -174,7 +174,33 @@ test('SpaceType.isAnyConveyor', () => {
     expect(SpaceType.isAnyConveyor(SpaceType.GEAR_L)).toBeFalsy()
     expect(SpaceType.isAnyConveyor(SpaceType.PIT)).toBeFalsy()
     expect(SpaceType.isAnyConveyor(SpaceType.BATTERY)).toBeFalsy()
-    expect(SpaceType.isAnyConveyor(SpaceType.SPAWN)).toBeFalsy()
+    expect(SpaceType.isAnyConveyor({id: "aa:bb:cc:dd"} as SpaceType.SPAWN)).toBeFalsy()
+})
+
+test('SpaceType.isSPAWN', () => {
+    const my_spawn = {id: "aa:bb:cc:dd"}
+
+    expect(SpaceType.isSpawn(undefined)).toBeFalsy()
+    expect(SpaceType.isSpawn(my_spawn)).toBeTruthy()
+
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_F)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_L)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_R)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_RF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_LF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_LR)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR_LRF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_F)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_L)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_R)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_RF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_LF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_LR)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.CONVEYOR2_LRF)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.GEAR_R)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.GEAR_L)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.PIT)).toBeFalsy()
+    expect(SpaceType.isSpawn(SpaceType.BATTERY)).toBeFalsy()
 })
 
 test('WallType.isPUSH', () => {
@@ -207,6 +233,17 @@ test('WallType.isLaser', () => {
     expect(WallType.isLaser(WallType.STANDARD)).toBeFalsy()
     expect(WallType.isLaser({registers: [1,3,5]})).toBeFalsy()
     expect(WallType.isLaser(undefined)).toBeFalsy()
+})
+
+test('WallType.getLaserDamage', () => {
+    // exhaustive-ish test
+    expect(WallType.getLaserDamage(WallType.LASER)).toBe(1)
+    expect(WallType.getLaserDamage(WallType.LASER2)).toBe(2)
+    expect(WallType.getLaserDamage(WallType.LASER3)).toBe(3)
+
+    expect(WallType.getLaserDamage(WallType.STANDARD)).toBe(0)
+    expect(WallType.getLaserDamage({registers: [1,3,5]})).toBe(0)
+    expect(WallType.getLaserDamage(undefined)).toBe(0)
 })
 
 test('SpaceCoverType.isCHECKPOINT/isCRUSHER', () => {
@@ -465,27 +502,37 @@ test('Board.getId', () => {
     expect(b2.getId() - b1.getId()).toBe(1)
 })
 
+test('Board.getLastCheckpoint', () => {
+    const b1 = new Board(sample_board)
+    const b1_checkpoint = b1.getLastCheckpoint()
+    expect(b1_checkpoint).toBe(2)
+
+    const b2 = new Board(sample_board2)
+    const b2_checkpoint = b2.getLastCheckpoint()
+    expect(b2_checkpoint).toBe(1)
+
+    const b3 = new Board(push_board)
+    const b3_checkpoint = b3.getLastCheckpoint()
+    expect(b3_checkpoint).toBe(3)
+})
+
 test('Board.handleConveyor2', () => {
     const b1 = new Board(sample_board)
-    const positions = new Map<string, OrientedPosition>()
-    positions.set('first', {x:1,y:2, orientation: Orientation.S})
-    positions.set('second', {x:0,y:2, orientation: Orientation.E})
+    const positions_1 = new Map<string, OrientedPosition>()
+    positions_1.set('first', {x:1,y:2, orientation: Orientation.S})
+    positions_1.set('second', {x:0,y:2, orientation: Orientation.E})
 
-    const handled = b1.handleConveyor2(positions)
+    const handled = b1.handleConveyor2(positions_1)
     expect(handled.size).toBe(1)
     expect(handled.has('first')).toBeTruthy()
     expect(handled.has('second')).toBeFalsy()
     const movements = handled.get('first') as MovementArrayWithResults
-    expect(movements.length).toBe(4)
+    expect(movements.length).toBe(2)
     expect(movements.frames[0]).toBeDefined()
     expect(isAbsoluteMovement(movements.frames[0])).toBeTruthy()
     expect(movements.frames[0].direction).toBe(Orientation.S)
     expect(isRotation(movements.frames[1])).toBeTruthy()
     expect(movements.frames[1].direction).toBe(RotationDirection.CW)
-    expect(isAbsoluteMovement(movements.frames[2])).toBeTruthy()
-    expect(movements.frames[2].direction).toBe(Orientation.W)
-    expect(isRotation(movements.frames[3])).toBeTruthy()
-    expect(movements.frames[3].direction).toBe(RotationDirection.CCW)
 
     expect(movements.movement_boundaries).toBeDefined()
     expect(movements.movement_boundaries.length).toBeDefined()
@@ -493,12 +540,31 @@ test('Board.handleConveyor2', () => {
     expect(movements.movement_boundaries[0].start).toBeDefined()
     expect(movements.movement_boundaries[0].start).toBe(0)
     expect(movements.movement_boundaries[0].end).toBeDefined()
-    expect(movements.movement_boundaries[0].end).toBe(4)
+    expect(movements.movement_boundaries[0].end).toBe(2)
 
-    for (let i = 0; i < 4; i++) {
+    const positions_2 = new Map<string, OrientedPosition>()
+    positions_2.set('first', {x:1, y:1, orientation: Orientation.W})
+    positions_2.set('second', {x:0,y:2, orientation: Orientation.E})
+
+    const handled_2 = b1.handleConveyor2(positions_2)
+    expect(handled_2.size).toBe(1)
+    expect(handled_2.has('first')).toBeTruthy()
+    expect(handled_2.has('second')).toBeFalsy()
+    const movements_2 = handled_2.get('first') as MovementArrayWithResults
+    expect(movements_2.length).toBe(2)
+    expect(movements_2.frames[0]).toBeDefined()
+    expect(isAbsoluteMovement(movements_2.frames[0])).toBeTruthy()
+    expect(movements_2.frames[0].direction).toBe(Orientation.W)
+    expect(isRotation(movements_2.frames[1])).toBeTruthy()
+    expect(movements_2.frames[1].direction).toBe(RotationDirection.CCW)
+
+    for (let i = 0; i < 2; i++) {
         console.log(i)
         expect(movements.pushed[i]).toBeFalsy()
         expect(movements.results[i]).toBe(MovementStatus.OK)
+
+        expect(movements_2.pushed[i]).toBeFalsy()
+        expect(movements_2.results[i]).toBe(MovementStatus.OK)
     }
 })
 
@@ -666,6 +732,38 @@ test('Board.handleLaserPaths (exclusive)', () => {
     expect(damages.get('second')).toBe(0)
     expect(damages.get('third')).toBe(1)
     expect(damages.get('fourth')).toBe(1)
+})
+
+test('Board.getSpawnLocation', () => {
+    const b = new Board(push_board)
+
+    const loc1 = b.getSpawnLocation("aa:bb:cc:dd")
+    expect(loc1).toBeDefined()
+    expect(loc1.x).toBe(0)
+    expect(loc1.y).toBe(0)
+    expect(loc1.orientation).toBe(Orientation.N)
+
+    const loc2 = b.getSpawnLocation('bb:cc:dd:ee')
+    expect(loc2).toBeDefined()
+    expect(loc2.x).toBe(2)
+    expect(loc2.y).toBe(1)
+    expect(loc2.orientation).toBe(Orientation.W)
+
+    const loc3 = b.getSpawnLocation('test_value')
+    expect(loc3).toBeUndefined()
+})
+
+test('Board.getRespawnLocation', () => {
+    const b = new Board(push_board)
+
+    const loc1 = b.getRespawnLocation("aa:bb:cc:dd")
+    expect(loc1).toBeDefined()
+    expect(loc1.x).toBe(3)
+    expect(loc1.y).toBe(2)
+    expect(loc1.orientation).toBe(Orientation.S)
+
+    const loc2 = b.getRespawnLocation('test_value')
+    expect(loc2).toBeUndefined()
 })
 
 // test('Board.rotateBoard', () => {})
