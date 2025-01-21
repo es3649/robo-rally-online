@@ -8,10 +8,10 @@ export class DeckManager {
     private discard_pile = [] as ProgrammingCard[]
 
     constructor(deck?: ProgrammingCard[]) {
-        if (deck) {
-            this.deck = deck
-        } else {
+        if (deck === undefined) {
             this.deck = newStandardDeck()
+        } else {
+            this.deck = deck
         }
         this.shuffleDeck()
     }
@@ -93,19 +93,25 @@ export class DeckManager {
      * TODO: this cannot be used to discard cards from the program. It will cause card duplication. It should
      * be used to clear damage cards from the hand
      * @param program the program to clear
+     * @return damager cards that need to be discarded
      */
-    clearProgram(program: RegisterArray): void {
+    clearProgram(program: RegisterArray): ProgrammingCard[] {
+        const damage_cards: ProgrammingCard[] = []
         program.forEach((register: ProgrammingCard[]) => {
             // programmed spam and haywire are discarded
-            if (register.length == 0 || register[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(register[0].action)) {
+            if (register.length == 0) {
                 return
-                // TODO, haywire should be returned to the deck, I think
+            } else if (register[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(register[0].action)) {
+                // return the damage to the damage deck
+                damage_cards.push(register[0])
             }
             // otherwise discard the card(s)
             register.forEach((card: ProgrammingCard) => {
                 this.discard_pile.push(card)
             })
         })
+
+        return damage_cards
     }
 
     discard(card: ProgrammingCard): void {

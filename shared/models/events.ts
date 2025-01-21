@@ -24,7 +24,6 @@ export type Client2Server = typeof Client2Server.JOIN_GAME |
     typeof Client2Server.PROGRAM_SHUTDOWN |
     typeof Client2Server.GET_ID
 
-
 /* events emitted by the main desktop process */
 // events sent back to server 
 export namespace Main2Server {
@@ -43,21 +42,29 @@ export namespace Main2Render {
     export const PLAYER_ADDED = "main:player-added"
     export const UPDATE_BOT_STATUS = "main:update-bot-status"
     export const UPDATE_BOT_CONNECTION = "main:update-bot-connection"
+    export const GAME_ACTION = "main:game-action"
+    export const GAME_ERROR = "main:game-error"
     export const UPDATE_PLAYER = "main:update-player"
 }
 export type Main2Render = typeof Main2Render.PLAYER_ADDED |
     typeof Main2Render.UPDATE_BOT_STATUS |
     typeof Main2Render.UPDATE_BOT_CONNECTION |
+    typeof Main2Render.GAME_ACTION |
+    typeof Main2Render.GAME_ERROR |
     typeof Main2Render.UPDATE_PLAYER
 
 // events sent to bots
+// technically writeable BLE characteristics
 export namespace Main2Bot {
     export const PLAY_SOUND = "main:play-sound"
-    export const FIRE_LASER = "main:fire-laser"
+    export const STATE = "main:state"
     export const MOVE = "main:move"
-    export const ROTATE = "main:rotate"
-    export const SHUTDOWN = "main:shutdown"
-    export const POWER_ON = "main:power-on"
+}
+
+// events sent to main from the bot
+// technically readable BLE characteristics
+export namespace Bot2Main {
+    export const RFID = "bot:rfid"
 }
 
 /* events emitted by the server thread */
@@ -99,11 +106,11 @@ export namespace Render2Main {
         export const LIST_BOARDS = "render:board:list-boards"
         export const LOAD_BOARD = "render:board:load-board"
         export const LOAD_SERIAL = "render:board:load-serial"
-        export const ROTATE = "render:board:rotate"
-        export const EXTEND = "render:board:extend"
+        // export const ROTATE = "render:board:rotate"
+        // export const EXTEND = "render:board:extend"
         export const READY = "render:board:ready"
-        export const TOGGLE_CHECKPOINT = "render:board:toggle-checkpoint"
-        export const TOGGLE_RESPAWN = "render:board:toggle-respawn"
-        export const ROTATE_RESPAWN = "render:board:rotate-respawn"
+        // export const TOGGLE_CHECKPOINT = "render:board:toggle-checkpoint"
+        // export const TOGGLE_RESPAWN = "render:board:toggle-respawn"
+        // export const ROTATE_RESPAWN = "render:board:rotate-respawn"
     }
 }

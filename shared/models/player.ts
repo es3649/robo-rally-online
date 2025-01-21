@@ -60,33 +60,28 @@ export declare type Player = Required<PartialPlayer>
 
 export class PlayerState {
     priority: number
-    name: PlayerName
+    readonly name: PlayerName
     energy: number
     checkpoints: number
     active: boolean
     static readonly MAX_ENERGY: number = 10
+    static readonly STARTING_ENERGY: number = 3
 
     constructor (name: PlayerName, priority: number) {
         this.name = name
         this.priority = priority
 
         // fill in defaults
-        this.energy = 3
+        this.energy = PlayerState.STARTING_ENERGY
         this.checkpoints = 0
         this.active = true
     }
 
-    gainEnergy(): void {
-        if (this.energy < PlayerState.MAX_ENERGY) {
-            this.energy++
-        }
+    gainEnergy(count: number): void {
+        this.energy = Math.min(this.energy + count, PlayerState.MAX_ENERGY)
     }
 
-    spendEnergy(count:number): boolean {
-        if (this.energy >= count) {
-            this.energy -= count
-            return true
-        }
-        return false
+    spendEnergy(count:number): void {
+        this.energy = Math.max(this.energy - count, 0)
     }
 }

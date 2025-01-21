@@ -36,6 +36,7 @@ test('ProgrammingCard.isActionChoice/isHaywire', () => {
     expect(ProgrammingCard.isHaywire(ProgrammingCard.power_up)).toBeFalsy()
     expect(ProgrammingCard.isHaywire(ProgrammingCard.again)).toBeFalsy()
     expect(ProgrammingCard.isHaywire(ProgrammingCard.spam)).toBeFalsy()
+    expect(ProgrammingCard.isHaywire(undefined)).toBeFalsy()
 
     // test is action choice
     expect(ProgrammingCard.isActionChoice(h1.actions)).toBeFalsy()

@@ -19,27 +19,25 @@ test('PlayerState.gainEnergy/spendEnergy', () => {
     // check default
     expect(ps.energy).toBe(3)
 
-    ps.gainEnergy()
+    ps.gainEnergy(1)
     expect(ps.energy).toBe(4)
     
-    expect(ps.spendEnergy(3)).toBeTruthy()
+    ps.spendEnergy(3)
     expect(ps.energy).toBe(1)
     
-    expect(ps.spendEnergy(1)).toBeTruthy()
+    ps.spendEnergy(1)
     expect(ps.energy).toBe(0)
     
-    ps.gainEnergy()
+    ps.gainEnergy(1)
     expect(ps.energy).toBe(1)
     
     // can't spend more than we have
-    expect(ps.spendEnergy(3)).toBeFalsy()
-    expect(ps.energy).toBe(1)
+    ps.spendEnergy(3)
+    expect(ps.energy).toBe(0)
 
-    for (let i = 0; i < PlayerState.MAX_ENERGY; i++) {
-        ps.gainEnergy()
-    }
+    ps.gainEnergy(PlayerState.MAX_ENERGY)
     expect(ps.energy).toBe(PlayerState.MAX_ENERGY)
 
-    ps.gainEnergy()
+    ps.gainEnergy(1)
     expect(ps.energy).toBe(PlayerState.MAX_ENERGY)
 })

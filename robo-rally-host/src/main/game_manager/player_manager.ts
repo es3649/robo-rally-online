@@ -1,6 +1,6 @@
-import {  PlayerState, type Player, type PlayerID, type PlayerName } from "../models/player"
+import {  PlayerState, type Player, type PlayerID } from "../models/player"
 import type { Main2ServerMessage, Sender } from '../models/connection'
-import { GamePhase, newDamageDeck, ProgrammingCard, type RegisterArray } from '../models/game_data'
+import { newDamageDeck, newRegisterArray, ProgrammingCard, type RegisterArray } from '../models/game_data'
 import type { Evaluator } from "./board"
 import { Main2Server } from "../models/events"
 import { DeckManager } from "./deck_manager"
@@ -21,12 +21,10 @@ export class PlayerManager {
     private damage_deck = new DeckManager(newDamageDeck())
     private programs = new Map<PlayerID, RegisterArray|undefined>()
     private next_programs = new Map<PlayerID, RegisterArray>()
-    private shutdowns = new Set<PlayerID>()
     private player_states = new Map<string, PlayerState>()
     private players_by_priority: PlayerID[] = []
     private priority_lock: boolean = false
     private player_positions: Map<PlayerID, OrientedPosition>
-    private readonly M2SSender: Sender<Main2Server>
 
     /**
      * constructs a PlayerManager object, go figure. It also initializes player states like checkpoints,
@@ -36,9 +34,7 @@ export class PlayerManager {
      * @param sender function which can be used to send data to clients
      */
     constructor(players: Map<PlayerID, Player>,
-            positions: Map<PlayerID, OrientedPosition>,
-            sender: Sender<Main2Server>) {
-        this.M2SSender = sender
+            positions: Map<PlayerID, OrientedPosition>) {
         this.priority_lock = false
 
         // set the player
@@ -49,13 +45,15 @@ export class PlayerManager {
         for (const [player_id, player_data] of players) {
 
             // set the players initial state
-            this.player_states.set(player_id, new PlayerState(player_data.name, this.players.size))
+            this.player_states.set(player_id, new PlayerState(player_data.name, this.player_states.size))
             
             // initialize all other player data
             this.decks.set(player_id, new DeckManager())
             this.programs.set(player_id, undefined)
-            this.resetPrograms()
         }
+        
+        this.resetPrograms()
+        this.rebuildPriority()
     }
 
     /**
@@ -105,25 +103,46 @@ export class PlayerManager {
             return this.player_positions
         }
 
-        if (result.movement === undefined) {
-            return this.player_positions
-        }
-
-        if (isAbsoluteMovement(result.movement)) {
-            pos = applyAbsoluteMovement(pos, result.movement)
-        } else if (isRotation(result.movement)) {
-            pos = applyRotation(pos, result.movement)
-        }
-
         // here is the status
         if (result.status == MovementStatus.PIT) {
             // we should be set as a shutdown and our position unset
             this.dealDamage(actor, SHUTDOWN_DAMAGE, register)
-            this.shutdowns.add(actor)
+            const state = this.player_states.get(actor)
             this.player_positions.delete(actor)
+            if (state === undefined) {
+                console.warn('failed to shutdown unknown actor (missing state):', actor)
+            } else {
+                state.active = false
+            }
+            return this.player_positions
         }
 
+        if (result.movement !== undefined) {            
+            if (isAbsoluteMovement(result.movement)) {
+                pos = applyAbsoluteMovement(pos, result.movement)
+            } else if (isRotation(result.movement)) {
+                pos = applyRotation(pos, result.movement)
+            }
+        }
+
+        this.player_positions.set(actor, pos)
+
         return this.player_positions
+    }
+
+    /**
+     * rebuilds the internal players_by_priority list using the priority values set
+     * in the player states
+     */
+    private rebuildPriority(): void {
+        this.players_by_priority = []
+        this.players.forEach((player: Player) => {
+            const state = this.player_states.get(player.id) as PlayerState
+            if (state === undefined) {
+                console.warn("Failed to get state for player:", player)
+            }
+            this.players_by_priority.splice(state.priority, 0, player.id)
+        })
     }
 
     /**
@@ -149,11 +168,7 @@ export class PlayerManager {
         }
 
         // reset the priority queue
-        this.players_by_priority = []
-        this.players.forEach((player: Player, _: string) => {
-            const state = this.player_states.get(player.name) as PlayerState
-            this.players_by_priority.splice(state.priority, 0, player.id)
-        })
+        this.rebuildPriority()
     }
 
     /**
@@ -178,21 +193,35 @@ export class PlayerManager {
     }
 
     /**
+     * gets the player states
+     * @returns a mapping of player IDs to their respective states
+     */
+    public getPlayerStates(): Map<PlayerID, PlayerState> {
+        return this.player_states
+    }
+
+    /**
      * mark the player for a shutdown
      * @param player_id the id of the player marked for shutdown
      */
     public setShutdown(player_id: PlayerID) {
-        this.shutdowns.add(player_id)
+        const state = this.player_states.get(player_id)
+        if (state === undefined) {
+            console.warn("tried to get state for unknown player:", player_id)
+            return
+        }
+
+        state.active = false
     }
 
     /**
      * 
-     * @param player_name the id of the player to set the program for
+     * @param player_id the id of the player to set the program for
      * @param program the program to set
      * @returns true if all programs are set
      */
-    public setProgram(player_name:PlayerID, program: RegisterArray): boolean {
-        this.programs.set(player_name, program)
+    public setProgram(player_id:PlayerID, program: RegisterArray): boolean {
+        this.programs.set(player_id, program)
         for (const [_, program] of this.programs.entries()) {
             if (program === undefined) {
                 return false
@@ -205,11 +234,29 @@ export class PlayerManager {
     /**
      * reset the player's programs
      */
-    public resetPrograms() {
+    public resetPrograms(): Map<PlayerID, RegisterArray> {
+        // save the next programs for return, we will clear them now also
+        const next = this.next_programs
+
+        this.next_programs = new Map<PlayerID, RegisterArray>()
+
         for (const player of this.players.keys()) {
+            // reactivate the actor
+            const state = this.player_states.get(player)
+            if (state === undefined) {
+                console.warn("Player state missing for actor:", player)
+            } else {
+                state.active = true
+            }
+
+            // set their program to undefined
             this.programs.set(player, undefined)
+
+            // reset their next program
+            this.next_programs.set(player, newRegisterArray())
         }
-        this.shutdowns.clear()
+
+        return next
     }
 
     /**
@@ -254,20 +301,21 @@ export class PlayerManager {
     /**
      * resolves the contents of the register into a series of Movements, handling all other collateral
      * actions along the way, such as powering up or haywire effects
-     * @param register the index of the register to resolve
+     * @param register the 0-indexed number of the register to resolve
      * @param program the program to resolve the action from
      * @param player_id the id of the player who owns this program
      * @returns an array of movements to be taken
      */
     public resolveRegister(register: number, player_id: PlayerID, card: ProgrammingCard|undefined=undefined, allow_2:boolean=false): Movement[] {
         const program = this.programs.get(player_id)
-        if (program === undefined) {
+        const state = this.player_states.get(player_id)
+        if (program === undefined || register < 0 || register > 4) {
             return []
         }
 
         const actions: ProgrammingCard[] = program[register]
         // if there is no program for some reason, or the player is on shutdown, take no actions
-        if (actions.length == 0 || this.shutdowns.has(player_id)) {
+        if (actions.length == 0 || state === undefined || !state.active) {
             return []
         }
 
@@ -295,7 +343,7 @@ export class PlayerManager {
             const deck = (this.decks.get(player_id) as DeckManager)
             do {
                 card = deck.drawCard()
-            } while (card.action != ProgrammingCard.spam)
+            } while (card.action == ProgrammingCard.spam)
             // discard the card, it wasn't actually in the register
             // any spam drawn don't have to be discarded
             deck.discard(card)
@@ -304,7 +352,7 @@ export class PlayerManager {
 
         // resolve again
         if (card.action == ProgrammingCard.again) {
-            if (register == 1) {
+            if (register == 0) {
                 card = {action: ProgrammingCard.spam, id: -1}
                 // recurse to handle the card in the previous register again
                 return this.resolveRegister(register, player_id, card)
@@ -316,7 +364,7 @@ export class PlayerManager {
 
         // if it's power up, add the energy, don't process the card ()
         if (card.action == ProgrammingCard.power_up) {
-            this.player_states.get(player_id)?.gainEnergy()
+            this.player_states.get(player_id)?.gainEnergy(1)
         }
 
         // resolve haywires
@@ -385,7 +433,7 @@ export class PlayerManager {
     }
 
     /**
-     * adds (or subtracts) energy to the given actor
+     * adds energy to the given actor
      * @param actor the actor to add energy to
      * @param energy the amount of energy to add
      */
@@ -394,22 +442,25 @@ export class PlayerManager {
         const player = this.player_states.get(actor)
         if (player == undefined) {
             console.warn(`trying to modify energy for unknown player: ${actor}`)
-            return
+            return 
         }
 
-        // if the energy value is positive, add energy
-        if (energy > 0) {
-            while (energy > 0) {
-                player.gainEnergy();
-                energy -= 1
-            }
-        // if it's negative, decrease it
-        } else if (energy < 0) {
-            while (energy < 0) {
-                player.spendEnergy(1)
-                energy += 1
-            }
+        player.gainEnergy(energy);
+    }
+
+    /**
+     * subtracts energy from the given actor
+     * @param actor the actor to subtract energy from
+     * @param energy the amount of energy to subtract
+     */
+    public spendEnergy(actor: PlayerID, energy: number): void {
+        // get the player to change energy for
+        const player = this.player_states.get(actor)
+        if (player == undefined) {
+            console.warn(`trying to modify energy for unknown player: ${actor}`)
+            return 
         }
+        player.spendEnergy(energy)
     }
 
     /**

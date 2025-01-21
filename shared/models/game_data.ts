@@ -41,6 +41,9 @@ export namespace ProgrammingCard {
     }
 
     export function isHaywire(card:string|undefined|Haywire): card is Haywire {
+        if (card === undefined) {
+            return false
+        }
         const h = card as Haywire
         return h.actions != undefined && h.text != undefined
     }
