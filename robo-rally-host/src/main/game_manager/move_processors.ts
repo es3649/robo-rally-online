@@ -156,7 +156,7 @@ export namespace MovementFrame {
                     o = Orientation.rotate(orientation, RotationDirection.CW)
                     break
                 case MovementDirection.Back:
-                    o = Orientation.rotate(orientation, RotationDirection.CW, 2)
+                    o = Orientation.flip(orientation)
                     break
                 case MovementDirection.Left:
                     o = Orientation.rotate(orientation, RotationDirection.CCW)

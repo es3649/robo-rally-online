@@ -1,11 +1,11 @@
 import { type Character } from "../main/models/player"
-import { bots } from "../main/data/robots"
+import { BOTS } from "../main/data/robots"
 
 // create a mapping of the bots
 export const bot_list = new Map<string, {used: boolean} & Character>()
 
 // put the bots in the mapping
-for (const bot of bots) {
+for (const bot of BOTS) {
     bot_list.set(bot.name, { used: false, ...bot})
 }
 

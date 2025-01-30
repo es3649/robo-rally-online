@@ -8,7 +8,23 @@ This repository contains a majority of the files and code needed to bring the pr
 
 **Disclaimer**: This project is not affiliated with nor endorsed by Richard Garfield nor Renegade Game Studio
 
-## Structure
+## Contents
+
+* [Contents](#contents)
+* [Setup Instructions](#setup-instructions)
+* [Project Structure](#project-structure)
+    * [Player Client](#player-client)
+    * [Host Application](#host-application)
+    * [Bot Drivers](#bot-drivers)
+    * [Schematics](#schematics)
+
+## Setup Instructions
+
+This project is the fullest stack application&mdash;all it's missing is a database.
+Instructions for setting up a game (assuming the code is installed, running, and the bots are assembled) can be found in [playing.md](./doc/playing.md).
+More comprehensive setup instructions, including instructions for setting up the execution environment and assembling bots, are provided in [setup.md](./doc/setup.md).
+
+## Project Structure
 
 The project is broken into 4 main parts:
 
@@ -41,34 +57,3 @@ Robots which do not support a certain feature, will simply have relevant compone
 
 CAD schematics are created in OnShape, and contain the 3D models for the robots.
 Each of these is unique.
-
-## Windows Setup
-
-```ps
-# install node
-winget install Schniz.fnm
-
-# restart shell
-fnm env --use-on-cd | Out-String | Invoke-Expression
-fnm use --install-if-missing 22
-
-# set execution policy for npm access
-Set-ExecutionPolicy -Scope CurrentUser Unrestricted
-
-# check installation versions
-node -v # should print v22.6.0
-npm -v  # should print 10.8.2
-
-# install git
-winget install --id Git.Git -e --source winget
-
-# clone project
-git clone git@github.com:es3649/robo-rally-online.git
-
-# install dependencies
-cd robo-rally-online\robo-rally-host
-npm install
-
-# start test application
-npm run start
-```

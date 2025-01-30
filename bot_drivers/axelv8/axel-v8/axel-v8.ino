@@ -22,6 +22,15 @@
 // step distance in mm
 #define STEP_DISTANCE 1
 
+enum State {
+  CONNECTING,
+  DEFAULT,
+  SHUTDOWN,
+  LASER,
+  RFID
+}
+
+State cur_state = State.CONNECTING;
 
 // const int led1Pin = 5;
 
@@ -118,18 +127,6 @@ void motorStep() {
   }
 }
 
-bool laser_on = false;
-void laserStep() {
-  static int steps = 0;
-  if (laser_on) {
-    if (steps > 10000) {
-      steps = 0;
-    } else {
-      steps++;
-    }
-  }
-}
-
 /**
  * a byte array to hold RFID reads
  */
@@ -178,18 +175,9 @@ void setup() {
 
 int iter = 0;
 void loop() {
-  // keep an iterator of the loop number
-  if (iter == 10000) {
-    iter = 0;
-  } else {
-    iter++;
+  switch (cur_state) {
+    case State.CONNECTING:
+      tryConnecting();
+    case
   }
-  // playerStep();
-  if (iter % 10 == 0) {
-    // motorStep();
-    // laserStep();
-    // ledStep();
-  }
-  motorStep();
-  delay(1000);
 }

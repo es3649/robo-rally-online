@@ -1,8 +1,8 @@
 import type { CharacterID, PartialPlayer, Player, PlayerID } from "../models/player"
 import type { Board } from "./board"
 import type { OrientedPosition } from "./move_processors"
-import * as bt from '../bluetooth'
 import { BOTS } from "../data/robots"
+import { BluetoothManager } from "../bluetooth"
 
 export const MAX_PLAYERS = 6
 export const MIN_PLAYERS = 2
@@ -192,45 +192,51 @@ export class BluetoothBotInitializer {
     public async connect(): Promise<void> {
         const cur = this.priority_list[this.connecting]
         // make sure a Bluetooth connection is established
-        if (!await bt.connectRobot(cur.character.id)) {
+        if (!await BluetoothManager.getInstance().connectRobot(cur.id, cur.character.id)) {
             throw new Error(`Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
         }
         
         // notify the player that their bot is ready to place
         // TODO
-
-        // notify the bot to move to RFID mode
-        bt.setMode(cur.character.id, bt.BotState.GET_POSITION)
     }
 
     /**
      * read the position from the bluetooth connection, store it, then connect the next actor
-     * @returns true if we have connected all actors
      */
-    public async setPosition(): Promise<boolean> {
+    async setPosition(): Promise<void> {
         const cur = this.priority_list[this.connecting]
-        const position_id = await bt.getPosition(cur.character.id)
-
-        const starting = this.board.getSpawnLocation(position_id)
         
-        // handle illegal values
-        if (starting === undefined) {
-            console.warn("unrecognized spawn location:", starting)
-            throw new Error("Unrecognized spawn location")
-        }
+        // define a callback for setting the position (if it's valid)
+        const callback = (position_id: string) => {
+            const starting = this.board.getSpawnLocation(position_id)
+            
+            // handle illegal values
+            if (starting === undefined) {
+                console.warn("unrecognized spawn location:", starting)
+                return
+            }
 
-        this.initial_positions.set(cur.id, starting)
+            // tell the manager we are done looking for a position
+            // don't bother to await, I think
+            BluetoothManager.getInstance().positionSet(cur.id)
 
-        // increment the priority we are connecting for
-        this.connecting++
-        // connect the next guy if we aren't done yet
-        if (this.connecting < this.priority_list.length) {
-            this.connect()
-            return false
-        } else {
-            // we're done
-            return true
+            // set the position we got
+            this.initial_positions.set(cur.id, starting)
+
+            // increment the priority we are connecting for
+            this.connecting++
+            // connect the next guy if we aren't done yet
+            if (this.connecting < this.priority_list.length) {
+                this.connect()
+                this.setPosition()
+            } else {
+                this.connecting = 0
+            }
         }
+    
+        // make the first call. We will recurse through the callback until we
+        // have set positions for every character in order
+        BluetoothManager.getInstance().getPosition(cur.id, callback)
     }
 
     public getStartingPositions(): Map<PlayerID, OrientedPosition> {

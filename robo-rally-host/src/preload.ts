@@ -5,9 +5,7 @@
 // use the BridgeContext API to make some data from the main process visible in the renderer
 // https://www.electronjs.org/docs/latest/tutorial/process-model
 import { contextBridge, ipcRenderer, utilityProcess } from "electron";
-import { gameStore } from "./main/stores/game_store";
-import { Board } from "./main/game_server/board";
-import type { BoardPosition, RotationDirection } from "./main/game_server/movement";
+import { Board } from "./main/game_manager/board";
 
 
 // load up ipc APIs
@@ -19,12 +17,13 @@ contextBridge.exposeInMainWorld('mainAPI', {
     loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
 
     // TODO: finish signatures
-    rotateBoard: (id:number, direction:RotationDirection): void => ipcRenderer.send('render:boards:rotate', id, direction),
-    extendBoard: (board_name:string): Promise<Board> => ipcRenderer.invoke('render:boards:extend', board_name),
+    // in the beginning, these values will be pre-determined by a hard copy board
+    // rotateBoard: (id:number, direction:RotationDirection): void => ipcRenderer.send('render:boards:rotate', id, direction),
+    // extendBoard: (board_name:string): Promise<Board> => ipcRenderer.invoke('render:boards:extend', board_name),
     readyBoard: (): void => ipcRenderer.send('render:boards:ready'),
-    toggleCheckpoint: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-checkpoint'),
-    toggleRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-respawn'),
-    rotateRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:rotate-checkpoint')
+    // toggleCheckpoint: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-checkpoint'),
+    // toggleRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-respawn'),
+    // rotateRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:rotate-checkpoint')
 })
 
 contextBridge.exposeInIsolatedWorld(0, 'rendererAPI', {

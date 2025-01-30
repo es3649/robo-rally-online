@@ -62,6 +62,7 @@ export class GameStateManager {
     private readonly player_manager: PlayerManager
     private readonly board: Board
     private readonly movement_executor: MovementExecutor
+    private readonly sender: Sender<Main2Server>
     // private game_manager: GameManager
 
     public constructor(player_initializer: GameInitializer,
@@ -72,11 +73,11 @@ export class GameStateManager {
         this.player_count = player_initializer.players.size
         // set up the player manager
         this.player_manager = new PlayerManager(player_initializer.getPlayers(),
-            bot_initializer.getStartingPositions(),
-            event_sender)
+            bot_initializer.getStartingPositions())
         
         this.board = player_initializer.getBoard()
         this.movement_executor = executor
+        this.sender = event_sender
     }
 
     /**
@@ -267,7 +268,7 @@ export class GameStateManager {
         const actions = new Map<PlayerID, ActionFrame>()
 
         for (const [actor, result] of this.movement_frames)
-        this.movement_executor.executeMovements()
+        this.movement_executor.unlatchActions()
 
         this.resume()
     }
