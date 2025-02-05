@@ -80,6 +80,14 @@ export interface ActionFrame {
     end_state?: BotState
 }
 
+export namespace ActionFrame {
+    export function isEmpty(frame: ActionFrame): boolean {
+        return frame.pre_action === undefined &&
+            frame.movement === undefined &&
+            frame.end_state === undefined
+    }
+}
+
 export interface MovementExecutor {
     setAction: (player_id: PlayerID, action: ActionFrame) => void|Promise<void>
     unlatchActions: () => void|Promise<void>

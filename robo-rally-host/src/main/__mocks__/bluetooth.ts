@@ -1,4 +1,4 @@
-import type { BotAction } from "../bluetooth";
+import type { BotState } from "../game_manager/executor";
 import type { MovementFrame } from "../game_manager/move_processors";
 import type { CharacterID } from "../models/player";
 
@@ -9,7 +9,7 @@ export type MoveBotCall = {
 
 export type BotActionCall = {
     botID: CharacterID,
-    action: BotAction
+    action: BotState
 }
 
 export const moveBot_calls: MoveBotCall[] = []
@@ -30,7 +30,7 @@ export function moveBot(botID: CharacterID, movement: MovementFrame): void {
     })
 }
 
-export function botAction(botID: CharacterID, action: BotAction): void {
+export function botAction(botID: CharacterID, action: BotState): void {
     botAction_calls.push({
         botID: botID,
         action: action

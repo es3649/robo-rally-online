@@ -1,19 +1,11 @@
 import { expect, jest, test } from '@jest/globals'
 import { PlayerManager } from '../src/main/game_manager/player_manager'
-import { senderMaker } from '../src/main/models/connection'
 import { Player, PlayerID, PlayerState } from '../src/main/models/player'
-import { MovementStatus, OrientedPosition, Turn } from '../src/main/game_manager/move_processors'
+import { MovementFrame, MovementResult, MovementStatus, OrientedPosition, Turn } from '../src/main/game_manager/move_processors'
 import { Robots } from '../src/main/data/robots'
-import { isRotation, Movement, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from '../src/main/models/movement'
+import { AbsoluteMovement, isAbsoluteMovement, isRotation, Movement, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from '../src/main/models/movement'
 import { ProgrammingCard, RegisterArray } from '../src/main/models/game_data'
-
-// function send(message: any,
-//     sendHandle?: any,
-//     options?: { keepOpen?: boolean|undefined } | undefined,
-//     callback?: ((error: Error|null) => void) | undefined
-// ): boolean {
-//     return true
-// }
+import { Evaluator } from 'src/main/game_manager/board'
 
 function getPlayerList(): Map<PlayerID, Player> {
     const ret = new Map<PlayerID, Player>()
@@ -36,6 +28,49 @@ function getStartingPositions(): Map<PlayerID, OrientedPosition> {
 
     return ret
 }
+
+function dummy_evaluator(position: OrientedPosition, move: MovementFrame): MovementResult {
+    return {
+        movement: move,
+        status: MovementStatus.OK,
+        pushed: false
+    }
+}
+
+function curry_evaluator(illegal: OrientedPosition[], status: MovementStatus = MovementStatus.WALL): Evaluator {
+    function evaluator(position: OrientedPosition, move: MovementFrame): MovementResult {
+        for (const configuration of illegal) {
+            if (!isAbsoluteMovement(move)) {
+                continue
+            }
+            if (position.x == configuration.x &&
+                position.y == configuration.y &&
+                move.direction == configuration.orientation
+            ) {
+                if (status == MovementStatus.WALL) {
+
+                    return {
+                        movement: undefined,
+                        status: status
+                    }
+                } else {
+                    return {
+                        movement: move,
+                        status: status
+                    }
+                }
+            }
+        }
+
+        return {
+            movement: move,
+            status: MovementStatus.OK
+        }
+    }
+
+    return evaluator
+}
+
 
 test('PlayerManager.constructor', () => {
     // make sure all player positions are set correctly, and player states are initialized
@@ -207,7 +242,7 @@ test('PlayerManager.updatePriority/getPlayerByPriority',  () => {
     expect(pm.getPlayerByPriority(2)).toBe(fourth)
     expect(pm.getPlayerByPriority(3)).toBe(first)
     
-    pm.priorityLock()
+    pm.lockPriority()
     pm.updatePriority()
     
     expect(pm.getPlayerByPriority(0)).toBe(second)
@@ -430,11 +465,6 @@ test('PlayerManager.resolveRegister',  () => {
     expect(mv_15.length).toBe(0)
 })
 
-// test('PlayerManager.dealDamages',  () => {
-//     // there's not much we can really test here since decks are kept private
-//     throw new Error('Not Implemented')
-// })
-
 test('PlayerManager.addEnergy/spendEnergy',  () => {
     const players = getPlayerList()
     const positions = getStartingPositions()
@@ -500,7 +530,110 @@ test('PlayerManager.getCheckpoints/takeCheckpoint', () => {
     expect(checkpoints_3.size).toBe(4)
 })
 
-test('PlayerManger.getBotPushes',  () => {
-    throw new Error('Not Implemented')
+test('PlayerManger.getBotPushes (no push)',  () => {
+
+    // first of all, rotation is always allowed
+    const players = getPlayerList()
+    const positions = getStartingPositions()
+    const pm = new PlayerManager(players, positions)
+
+    const result = pm.getBotPushes('wotc1234', new Turn(RotationDirection.CCW), dummy_evaluator)
+    expect(result.size).toBe(1)
+    expect(result.has('wotc1234')).toBeTruthy()
+    expect(result.get('wotc1234').length).toBe(1)
+    expect(result.get('wotc1234')[0].movement).toBeDefined()
+    expect(isRotation(result.get('wotc1234')[0].movement)).toBeTruthy()
+    expect(result.get('wotc1234')[0].status).toBe(MovementStatus.OK)
 })
 
+test('PlayerManager.getBotPushes (chain)', () => {
+    const players = getPlayerList()
+    const positions = getStartingPositions()
+    positions.set('miles1234', {x: 0, y:1, orientation: Orientation.N})
+
+    const pm = new PlayerManager(players, positions)
+
+    const result = pm.getBotPushes('hems1234', {direction: Orientation.N, distance: 1}, dummy_evaluator)
+
+    expect(result.size).toBe(2)
+    expect(result.has('hems1234')).toBeTruthy()
+    expect(result.has('miles1234')).toBeTruthy()
+    expect(result.get('hems1234').length).toBe(1)
+    expect(result.get('hems1234')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(result.get('hems1234')[0].movement)).toBeTruthy()
+    expect(result.get('hems1234')[0].movement.direction).toBe(Orientation.N)
+    expect(result.get('hems1234')[0].status).toBe(MovementStatus.OK)
+    expect(result.get('hems1234')[0].pushed).toBeFalsy()
+    expect(result.get('miles1234').length).toBe(1)
+    expect(result.get('miles1234')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(result.get('miles1234')[0].movement)).toBeTruthy()
+    expect(result.get('miles1234')[0].movement.direction).toBe(Orientation.N)
+    expect(result.get('miles1234')[0].status).toBe(MovementStatus.OK)
+    expect(result.get('miles1234')[0].pushed).toBeTruthy()
+})
+
+test('PlayerManager.getBotPushes (wall shield)', () => {
+    const evaluator = curry_evaluator([{x:0, y:0, orientation: Orientation.N}], MovementStatus.WALL)
+    const players = getPlayerList()
+    const positions = getStartingPositions()
+    positions.set('miles1234', {x:0, y:1, orientation: Orientation.S})
+    const pm = new PlayerManager(players, positions)
+
+    const result = pm.getBotPushes('hems1234', {direction: Orientation.N, distance: 1}, evaluator)
+    expect(result.size).toBe(1)
+    expect(result.has('hems1234')).toBeTruthy()
+    expect(result.get('hems1234').length).toBe(1)
+    expect(result.get('hems1234')[0].movement).toBeUndefined()
+    expect(result.get('hems1234')[0].status).toBeDefined()
+    expect(result.get('hems1234')[0].status).toBe(MovementStatus.WALL)
+    expect(result.get('hems1234')[0].pushed).toBeFalsy()
+})
+
+test('PlayerManager.getBotPushes (multiple pushing to wall)', () => {
+    const evaluator = curry_evaluator([{x:0, y:2, orientation: Orientation.N}], MovementStatus.WALL)
+    const players = getPlayerList()
+    const positions = getStartingPositions()
+    positions.set('miles1234', {x:0, y:1, orientation: Orientation.S})
+    positions.set('wotc1234', {x:0, y:2, orientation: Orientation.S})
+    const pm = new PlayerManager(players, positions)
+
+    const result = pm.getBotPushes('hems1234', {direction: Orientation.N, distance: 1}, evaluator)
+    expect(result.size).toBe(1)
+
+    expect(result.has('wotc1234')).toBeTruthy()
+    expect(result.get('wotc1234').length).toBe(1)
+    expect(result.get('wotc1234')[0].movement).toBeUndefined()
+    expect(result.get('wotc1234')[0].status).toBeDefined()
+    expect(result.get('wotc1234')[0].status).toBe(MovementStatus.WALL)
+    expect(result.get('wotc1234')[0].pushed).toBeTruthy()
+})
+
+test('PlayerManager.getBotPushes (chain push to pit', () => {
+    const evaluator = curry_evaluator([{x:0, y:1, orientation: Orientation.N}], MovementStatus.PIT)
+    const players = getPlayerList()
+    const positions = getStartingPositions()
+    positions.set('miles1234', {x:0, y:1, orientation: Orientation.S})
+    const pm = new PlayerManager(players, positions)
+
+    const result = pm.getBotPushes('hems1234', {direction: Orientation.N, distance: 1}, evaluator)
+    expect(result.size).toBe(2)
+    expect(result.has('hems1234')).toBeTruthy()
+    expect(result.get('hems1234').length).toBe(1)
+    expect(result.get('hems1234')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(result.get('hems1234')[0].movement)).toBeTruthy()
+    expect(result.get('hems1234')[0].movement.direction).toBe(Orientation.N)
+    expect((result.get('hems1234')[0].movement as AbsoluteMovement).distance).toBe(1)
+    expect(result.get('hems1234')[0].status).toBeDefined()
+    expect(result.get('hems1234')[0].status).toBe(MovementStatus.OK)
+    expect(result.get('hems1234')[0].pushed).toBeFalsy()
+
+    expect(result.has('miles1234')).toBeTruthy()
+    expect(result.get('miles1234').length).toBe(1)
+    expect(result.get('miles1234')[0].movement).toBeDefined()
+    expect(isAbsoluteMovement(result.get('miles1234')[0].movement)).toBeTruthy()
+    expect(result.get('miles1234')[0].movement.direction).toBe(Orientation.N)
+    expect((result.get('miles1234')[0].movement as AbsoluteMovement).distance).toBe(1)
+    expect(result.get('miles1234')[0].status).toBeDefined()
+    expect(result.get('miles1234')[0].status).toBe(MovementStatus.PIT)
+    expect(result.get('miles1234')[0].pushed).toBeTruthy()
+})

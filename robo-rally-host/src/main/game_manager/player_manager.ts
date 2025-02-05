@@ -1,8 +1,6 @@
 import {  PlayerState, type Player, type PlayerID } from "../models/player"
-import type { Main2ServerMessage, Sender } from '../models/connection'
 import { newDamageDeck, newRegisterArray, ProgrammingCard, type RegisterArray } from '../models/game_data'
 import type { Evaluator } from "./board"
-import { Main2Server } from "../models/events"
 import { DeckManager } from "./deck_manager"
 import { MovementDirection, type Movement, isRotation, isAbsoluteMovement } from "../models/movement"
 import { MovementForest } from "./graph"
@@ -104,7 +102,7 @@ export class PlayerManager {
         }
 
         // here is the status
-        if (result.status == MovementStatus.PIT) {
+        if (result.status === MovementStatus.PIT) {
             // we should be set as a shutdown and our position unset
             this.dealDamage(actor, SHUTDOWN_DAMAGE, register)
             const state = this.player_states.get(actor)
@@ -174,7 +172,7 @@ export class PlayerManager {
     /**
      * sets the priority lock, so that the next call to update priority does nothing
      */
-    public priorityLock() {
+    public lockPriority() {
         this.priority_lock = true
     }
 
@@ -222,13 +220,15 @@ export class PlayerManager {
      */
     public setProgram(player_id:PlayerID, program: RegisterArray): boolean {
         this.programs.set(player_id, program)
+        let missing = 0
         for (const [_, program] of this.programs.entries()) {
             if (program === undefined) {
-                return false
+                missing += 1
             }
         }
         
-        return true
+        console.log(`still expecting ${missing} programs`)
+        return missing === 0
     }
 
     /**
@@ -508,8 +508,11 @@ export class PlayerManager {
     public getBotPushes(actor: PlayerID, movement: MovementFrame, evaluator: Evaluator): Map<PlayerID, MovementResult[]> {
         // populate data stores
         const ret = new Map<PlayerID, MovementResult[]>()
+        
+        if (movement === undefined) {
+            return ret
+        }
 
-        // TODO the best move here is to extend the pusher forest to accommodate this as well.
         // we'll just instantiate a pusher forest with the single push and go from there
         if (isRotation(movement)) {
             // apply the rotation to the working position
@@ -529,7 +532,7 @@ export class PlayerManager {
 
         // create a new pusher forest with this push
         const forest = new MovementForest()
-        forest.addMover(position, position.orientation)
+        forest.addMover(position, movement.direction)
         const results = forest.handleMovement(this.player_positions, evaluator)
 
         // for each actor in the result

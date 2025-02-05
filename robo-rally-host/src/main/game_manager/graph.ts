@@ -300,7 +300,7 @@ export class MovementForest {
 
             // this will be at most an absolute movement followed by a rotation
             const result = evaluator(start, movements[0])
-            if (result === undefined || result.status == MovementStatus.WALL || result.status === MovementStatus.PIT) {
+            if (result === undefined || result.status === MovementStatus.WALL || result.status === MovementStatus.PIT) {
                 // we hit a wall, so invalidate our cluster
                 // do not process any rotation, the entire movement is cancelled
                 console.log('hit a wall/pit')

@@ -170,18 +170,18 @@ export class GameInitializer {
 }
 
 export interface BotInitializer {
-    setPosition: () => Promise<boolean>
+    fetchPosition: () => Promise<void>
+    setPosition: (player_id: PlayerID, position: OrientedPosition) => boolean
     getStartingPositions: () => Map<PlayerID, OrientedPosition>
-    reinitialize: () => Promise<void>
 }
 
 /**
  * Initializes bots over bluetooth connections
  */
-export class BluetoothBotInitializer {
+export class BluetoothBotInitializer implements BotInitializer {
     private priority_list: Player[]
     private connecting: number = 0
-    private initial_positions= new Map<PlayerID, OrientedPosition>()
+    private initial_positions = new Map<PlayerID, OrientedPosition>()
     private board: Board
 
     public constructor(board: Board, priority_list: Player[]) {
@@ -200,10 +200,15 @@ export class BluetoothBotInitializer {
         // TODO
     }
 
+    setPosition(player_id: PlayerID, position: OrientedPosition): boolean {
+        this.initial_positions.set(player_id, position)
+        return this.initial_positions.size == this.priority_list.length
+    }
+
     /**
      * read the position from the bluetooth connection, store it, then connect the next actor
      */
-    async setPosition(): Promise<void> {
+    async fetchPosition(): Promise<void> {
         const cur = this.priority_list[this.connecting]
         
         // define a callback for setting the position (if it's valid)
@@ -221,14 +226,14 @@ export class BluetoothBotInitializer {
             BluetoothManager.getInstance().positionSet(cur.id)
 
             // set the position we got
-            this.initial_positions.set(cur.id, starting)
+            this.setPosition(cur.id, starting)
 
             // increment the priority we are connecting for
             this.connecting++
             // connect the next guy if we aren't done yet
             if (this.connecting < this.priority_list.length) {
                 this.connect()
-                this.setPosition()
+                this.fetchPosition()
             } else {
                 this.connecting = 0
             }

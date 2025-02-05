@@ -1,6 +1,6 @@
 import { createBluetooth, type Adapter, type Device, type GattService } from "node-ble";
 import type { CharacterID, PlayerID } from "./models/player"
-import { BotMovement, BotState, type ActionFrame } from "./game_manager/executor";
+import { ActionFrame, BotMovement, BotState } from "./game_manager/executor";
 import type { MovementExecutor } from "./game_manager/executor";
 import { v4 as uuid4 } from "uuid";
 
@@ -141,9 +141,7 @@ export class BluetoothManager implements MovementExecutor {
         console.log(`sending movement to ${player_id}`)
 
         // check which attributes are set on the given ActionFrame
-        if (action.pre_action === undefined
-                && action.movement === undefined
-                && action.end_state === undefined) {
+        if (ActionFrame.isEmpty(action)) {
             // there's nothing to do here
             return
         }

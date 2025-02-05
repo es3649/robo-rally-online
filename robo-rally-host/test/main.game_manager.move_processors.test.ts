@@ -101,6 +101,17 @@ test('MovementFrame.fromMovement', () => {
     expect(relative_res[1].direction).toBe(Orientation.W)
     expect((relative_res[1] as AbsoluteMovement).distance).toBe(1)
 
+    const relative_2: RelativeMovement = {
+        direction: MovementDirection.Back,
+        distance: 1
+    }
+    const relative_2_res = MovementFrame.fromMovement(relative_2, Orientation.E)
+    expect(relative_2_res.length).toBeDefined()
+    expect(relative_2_res.length).toBe(1)
+    expect(isAbsoluteMovement(relative_2_res[0])).toBeTruthy()
+    expect(relative_2_res[0].direction).toBe(Orientation.W)
+    expect((relative_2_res[0] as AbsoluteMovement).distance).toBe(1)
+
     // convert an absolute movement
     const absolute: AbsoluteMovement = {
         direction: Orientation.S,
@@ -411,7 +422,6 @@ test('MovementMapBuilder', () => {
     expect(ok3).toBeFalsy()
 
     const complete = builder.finish()
-    console.log(complete)
     expect(complete).toBeDefined()
     expect(complete.size).toBe(3)
     const first = complete.get('first')

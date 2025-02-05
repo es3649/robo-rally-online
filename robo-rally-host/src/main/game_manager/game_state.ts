@@ -6,14 +6,13 @@
 import { type PlayerID } from "../models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
-import { MovementFrame, MovementMapBuilder type MovementArrayWithResults, type OrientedPosition } from "./move_processors"
-import * as bt from "../bluetooth"
+import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import type { Main2Server } from "../models/events"
 import type { Sender } from "../models/connection"
 import { isRotation, Orientation, type Movement } from "../models/movement"
 import type { RegisterArray } from "../models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
-import type { ActionFrame, MovementExecutor } from "./executor"
+import { BotMovement, BotState, type ActionFrame, type MovementExecutor } from "./executor"
 
 enum TurnPhase {
     MOVEMENT,
@@ -28,13 +27,6 @@ enum TurnPhase {
     BATTERIES,
     CHECKPOINTS
 }
-
-TODO
-// we need to update positions somewhere in the GameState manager:
-// if we update in movements, we can apply several movements at once as long as they are all ok, however,
-// we will be unable to track movements caused by board elements, as these will go directly to the movement
-// frame execution
-// We could do it in both, but hold off in executeMovementFrames depending on the current state
 
 /**
  * This class needs to be implemented like so:
@@ -102,11 +94,14 @@ export class GameStateManager {
         // if there are movement frames to execute, then execute them
         if (this.movement_frames.size > 0) {
             this.executeMovementFrames()
+            return
         } else if (this.movements.length > 0) {
             // if there are movements, then execute those (as active priority player)
             this.executeMovements()
+            return
         } else if (this.damage.size > 0) {
             this.applyDamage()
+            return
         }
         // otherwise all movements are done, so do the next board element
         switch (this.next_board_element) {
@@ -149,6 +144,12 @@ export class GameStateManager {
     public setProgram(player_id: PlayerID, program: RegisterArray): void {
         const ready = this.player_manager.setProgram(player_id, program)
         if (ready) {
+            console.log("All programs received, beginning execution")
+            // unlatch the movements for actors which are shutdown
+            // these actions will have been set on setShutdown before programs are submitted
+            this.movement_executor.unlatchActions()
+
+            // continue to execution
             this.resolveRegister()
         }
     }
@@ -159,6 +160,7 @@ export class GameStateManager {
      */
     public setShutdown(player_id: PlayerID): void {
         this.player_manager.setShutdown(player_id)
+        this.movement_executor.setAction(player_id, {end_state: BotState.SHUTDOWN})
     }
 
     /**
@@ -173,6 +175,7 @@ export class GameStateManager {
     private resolveRegister(): void {
         // check the priority
         if (this.priority >= this.player_count) {
+            console.log('all registers resolved, continuing...')
             // just move on
             this.next_board_element = TurnPhase.CONVEYOR2_a
             this.conveyor2()
@@ -180,6 +183,7 @@ export class GameStateManager {
         }
 
         const player_id = this.player_manager.getPlayerByPriority(this.priority)
+        console.log(`resolving register ${this.register} for ${player_id}`)
         let position = this.player_manager.getPosition(player_id)
         // if there is no position, it's likely because the player is offline
         if (position === undefined) {
@@ -203,7 +207,7 @@ export class GameStateManager {
         }
 
         // we should now have a list of movements
-        if (this.movements.length == 0) {
+        if (resolved_movements.length == 0) {
             // there are no movements, could be due to a shutdown, just continue
             this.priority += 1
             this.resolveRegister()
@@ -220,9 +224,6 @@ export class GameStateManager {
             // if this is a rotation, update the orientation
             // otherwise, it should be invariant under any other action (no effect causes another actor to turn)
             for (const frame of frames) {
-                if (isRotation(frame)) {
-                    position.orientation = Orientation.rotate(position.orientation, frame.direction)
-                }
                 this.movements.push(frame)
             }
         }
@@ -234,13 +235,18 @@ export class GameStateManager {
     /**
      * executed the movements (not movement frames) set on the state manager. They are evaluated and the results 
      * submitted to executeMovementFrames, and its assumed these are the movements of the player with the currently
-     * set priority 
+     * set priority. We evaluate results here because if the player is pushed into a pit or something, movement
+     * needs to terminate. Positions are also updated here to maintain an accurate understanding of the board state
+     * for the evaluation
      */
     private executeMovements(): void {
+        console.log(`executing movements (register ${this.register})`)
         if (this.movements.length === 0 || this.movements_position >= this.movements.length) {
-            // then we are done here, zero ourselves out, and resume?
+            // then we are done here, zero ourselves out, move to the next player in priority, and resume?
+            console.log('no more movements to execute, continuing')
             this.movements = []
             this.movements_position = 0
+            this.priority += 1
             this.resume()
             return
         }
@@ -249,15 +255,19 @@ export class GameStateManager {
         const evaluator = (pos: OrientedPosition, move: MovementFrame) => this.board.getMovementResult(pos, move)
         const builder = new MovementMapBuilder<PlayerID>()
 
-        if (this.movements_position < this.movements.length) {
-            // use the movement evaluator to build a MovementResult map until something comes up an issue:
-            const movement_results = this.player_manager.getBotPushes(active_player, this.movements[this.movements_position], evaluator)
-            this.movements_position += 1
+        // use the movement evaluator to build a MovementResult map until something comes up an issue:
+        const movement_results = this.player_manager.getBotPushes(active_player, this.movements[this.movements_position], evaluator)
+        
+        builder.appendMovements(movement_results)
 
-            // we are either done, or not OK:
-            // send these movement to the executor
-            this.executeMovementFrames()
-        }
+        // this will need to be updated even if we are not ok
+        this.movements_position += 1
+
+
+        // we are either done, or not OK:
+        // send these movement to the frame executor
+        this.movement_frames = builder.finish()
+        this.executeMovementFrames()
     }
 
     /**
@@ -265,19 +275,66 @@ export class GameStateManager {
      * Additionally, it updates the player positions by the action of the movements we execute
      */
     private executeMovementFrames(): void {
-        const actions = new Map<PlayerID, ActionFrame>()
+        console.log(`executing movement frame (register ${this.register}, phase ${this.next_board_element})`)
+        // move through the list of movement frames and execute them
+        let executed_any_frames = false
+        for (const [actor, results] of this.movement_frames) {
+            if (this.movement_frames_position < results.length) {
+                executed_any_frames = true
+                const action: ActionFrame = {}
+                // get the move
+                const result = results.getResult(this.movement_frames_position)
 
-        for (const [actor, result] of this.movement_frames)
-        this.movement_executor.unlatchActions()
+                // if it exists...
+                if (result.movement !== undefined) {
+                    // get the player;s position
+                    const position = this.player_manager.getPosition(actor)
+                    // FIXME if this is coming through on a rotation from a movement, getting the position here will not give
+                    // the correct orientation because it will have already been updated
+                    if (position === undefined) {
+                        console.warn('Failed to get position for actor:', actor)
+                    } else {
+                        // use that to create a relativized BotMovement and set it on the action
+                        action.movement = BotMovement.fromFrame(result.movement, position.orientation)
+                    }
 
-        this.resume()
+                    // now that we have set the move on the action, we can update the position
+                    this.player_manager.updatePositions(actor, result, this.register)
+                }
+
+                // check if the bot fell off the map, if so: b'bye
+                if (result.status === MovementStatus.PIT) {
+                    this.player_manager.setShutdown(actor)
+                    action.end_state = BotState.SHUTDOWN
+                }
+
+                this.movement_executor.setAction(actor, action)
+            }
+        }
+
+        if (executed_any_frames) {
+            this.movement_executor.unlatchActions()
+            // repeat for the next frame
+            this.movement_frames_position++
+            this.executeMovementFrames()
+        } else {
+            console.log('no more frames to execute, continuing')
+            this.movement_frames.clear()
+            this.movement_frames_position = 0
+            this.resume()
+        }
     }
 
     /**
      * apply damage to the actors from the damage array set on the class
      */
     private applyDamage(): void {
-
+        console.log('applying damage')
+        // handle any damage-taking-specific actions here
+        // assign the damage
+        this.player_manager.dealDamages(this.damage, this.register)
+        this.damage.clear()
+        this.resume()
     }
 
     /**
@@ -290,8 +347,10 @@ export class GameStateManager {
         this.movement_frames_position = 0
         this.movement_frames = this.board.handleConveyor2(this.player_manager.getPositions())
         if (this.next_board_element === TurnPhase.CONVEYOR2_a) {
+            console.log('processing first conveyor2 execution')
             this.next_board_element = TurnPhase.CONVEYOR2_b
         } else {
+            console.log('processing second conveyor2 execution')
             this.next_board_element = TurnPhase.CONVEYOR
         }
         this.executeMovementFrames()
@@ -302,6 +361,7 @@ export class GameStateManager {
      * then invoking their execution
      */
     private conveyor(): void {
+        console.log('processing conveyor execution')
         // get the movements and set them on the executor, then execute
         this.movement_frames_position = 0
         this.movement_frames = this.board.handleConveyor(this.player_manager.getPositions())
@@ -315,6 +375,7 @@ export class GameStateManager {
      * then invoking their execution
      */
     private gears(): void {
+        console.log('processing gear execution')
         this.movement_frames_position = 0
         this.movement_frames = this.board.handleGear(this.player_manager.getPositions())
         
@@ -327,6 +388,7 @@ export class GameStateManager {
      * on the class, then invokes their execution
      */
     private pushers(): void {
+        console.log('processing pusher execution')
         this.movement_frames_position = 0
         this.movement_frames = this.board.handlePush(this.player_manager.getPositions(), this.register)
 
@@ -335,6 +397,7 @@ export class GameStateManager {
     }
 
     private boardLasers(): void {
+        console.log('executing board lasers')
         // get the laser positions, from the board
         const laser_positions = this.board.getLaserOrigins()
         const target_positions = this.player_manager.getPositions()
@@ -348,6 +411,16 @@ export class GameStateManager {
      * gets the damage from the robot lasers and applies it
      */
     private robotLasers(): void {
+        console.log('activating robot lasers')
+        // set all players to laser on mode
+        for (const [actor, state] of this.player_manager.getPlayerStates().entries()) {
+            if (state.active) {
+                this.movement_executor.setAction(actor, {end_state: BotState.FIRE_LASER})
+            }
+        }
+        this.movement_executor.unlatchActions()
+
+        // perform the computations while the lasers are on
         const target_positions = this.player_manager.getPositions()
         const laser_positions: LaserPosition[] = []
         // build up the list of laser positions
@@ -359,6 +432,14 @@ export class GameStateManager {
         }
         this.damage = this.board.handleLaserPaths(laser_positions, target_positions, false)
 
+        // turn off the lasers
+        for (const [actor, state] of this.player_manager.getPlayerStates().entries()) {
+            if (state.active) {
+                this.movement_executor.setAction(actor, {end_state: BotState.DEFAULT})
+            }
+        }
+        this.movement_executor.unlatchActions()
+
         this.next_board_element = TurnPhase.BATTERIES
         this.applyDamage()
     }
@@ -368,6 +449,7 @@ export class GameStateManager {
      * energy values on the player manager
      */
     private batteries(): void {
+        console.log('executing batteries')
         // get the player locations
         const locations = this.player_manager.getPositions()
 
@@ -389,6 +471,7 @@ export class GameStateManager {
      * handles checkpoints
      */
     private checkpoint(): void {
+        console.log('granting checkpoints')
         const positions = this.player_manager.getPositions()
 
         for (const [actor, position] of positions.entries()) {
@@ -409,16 +492,30 @@ export class GameStateManager {
      * or ending the activation phase entirely
      */
     private finish(): void {
+        console.log(`finishing register ${this.register}`)
+        // check the end condition
+        if (this.gameOver() !== undefined) {
+            // return. The caller should be checking the game over condition, and we can't
+            // guarantee a return from this depth, but we need to halt
+            return
+        }
+
+        // proceed to the next register
         this.register++
-        // if we are on the last register, go back to programming stage
+        this.priority = 0
+        // if we aren't on the last register, go back to programming stage
         this.next_board_element = TurnPhase.MOVEMENT
         if (this.register < 5) {
             // then we are still playing, go back to movement phase
             this.resolveRegister()
+            return
         }
 
-        // otherwise, 
-        this.resolveRegister()
+        // otherwise this is the end of the last register
+        // reset, then return and await a new set of programs
+        this.player_manager.resetPrograms()
+        this.player_manager.updatePriority()
+        this.register = 0
     }
 
     /**
@@ -426,7 +523,17 @@ export class GameStateManager {
      * @returns the id of the player who won the game
      */
     public gameOver(): PlayerID|undefined {
+        console.log('checking win condition')
         // check the end conditions
-        return
+        const last_checkpoint = this.board.getLastCheckpoint()
+
+        for (const [actor, state] of this.player_manager.getPlayerStates().entries()) {
+            // if this is checked every register, then there should only be one player with the
+            // checkpoint, so there's no possibility for a tie
+            if (state.checkpoints == last_checkpoint) {
+                console.log(`${actor} has won`)
+                return actor
+            }
+        }
     }
 }

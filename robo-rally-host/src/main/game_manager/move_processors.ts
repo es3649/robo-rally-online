@@ -208,6 +208,18 @@ export class MovementArrayWithResults {
     get length(): number {
         return this.frames.length
     }
+
+    getResult(position: number): MovementResult {
+        if (position < 0 || position >= this.length) {
+            throw new Error("Index out of bounds")
+        }
+
+        return {
+            movement: this.frames[position],
+            status: this.results[position],
+            pushed: this.pushed[position]
+        }
+    }
 }
 
 /**
