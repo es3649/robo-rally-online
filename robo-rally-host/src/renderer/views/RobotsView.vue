@@ -2,7 +2,7 @@
 import router from '../router'
 import Robot from '../components/Robot.vue'
 
-import { bots } from '../../main/data/robots';
+import { BOTS } from '../../main/data/robots';
 
 setInterval(() => {
     // call the main process back to get the status of this robot, and see if anyone is using it
@@ -13,7 +13,7 @@ setInterval(() => {
     <h1>Robot Settings</h1>
     <button @click="router.replace('/lobby')">&lt;&nbsp;Back</button>
 
-    <div v-for="bot of bots">
+    <div v-for="bot of BOTS">
         <Robot :robot="bot" />
     </div>
 

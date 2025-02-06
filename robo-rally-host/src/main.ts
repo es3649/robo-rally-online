@@ -2,18 +2,18 @@ import { app, BrowserWindow, ipcMain, net, protocol } from 'electron';
 import * as path from 'path';
 import { networkInterfaces } from 'node:os'
 import { existsSync } from 'fs';
-import { connectRobot } from './main/bluetooth';
 import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
-import { Board, type BoardData } from './main/game_manager/board';
+import { Board } from './main/game_manager/board';
 import { Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { GameManager } from './main/game_manager/manager';
 import { senderMaker, type Server2MainMessage } from './main/models/connection';
+import { BluetoothManager } from './main/bluetooth';
+import { GameStateManager } from './main/game_manager/game_state';
 
 // create the game manager
 // this game manager will manage the state of the game through the life of the program
-let game = new GameManager(senderMaker<Main2Server>(process))
+let game: GameStateManager
 
 // listen and serve
 const modulePath = path.join(__dirname, './server.js')
@@ -66,7 +66,7 @@ const createWindow = () => {
  */
 function registerIPCListeners() {
   ipcMain.on(Render2Main.BLE_CONNECT, (event: Electron.IpcMainEvent, name: string) => {
-    connectRobot(name)
+    BluetoothManager.getInstance().connectRobot(name)
   })
 
   ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
@@ -98,7 +98,7 @@ function registerIPCListeners() {
     // tell the server to reset
     child.send(Main2Server.RESET)
     // create a new game object
-    game = new GameManager(senderMaker<Main2Server>(process))
+    game = new GameStateManager(senderMaker<Main2Server>(process))
   })
 
   // ipcMain.on(Render2Main.BOARD.ROTATE)

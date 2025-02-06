@@ -6,13 +6,13 @@
 import { type PlayerID } from "../models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
-import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
+import { applyRotation, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import type { Main2Server } from "../models/events"
 import type { Sender } from "../models/connection"
 import { isRotation, Orientation, type Movement } from "../models/movement"
 import type { RegisterArray } from "../models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
-import { BotMovement, BotState, type ActionFrame, type MovementExecutor } from "./executor"
+import { ActionFrame, BotMovement, BotState, type MovementExecutor } from "./executor"
 
 enum TurnPhase {
     MOVEMENT,
@@ -70,6 +70,24 @@ export class GameStateManager {
         this.board = player_initializer.getBoard()
         this.movement_executor = executor
         this.sender = event_sender
+    }
+
+    /**
+     * sets the program for the given player on the PlayerManager
+     * @param player_id the id of the player submitting the program
+     * @param program the program to be submitted
+     */
+    public setProgram(player_id: PlayerID, program: RegisterArray): void {
+        const ready = this.player_manager.setProgram(player_id, program)
+        if (ready) {
+            console.log("All programs received, beginning execution")
+            // unlatch the movements for actors which are shutdown
+            // these actions will have been set on setShutdown before programs are submitted
+            this.movement_executor.unlatchActions()
+
+            // continue to execution
+            this.resolveRegister()
+        }
     }
 
     /**
@@ -137,24 +155,6 @@ export class GameStateManager {
     }
 
     /**
-     * sets the program for the given player on the PlayerManager
-     * @param player_id the id of the player submitting the program
-     * @param program the program to be submitted
-     */
-    public setProgram(player_id: PlayerID, program: RegisterArray): void {
-        const ready = this.player_manager.setProgram(player_id, program)
-        if (ready) {
-            console.log("All programs received, beginning execution")
-            // unlatch the movements for actors which are shutdown
-            // these actions will have been set on setShutdown before programs are submitted
-            this.movement_executor.unlatchActions()
-
-            // continue to execution
-            this.resolveRegister()
-        }
-    }
-
-    /**
      * Marks the payer as having shutdown this round
      * @param player_id the id of the player to set a shutdown
      */
@@ -218,12 +218,18 @@ export class GameStateManager {
         this.movements = []
         this.movements_position = 0
 
+        // create a copy for computations
+        let tmp_orientation = position.orientation
+
         // convert the movements to frames
         for (const movement of resolved_movements) {
-            const frames = MovementFrame.fromMovement(movement, position.orientation)
+            const frames = MovementFrame.fromMovement(movement, tmp_orientation)
             // if this is a rotation, update the orientation
             // otherwise, it should be invariant under any other action (no effect causes another actor to turn)
             for (const frame of frames) {
+                if (isRotation(frame)) {
+                    tmp_orientation = Orientation.rotate(tmp_orientation, frame.direction)
+                }
                 this.movements.push(frame)
             }
         }
@@ -280,11 +286,10 @@ export class GameStateManager {
         let executed_any_frames = false
         for (const [actor, results] of this.movement_frames) {
             if (this.movement_frames_position < results.length) {
-                executed_any_frames = true
                 const action: ActionFrame = {}
                 // get the move
                 const result = results.getResult(this.movement_frames_position)
-
+                
                 // if it exists...
                 if (result.movement !== undefined) {
                     // get the player;s position
@@ -297,17 +302,24 @@ export class GameStateManager {
                         // use that to create a relativized BotMovement and set it on the action
                         action.movement = BotMovement.fromFrame(result.movement, position.orientation)
                     }
-
+                    
                     // now that we have set the move on the action, we can update the position
                     this.player_manager.updatePositions(actor, result, this.register)
                 }
-
+                
                 // check if the bot fell off the map, if so: b'bye
                 if (result.status === MovementStatus.PIT) {
                     this.player_manager.setShutdown(actor)
                     action.end_state = BotState.SHUTDOWN
                 }
 
+                // at this point, if there's still no action, move on
+                // can happen in the case of a wall strike
+                if (ActionFrame.isEmpty(action)) {
+                    continue
+                }
+                
+                executed_any_frames = true
                 this.movement_executor.setAction(actor, action)
             }
         }

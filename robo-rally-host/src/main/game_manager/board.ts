@@ -910,10 +910,7 @@ export class Board {
         if (cell.wall(direction)) {
             // then we move 0
             return {
-                movement: {
-                    direction: direction,
-                    distance: 1
-                },
+                movement: undefined,
                 status: MovementStatus.WALL
             }
         }
