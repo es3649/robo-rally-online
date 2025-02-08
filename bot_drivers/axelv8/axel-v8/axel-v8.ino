@@ -274,7 +274,7 @@ void laser() {
 }
 
 /******************************* DEFAULT STATE DEFN *******************************/
-void stautsLEDUpdate() {
+void statusLEDUpdate() {
   static int last_status_led_swap = 0;
   int now = millis();
   PinStatus led_status = digitalRead(STATUS_LED_PIN);
@@ -307,7 +307,7 @@ void stautsLEDUpdate() {
 }
 
 void defaultState() {
-  stautsLEDUpdate();
+  statusLEDUpdate();
 
   if (movement != Movement::NONE) {
     moveStep();
@@ -405,7 +405,7 @@ void loop() {
     readRFID();
     break;
   default:
-    state = State::DEFAULT;
+    cur_state = State::DEFAULT;
     break;
   }
 }
