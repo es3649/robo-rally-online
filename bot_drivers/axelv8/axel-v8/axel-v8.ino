@@ -1,7 +1,5 @@
 #include <ArduinoBLE.h> // builtin
 #include <SPI.h> // builtin
-#include <sstream>
-#include <iomanip>
 #include <MFRC522.h> // https://github.com/miguelbalboa/rfid
 
 #define DEBUG true
@@ -31,27 +29,28 @@
  * RFID: two quick pulses, followed by ~1s off      -_-_____
  * ERROR: flashing slowly (~every 2 sec)            ----____
  */
-enum State {
-    CONNECTING,
-    DEFAULT,
-    SHUTDOWN,
-    LASER,
-    RFID
+namespace State {
+  const uint8_t DEFAULT = 1;
+  const uint8_t SHUTDOWN = 2;
+  const uint8_t LASER = 3;
+  const uint8_t RFID = 4;
 };
 
-State cur_state = State::CONNECTING;
+uint8_t cur_state = State::DEFAULT;
+uint8_t last_idempotence_code = 0;
 
-enum Movement {
-  NONE,
-  MOVE_FORWARD,
-  MOVE_BACK,
-  MOVE_LEFT,
-  MOVE_RIGHT,
-  TURN_LEFT,
-  TURN_RIGHT
+namespace Movement {
+  const uint8_t NONE = 0;
+  const uint8_t MOVE_FORWARD = 1;
+  const uint8_t MOVE_BACK = 2;
+  const uint8_t MOVE_LEFT = 3;
+  const uint8_t MOVE_RIGHT = 4;
+  const uint8_t TURN_LEFT = 5;
+  const uint8_t TURN_RIGHT = 6;
 };
 
-Movement action = Movement::NONE;
+uint8_t movement = Movement::NONE;
+int steps;
 
 /******************************* BLUETOOTH SETUP *******************************/
 // define the UUIDs for our characteristics
@@ -63,22 +62,57 @@ const char* IDEMPOTENCY_CHARACTERISTIC          = "346642f1-0004-49fc-a6a6-8a782
 const char* RFID_CHARACTERISTIC                 = "346642f1-0005-49fc-a6a6-8a782eb06f26";
 
 BLEService controlService(SERVICE_ID);
-BLEByteCharacteristic controlCharacteristic(STATE_CHARACTERISTIC, BLERead);
+BLEByteCharacteristic stateCharacteristic(STATE_CHARACTERISTIC, BLERead);
 BLEByteCharacteristic soundCharacteristic(SOUND_CHARACTERISTIC, BLERead);
 BLEByteCharacteristic movementDirectionCharacteristic(MOVEMENT_DIRECTION_CHARACTERISTIC, BLERead);
-BLEWordCharacteristic idempotencyCharacteristic(IDEMPOTENCY_CHARACTERISTIC, BLERead);
-BLEWordCharacteristic rfidCharacteristic(RFID_CHARACTERISTIC, BLEWrite);
+BLEByteCharacteristic idempotencyCharacteristic(IDEMPOTENCY_CHARACTERISTIC, BLERead);
+BLEUnsignedIntCharacteristic rfidCharacteristic(RFID_CHARACTERISTIC, BLEWrite);
 
-void connecting() {
+BLEDevice central;
+
+void connect() {
   // if not initialized: initialize
   BLE.advertise();
-  // TODO, more here
 
-  // flash the STATUS LED quickly
-  digitalWrite(STATUS_LED_PIN, HIGH);
-  delay(500);
-  digitalWrite(STATUS_LED_PIN, LOW);
-  delay(500);
+  // flash the STATUS LED quickly while awaiting a connection
+  do {
+    central = BLE.central();
+    digitalWrite(STATUS_LED_PIN, !digitalRead(STATUS_LED_PIN));
+    delay(500);
+  } while (!central);
+
+  BLE.stopAdvertise();
+
+  #ifdef DEBUG
+    Serial.println("Connected to central device!");
+    Serial.print("MAC Address: ");
+    Serial.println(central.address());
+  #endif
+
+  updateBLEValues();
+}
+
+void updateBLEValues() {
+  // check if the state code changed
+  uint8_t written_idempotency;
+  idempotencyCharacteristic.readValue(written_idempotency);
+
+  if (written_idempotency != last_idempotence_code) {
+    // update all the values
+    stateCharacteristic.readValue(cur_state);
+    movementDirectionCharacteristic.readValue(movement);
+    last_idempotence_code = written_idempotency;
+    if (movement != Movement::NONE) {
+      move();
+    }
+
+    #ifdef DEBUG
+      Serial.print("Read state: ");
+      Serial.println(cur_state);
+      Serial.print("Read movement: ");
+      Serial.println(movement);
+    #endif
+  }
 }
 
 /******************************* RFID READER SETUP *******************************/
@@ -109,16 +143,15 @@ void readRFID() {
       Serial.println();
     #endif
     // save the most recent code
-    std::stringstream ss;
-    ss << std::hex;
+    uint32_t value = 0;
     for (uint8_t i = 0; i < 4; i++) {
+      value <<= 8;
       nuid_PICC[i] = rfid.uid.uidByte[i];
-      ss << std::setw(2) << std::setfill('0') << rfid.uid.uidByte[i];
-      ss << " ";
+      value |= rfid.uid.uidByte[i];
     }
 
     // write the new card value to the bluetooth characteristic
-    // rfidCharacteristic.writeValue(ss.str());
+    rfidCharacteristic.writeValue(value);
   }
 }
 
@@ -144,10 +177,7 @@ inline void setMotorWiddershins(const uint8_t& controller_pin) {
 }
 
 void move() {
-  // determine the movement direction
-  Movement movement_direction = movementDirectionCharacteristic.readValue();
-
-  if (movement_direction == Movement::MOVE_FORWARD || movement_direction == Movement::TURN_RIGHT) {
+  if (movement == Movement::MOVE_FORWARD || movement == Movement::TURN_RIGHT) {
     // left motor needs to move clockwise
     setMotorClockwise(MTRL_ORIENTATION_PIN);
   } else {
@@ -155,7 +185,7 @@ void move() {
     setMotorWiddershins(MTRL_ORIENTATION_PIN);
   }
 
-  if (movement_direction == Movement::MOVE_BACK || movement_direction == Movement::TURN_RIGHT) {
+  if (movement == Movement::MOVE_BACK || movement == Movement::TURN_RIGHT) {
     // right motor needs to move clockwise
     setMotorClockwise(MTRR_ORIENTATION_PIN);
   } else {
@@ -163,9 +193,7 @@ void move() {
     setMotorWiddershins(MTRR_ORIENTATION_PIN);
   }
 
-  // use the correct number of steps for forward/back movment, lateral movement, or rotation
-  int steps;
-  if (movement_direction == Movement::MOVE_FORWARD || Movement::MOVE_BACK) {
+  if (movement == Movement::MOVE_FORWARD || Movement::MOVE_BACK) {
     steps = STEPS_TO_MOVE_ONE_SPACE;
   } else {
     steps = STEPS_TO_ROTATE;
@@ -173,16 +201,29 @@ void move() {
 
   // enable the motors
   enableMotors();
+}
+
+void moveStep() {
+  // use the correct number of steps for forward/back movment, lateral movement, or rotation
+  static int steps_taken = 0;
 
   // begin rotatating the motors
-  for (int i = 0; i < steps; i++) {
-    digitalWrite(MTR_CLK_PIN, HIGH);
+  if (steps_taken < steps) {
+    PinStatus clk_state = digitalRead(MTR_CLK_PIN);
+    digitalWrite(MTR_CLK_PIN, !clk_state);
     delayMicroseconds(MOTOR_STEP_DELAY_US);
-    digitalWrite(MTR_CLK_PIN, LOW);
-    delayMicroseconds(MOTOR_STEP_DELAY_US);
+    if (clk_state == LOW) {
+      steps_taken++;
+    }
+  } else {
+    // set the clock low
+    disableMotors();
+    // set that there's no movement
+    movement = Movement::NONE;
+    // reset the step counts
+    steps = 0;
+    steps_taken = 0;
   }
-
-  disableMotors();
 }
 
 /******************************* ERROR STATE DEFN *******************************/
@@ -201,22 +242,23 @@ void errorState() {
 
 /******************************* SHUTDOWN STATE DEFN *******************************/
 void shutdown() {
-  // play a shutdown noise
+  // later: play a shutdown noise
 
   static int step = 1;
   static uint8_t intensity = 0;
   analogWrite(STATUS_LED_PIN, intensity);
   
-  while (cur_state == State::SHUTDOWN) {
-    // check the bluetooth state for a change of state
-    // if there's a state change, return
-    delay(10);
-    if (intensity < 255 && intensity > 0) {
-      intensity += step;
-      analogWrite(STATUS_LED_PIN, intensity);
-    } else {
-      step *= -1;
-    }
+  delay(10);
+  if (intensity < 255 && intensity > 0) {
+    intensity += step;
+    analogWrite(STATUS_LED_PIN, intensity);
+  } else {
+    step *= -1;
+  }
+
+  // sometimes we still need to move while shutdown
+  if (steps) {
+    moveStep();
   }
 }
 
@@ -225,13 +267,51 @@ void laser() {
   // light off; laser on
   digitalWrite(STATUS_LED_PIN, LOW);
   digitalWrite(LASER_PIN, HIGH);
-  
-  // wait for iiiiiiiitt;
-  delay(2000);
 
   // laser off, back to default
   digitalWrite(LASER_PIN, LOW);
   cur_state = State::DEFAULT;
+}
+
+/******************************* DEFAULT STATE DEFN *******************************/
+void stautsLEDUpdate() {
+  static int last_status_led_swap = 0;
+  int now = millis();
+  PinStatus led_status = digitalRead(STATUS_LED_PIN);
+  int diff = now - last_status_led_swap;
+  switch (cur_state) {
+    case State::DEFAULT:
+    case State::LASER:
+      if (diff < 250) {
+        digitalWrite(STATUS_LED_PIN, HIGH);
+      } else {
+        digitalWrite(STATUS_LED_PIN, LOW);
+      }
+      break;
+    case State::RFID:
+      if (diff < 250) {
+        digitalWrite(STATUS_LED_PIN, HIGH);
+      } else if (diff > 250) {
+        digitalWrite(STATUS_LED_PIN, LOW);
+      } else if (diff > 500) {
+        digitalWrite(STATUS_LED_PIN, HIGH);
+      } else if (diff > 750) {
+        digitalWrite(STATUS_LED_PIN, LOW);
+      }
+      break;
+  }
+
+  if (diff > 2000) {
+    last_status_led_swap = now;
+  }
+}
+
+void defaultState() {
+  stautsLEDUpdate();
+
+  if (movement != Movement::NONE) {
+    moveStep();
+  }
 }
 
 /******************************* SETUP AND LOOP *******************************/
@@ -247,6 +327,9 @@ void setup() {
   disableMotors();
   pinMode(MTRL_ORIENTATION_PIN, OUTPUT);
   pinMode(MTRR_ORIENTATION_PIN, OUTPUT);
+
+  digitalWrite(STATUS_LED_PIN, HIGH);
+  
   
   #ifdef DEBUG
     Serial.begin(9600);
@@ -281,25 +364,36 @@ void setup() {
 
   BLE.setLocalName(BOT_NAME);
   BLE.setAdvertisedService(controlService);
-  controlService.addCharacteristic(controlCharacteristic);
+  controlService.addCharacteristic(stateCharacteristic);
   controlService.addCharacteristic(soundCharacteristic);
   controlService.addCharacteristic(movementDirectionCharacteristic);
   controlService.addCharacteristic(idempotencyCharacteristic);
   controlService.addCharacteristic(rfidCharacteristic);
 
-  controlCharacteristic.writeValue(-1);
+  stateCharacteristic.writeValue(-1);
   #ifdef DEBUG
     Serial.println("Bluetooth® Low Energy initialized");
   #endif
+
+  // start connecting
+  connect();
 }
 
 void loop() {
+  // check the connection status, if we were disconnected, return to pairing mode
+  if (!central.connected()) {
+    // switch back to connecting state
+    connect();
+  } else {
+    // update values from BLE
+    updateBLEValues();
+  }
+
+  statusLEDUpdate();
+
   switch (cur_state) {
-  case State::CONNECTING:
-    // check that BT is initialized and wait for a connection
-    connecting();
-    break;
   case State::DEFAULT:
+    defaultState();
     break;
   case State::SHUTDOWN:
     shutdown();
@@ -309,6 +403,9 @@ void loop() {
     break;
   case State::RFID:
     readRFID();
+    break;
+  default:
+    state = State::DEFAULT;
     break;
   }
 }
