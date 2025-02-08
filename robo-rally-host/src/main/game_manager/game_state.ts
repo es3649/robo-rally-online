@@ -6,7 +6,7 @@
 import { type PlayerID } from "../models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
-import { applyRotation, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
+import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import type { Main2Server } from "../models/events"
 import type { Sender } from "../models/connection"
 import { isRotation, Orientation, type Movement } from "../models/movement"
@@ -408,6 +408,9 @@ export class GameStateManager {
         this.executeMovementFrames()
     }
 
+    /**
+     * gets the damage from the board lasers and sends it to be assigned
+     */
     private boardLasers(): void {
         console.log('executing board lasers')
         // get the laser positions, from the board
@@ -420,7 +423,7 @@ export class GameStateManager {
     }
 
     /**
-     * gets the damage from the robot lasers and applies it
+     * gets the damage from the robot lasers and sends it to be assigned
      */
     private robotLasers(): void {
         console.log('activating robot lasers')

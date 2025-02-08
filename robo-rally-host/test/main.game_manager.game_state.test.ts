@@ -674,36 +674,36 @@ test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again
     expect(mock_executor.calls[29].set_action_calls.get('miles1234').movement).toBe(BotMovement.MOVE_RIGHT)
     expect(mock_executor.calls[29].set_action_calls.get('miles1234').end_state).toBeUndefined()
     
-    expect(mock_executor.calls[30].set_action_calls.has('hems1234')).toBeTruthy()
-    expect(mock_executor.calls[30].set_action_calls.get('hems1234').movement).toBe(BotMovement.MOVE_RIGHT)
-    expect(mock_executor.calls[30].set_action_calls.get('hems1234').end_state).toBeUndefined()
+    expect(mock_executor.calls[30].set_action_calls.has('ford1234')).toBeTruthy()
+    expect(mock_executor.calls[30].set_action_calls.get('ford1234').movement).toBe(BotMovement.MOVE_RIGHT)
+    expect(mock_executor.calls[30].set_action_calls.get('ford1234').end_state).toBeUndefined()
     expect(mock_executor.calls[30].set_action_calls.has('miles1234')).toBeTruthy()
     expect(mock_executor.calls[30].set_action_calls.get('miles1234').movement).toBe(BotMovement.MOVE_RIGHT)
     expect(mock_executor.calls[30].set_action_calls.get('miles1234').end_state).toBeUndefined()
 
     // lasers on
-    expect(mock_executor.calls[31].set_action_calls.has('hems1234')).toBeTruthy()
-    expect(mock_executor.calls[31].set_action_calls.get('hems1234').movement).toBeUndefined()
-    expect(mock_executor.calls[31].set_action_calls.get('hems1234').end_state).toBe(BotState.FIRE_LASER)
+    expect(mock_executor.calls[31].set_action_calls.has('hems1234')).toBeFalsy() // hal died
     expect(mock_executor.calls[31].set_action_calls.has('wotc1234')).toBeTruthy()
     expect(mock_executor.calls[31].set_action_calls.get('wotc1234').movement).toBeUndefined()
     expect(mock_executor.calls[31].set_action_calls.get('wotc1234').end_state).toBe(BotState.FIRE_LASER)
     expect(mock_executor.calls[31].set_action_calls.has('miles1234')).toBeTruthy()
     expect(mock_executor.calls[31].set_action_calls.get('miles1234').movement).toBeUndefined()
     expect(mock_executor.calls[31].set_action_calls.get('miles1234').end_state).toBe(BotState.FIRE_LASER)
-    expect(mock_executor.calls[31].set_action_calls.has('ford1234')).toBeFalsy() // hal died
+    expect(mock_executor.calls[31].set_action_calls.has('ford1234')).toBeTruthy()
+    expect(mock_executor.calls[31].set_action_calls.get('ford1234').movement).toBeUndefined()
+    expect(mock_executor.calls[31].set_action_calls.get('ford1234').end_state).toBe(BotState.FIRE_LASER)
 
     // lasers off
-    expect(mock_executor.calls[32].set_action_calls.has('hems1234')).toBeTruthy()
-    expect(mock_executor.calls[32].set_action_calls.get('hems1234').movement).toBeUndefined()
-    expect(mock_executor.calls[32].set_action_calls.get('hems1234').end_state).toBe(BotState.DEFAULT)
+    expect(mock_executor.calls[32].set_action_calls.has('hems1234')).toBeFalsy()
     expect(mock_executor.calls[32].set_action_calls.has('wotc1234')).toBeTruthy()
     expect(mock_executor.calls[32].set_action_calls.get('wotc1234').movement).toBeUndefined()
     expect(mock_executor.calls[32].set_action_calls.get('wotc1234').end_state).toBe(BotState.DEFAULT)
     expect(mock_executor.calls[32].set_action_calls.has('miles1234')).toBeTruthy()
     expect(mock_executor.calls[32].set_action_calls.get('miles1234').movement).toBeUndefined()
     expect(mock_executor.calls[32].set_action_calls.get('miles1234').end_state).toBe(BotState.DEFAULT)
-    expect(mock_executor.calls[32].set_action_calls.has('ford1234')).toBeFalsy()
+    expect(mock_executor.calls[32].set_action_calls.has('miles1234')).toBeTruthy()
+    expect(mock_executor.calls[32].set_action_calls.get('miles1234').movement).toBeUndefined()
+    expect(mock_executor.calls[32].set_action_calls.get('miles1234').end_state).toBe(BotState.DEFAULT)
 
     // checkpoints and rich wins
     expect(gm.gameOver()).toBe('wotc1234')
