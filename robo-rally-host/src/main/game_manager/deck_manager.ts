@@ -1,6 +1,4 @@
-import { newStandardDeck, ProgrammingCard, type ProgrammingCardSlot, type RegisterArray } from "../models/game_data";
-
-const PROGRAMMING_HAND_SIZE: number = 9
+import { newStandardDeck, ProgrammingCard, PROGRAMMING_HAND_SIZE, type ProgrammingCardSlot, type RegisterArray } from "../models/game_data";
 
 export class DeckManager {
     private hand = [] as ProgrammingCardSlot[]

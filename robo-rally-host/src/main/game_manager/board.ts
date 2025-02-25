@@ -1,4 +1,4 @@
-import { Orientation, RotationDirection, Rotation, isAbsoluteMovement, isRotation } from "../models/movement"
+import { Orientation, RotationDirection, isRotation } from "../models/movement"
 import type { PlayerID } from "../models/player"
 import { DualKeyMap, MovementForest } from "./graph"
 import { applyOrientationStep, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
@@ -978,7 +978,15 @@ export class Board {
  * @throws if the position is not on the board
  * @returns a SpaceBoundaries object containing the the wall data of the walls adjacent to the cell
  */
-export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries {
+export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries
+export function getWalls(board: BoardData, pos: BoardPosition): SpaceBoundaries
+export function getWalls(board: Board|BoardData, pos: BoardPosition): SpaceBoundaries {
+    let data: BoardData
+    if (board instanceof Board) {
+        data = board.data
+    } else {
+        data = board
+    }
     const x = pos.x
     const y = pos.y
     if (x < 0 || y < 0 || x >= BOARD_SIZE || y >= BOARD_SIZE) {
@@ -992,10 +1000,10 @@ export function getWalls(board: Board, pos: BoardPosition): SpaceBoundaries {
     // (n, down), (e, down), (s, up), (w, up)
     
     // get the wall values
-    const n_wall = board.data.walls.horizontal_walls[x][y+1]
-    const e_wall = board.data.walls.vertical_walls[x+1][y]
-    const s_wall = board.data.walls.horizontal_walls[x][y]
-    const w_wall = board.data.walls.vertical_walls[x][y]
+    const n_wall = data.walls.horizontal_walls[x][y+1]
+    const e_wall = data.walls.vertical_walls[x+1][y]
+    const s_wall = data.walls.horizontal_walls[x][y]
+    const w_wall = data.walls.vertical_walls[x][y]
     
     // if n_wall is non-null, and n_wall.lo is not defined
     // use standard, otherwise use n_wall.lo (undefined if n_wall is undefined)

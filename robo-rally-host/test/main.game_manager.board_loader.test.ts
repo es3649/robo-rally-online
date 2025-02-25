@@ -25,17 +25,17 @@ test('loadFromJson', async () => {
     await expect(loadFromJson('ur_mom')).rejects.toThrow()
 
     // incorrect boards shouldn't load
-    await expect(loadFromJson('test.empty')).rejects.toThrow()
-    await expect(loadFromJson('test.illegal_spaces')).rejects.toThrow()
-    await expect(loadFromJson('test.illegal_walls')).rejects.toThrow()
+    await expect(loadFromJson('test.empty.json')).rejects.toThrow()
+    await expect(loadFromJson('test.illegal_spaces.json')).rejects.toThrow()
+    await expect(loadFromJson('test.illegal_walls.json')).rejects.toThrow()
 
     // required boards should load
     // correctness determined more in the Board class tests
     // JSON reader can be assumed to function
-    expect(await loadFromJson('pushy')).toBeDefined()
-    expect(await loadFromJson('in_and_out')).toBeDefined()
-    expect(await loadFromJson('docking_bay_a')).toBeDefined()
-    expect(await loadFromJson('the_keep')).toBeDefined()
+    expect(await loadFromJson('pushy.json')).toBeDefined()
+    expect(await loadFromJson('in_and_out.json')).toBeDefined()
+    expect(await loadFromJson('docking_bay_a.json')).toBeDefined()
+    expect(await loadFromJson('the_keep.json')).toBeDefined()
     // expect(await loadFromJson('party')).toBeDefined()
 })
 

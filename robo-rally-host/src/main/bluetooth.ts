@@ -1,17 +1,19 @@
 import { createBluetooth, type Adapter, type Device, type GattService } from "node-ble";
-import type { CharacterID, PlayerID } from "./models/player"
+import type { CharacterID, Player, PlayerID } from "./models/player"
 import { ActionFrame, BotMovement, BotState } from "./game_manager/executor";
 import type { MovementExecutor } from "./game_manager/executor";
-import { v4 as uuid4 } from "uuid";
+import type { OrientedPosition } from "./game_manager/move_processors";
+import type { BotInitializer } from "./game_manager/initializers";
+import type { Board } from "./game_manager/board";
 
 /** a timeout value (ms) */
 const TIMEOUT = 15000
-const SERVICE_ID = "346642f1-48ef-49fc-a6a6-8a782eb06f26"
-const STATE_CHARACTERISTIC = "fd2deb9e-d600-46ba-9f3b-0f8fe52a5b0b"
-const SOUND_CHARACTERISTIC = "67b35a19-03be-41f4-859a-db8487711878"
-const MOVEMENT_DIRECTION_CHARACTERISTIC = "66d8cf14-fe99-4937-83f1-8504fd093731"
-const IDEMPOTENCY_CHARACTERISTIC = "e542d2b4-4a28-4fd2-8a6d-9be1371ea03e"
-const RFID_CHARACTERISTIC = "2970f9ef-277c-49f8-ab1c-096e45242807"
+const SERVICE_ID                        = "346642f1-0000-49fc-a6a6-8a782eb06f26"
+const STATE_CHARACTERISTIC              = "346642f1-0001-49fc-a6a6-8a782eb06f26"
+const SOUND_CHARACTERISTIC              = "346642f1-0002-49fc-a6a6-8a782eb06f26"
+const MOVEMENT_DIRECTION_CHARACTERISTIC = "346642f1-0003-49fc-a6a6-8a782eb06f26"
+const IDEMPOTENCY_CHARACTERISTIC        = "346642f1-0004-49fc-a6a6-8a782eb06f26"
+const RFID_CHARACTERISTIC               = "346642f1-0005-49fc-a6a6-8a782eb06f26"
 
 export class BluetoothManager implements MovementExecutor {
     private static instance: BluetoothManager|undefined
@@ -48,6 +50,9 @@ export class BluetoothManager implements MovementExecutor {
     private connections = new Map<PlayerID, Device>()
     private discovering = false
     private actions_set = new Set<PlayerID>()
+    // ensure this is in the range [1,255]. 0 is reserved so the drivers have a default which will
+    // never appear, and we always want to be able to store it in a uint8;
+    private last_idempotency_code: number = 1
 
     /**
      * create a BluetoothManager
@@ -157,8 +162,9 @@ export class BluetoothManager implements MovementExecutor {
         }
 
         if (action.pre_action !== undefined) {
-            const action_characteristic = await service.getCharacteristic(SOUND_CHARACTERISTIC)
-            await action_characteristic.writeValue(Buffer.from(action.pre_action))
+            console.log(`execution for pre-action is not implemented: ${action.pre_action}`)
+            // const action_characteristic = await service.getCharacteristic(SOUND_CHARACTERISTIC)
+            // await action_characteristic.writeValue(Buffer.from(action.pre_action))
         }
 
         if (action.end_state !== undefined) {
@@ -178,7 +184,13 @@ export class BluetoothManager implements MovementExecutor {
         // we will have the GattClient read their movement values and execute them once, then
         // wait for a new status change.
         console.log('unlatching movements')
-        const idempotency = uuid4()
+        if (this.last_idempotency_code >= 255) {
+            // never set the code to be 0. 0 is reserved for a default value in the drivers so that
+            // any initial value will still trigger a change
+            this.last_idempotency_code = 1
+        } else {
+            this.last_idempotency_code++
+        }
 
         for (const player of this.actions_set) {
 
@@ -188,7 +200,7 @@ export class BluetoothManager implements MovementExecutor {
                 continue
             }
             const idempotency_characteristic = await service.getCharacteristic(IDEMPOTENCY_CHARACTERISTIC)
-            idempotency_characteristic.writeValue(Buffer.from(idempotency))
+            idempotency_characteristic.writeValue(Buffer.from([this.last_idempotency_code]))
         }
 
         this.actions_set.clear()
@@ -277,5 +289,79 @@ export class BluetoothManager implements MovementExecutor {
         }
         const characteristic = await service.getCharacteristic(STATE_CHARACTERISTIC)
         characteristic.writeValue(Buffer.from([mode]))
+    }
+}
+
+/**
+ * Initializes bots over bluetooth connections
+ */
+export class BluetoothBotInitializer implements BotInitializer {
+    private priority_list: Player[]
+    private connecting: number = 0
+    private initial_positions = new Map<PlayerID, OrientedPosition>()
+    private board: Board
+
+    public constructor(board: Board, priority_list: Player[]) {
+        this.board = board,
+        this.priority_list = priority_list
+    }
+
+    public async connect(): Promise<void> {
+        const cur = this.priority_list[this.connecting]
+        // make sure a Bluetooth connection is established
+        if (!await BluetoothManager.getInstance().connectRobot(cur.id, cur.character.id)) {
+            throw new Error(`Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
+        }
+        
+        // notify the player that their bot is ready to place
+        // TODO
+    }
+
+    setPosition(player_id: PlayerID, position: OrientedPosition): boolean {
+        this.initial_positions.set(player_id, position)
+        return this.initial_positions.size == this.priority_list.length
+    }
+
+    /**
+     * read the position from the bluetooth connection, store it, then connect the next actor
+     */
+    async fetchPosition(): Promise<void> {
+        const cur = this.priority_list[this.connecting]
+        
+        // define a callback for setting the position (if it's valid)
+        const callback = (position_id: string) => {
+            const starting = this.board.getSpawnLocation(position_id)
+            
+            // handle illegal values
+            if (starting === undefined) {
+                console.warn("unrecognized spawn location:", starting)
+                return
+            }
+
+            // tell the manager we are done looking for a position
+            // don't bother to await, I think
+            BluetoothManager.getInstance().positionSet(cur.id)
+
+            // set the position we got
+            this.setPosition(cur.id, starting)
+
+            // increment the priority we are connecting for
+            this.connecting++
+            // connect the next guy if we aren't done yet
+            if (this.connecting < this.priority_list.length) {
+                this.connect()
+                this.fetchPosition()
+            } else {
+                this.connecting = 0
+            }
+        }
+    
+        // make the first call. We will recurse through the callback until we
+        // have set positions for every character in order
+        BluetoothManager.getInstance().getPosition(cur.id, callback)
+    }
+
+    public getStartingPositions(): Map<PlayerID, OrientedPosition> {
+        return this.initial_positions
     }
 }

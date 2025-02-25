@@ -91,7 +91,7 @@ test('GameStateManager.setProgram (Movements, again, pushing, pits, initial shut
     player_initializer.setCharacter('miles1234', Robots.AxelV8.id)
     player_initializer.setCharacter('ford1234', Robots.PanzerX90.id)
 
-    const board_data = await loadFromJson("the_keep")
+    const board_data = await loadFromJson("the_keep.json")
     board_data.spaces[11][11].cover = {number: 1}
     player_initializer.board = new Board(board_data)
 
@@ -428,7 +428,7 @@ test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again
     player_initializer.setCharacter('miles1234', Robots.AxelV8.id)
     player_initializer.setCharacter('ford1234', Robots.PanzerX90.id)
 
-    const board_data = await loadFromJson("the_keep")
+    const board_data = await loadFromJson("the_keep.json")
     board_data.spaces[11][11].cover = {number: 1}
     player_initializer.board = new Board(board_data)
 

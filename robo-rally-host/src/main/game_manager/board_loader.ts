@@ -1,6 +1,7 @@
 import { isValidBoardData, type BoardData } from "./board";
 import { readFile } from 'fs/promises'
-import { readdirSync } from "node:original-fs";
+// import { readdirSync } from "node:original-fs";
+import { readdirSync } from "fs";
 import * as path from 'node:path'
 
 /**
@@ -12,8 +13,7 @@ import * as path from 'node:path'
  * contain properly formatted board data
  */
 export async function loadFromJson(name:string): Promise<BoardData> {
-    // const file = await readFile(path.join('/Users/studmane/workspace/robo-rally-online/robo-rally-host/assets/boards', name+'.json'))
-    const fname = path.join('assets/boards', `${name}.json`)
+    const fname = path.join('assets/boards', name)
     const file = await readFile(fname)
     const raw = JSON.parse(file.toString())
 
@@ -34,6 +34,11 @@ export async function loadFromSerial(): Promise<BoardData> {
     throw new Error("Not Implemented")
 }
 
+/**
+ * gets the list of boards from the assets folder, filters out any test boards, then returns
+ * the others
+ * @returns the list of boards which are available to load
+ */
 export function listBoards(): string[] {
     // don't return any test boards
     return readdirSync('assets/boards/').filter((val: string) => !val.startsWith("test."))

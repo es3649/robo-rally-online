@@ -86,22 +86,36 @@ test('GameInitializer.setCharacter', () => {
     const gi = new GameInitializer()
 
     gi.addPlayer('Richard', 'wotc1234')
-    expect(gi.setCharacter('wotc1234', Robots.Twonky.id)).toBeTruthy()
+    const update = gi.setCharacter('wotc1234', Robots.Twonky.id)
+    expect(update.newly_available.length).toBe(0)
+    expect(update.newly_unavailable.length).toBe(1)
+    expect(update.newly_unavailable[0]).toBe(Robots.Twonky.id)
     expect(gi.players.get('wotc1234')).toBeDefined()
     expect(gi.players.get('wotc1234').character.id).toBe(Robots.Twonky.id)
     
     // Chris doesn't exist yet, so this should be no good
-    expect(gi.setCharacter('Chris', Robots.Thor.id)).toBeFalsy()
+    const update_2 = gi.setCharacter('Chris', Robots.Thor.id)
+    expect(update_2.newly_available.length).toBe(0)
+    expect(update_2.newly_unavailable.length).toBe(0)
     
     gi.addPlayer('Chris', 'hems1234')
     // Twonky is in use, so this should be disallowed
-    expect(gi.setCharacter('Chris', Robots.Twonky.id)).toBeFalsy()
+    const update_3 = gi.setCharacter('Chris', Robots.Twonky.id)
+    expect(update_3.newly_available.length).toBe(0)
+    expect(update_3.newly_unavailable.length).toBe(0)
     
-    expect(gi.setCharacter('wotc1234', Robots.ZephyrM2.id)).toBeTruthy()
+    const update_4 = gi.setCharacter('wotc1234', Robots.ZephyrM2.id)
+    expect(update_4.newly_available.length).toBe(1)
+    expect(update_4.newly_available[0]).toBe(Robots.Twonky.id)
+    expect(update_4.newly_unavailable.length).toBe(1)
+    expect(update_4.newly_unavailable[0]).toBe(Robots.ZephyrM2.id)
     expect(gi.players.get('wotc1234')).toBeDefined()
     expect(gi.players.get('wotc1234').character.id).toBe(Robots.ZephyrM2.id)
 
-    expect(gi.setCharacter('hems1234', Robots.Twonky.id)).toBeTruthy()
+    const update_5 = gi.setCharacter('hems1234', Robots.Twonky.id)
+    expect(update_5.newly_available.length).toBe(0)
+    expect(update_5.newly_unavailable.length).toBe(1)
+    expect(update_5.newly_unavailable[0]).toBe(Robots.Twonky.id)
     expect(gi.players.get('hems1234')).toBeDefined()
     expect(gi.players.get('hems1234').character.id).toBe(Robots.Twonky.id)
 })
