@@ -3,7 +3,6 @@ import { Character } from '../../main/models/player';
 const props = defineProps<{
     robot: Character
 }>()
-import { ref } from 'vue';
 import { useConnectionsStore } from '../stores/connections_store';
 
 const connections_store = useConnectionsStore()

@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { Ref, ref } from 'vue';
-import { useGameDataStore } from '../stores/game_data_store';
+import { SetupPhase, useGameDataStore } from '../stores/game_data_store';
 import BoardComponent from '../components/Board.vue'
 import router from '../router';
-import { Board } from '../../main/game_manager/board';
+import { BoardData } from '../../main/game_manager/board';
 
 const gds = useGameDataStore()
 const board_name = ref('')
 const board_list: Ref<string[]> = ref([])
-const board: Ref<Board|undefined> = ref(undefined)
+const board: Ref<BoardData|undefined> = ref(undefined)
 const add = ref(true)
+const load_error = ref(false)
 
 if (gds.loadable_boards.length === 0) {
     gds.listBoards().then(() => {
@@ -24,9 +25,12 @@ async function load() {
         return
     }
     console.log(board_name.value)
-    await gds.loadBoard(board_name.value)
-    board.value = gds.board as Board
-    console.log(board.value)
+    const ok = await gds.loadBoard(board_name.value)
+    load_error.value = !ok
+    if (ok) {
+        board.value = gds.board
+        console.log(board.value)
+    }
 }
 
 function finish() {
@@ -46,6 +50,7 @@ function finish() {
             </select>
         </div>
         <button @click="load" :disabled="!board_name">Load Selected</button>
+        <div v-if="load_error" class="error"><p>Failed to load requested board</p></div>
         <!-- position buttons above, below, L, and R of the guy to extend the board
          re-evaluate the board data type before writing extend method
           -->

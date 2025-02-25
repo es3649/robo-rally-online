@@ -15,12 +15,14 @@ const game_state = useGameStateStore()
 const connection_store = useConnectionStore()
 game_state.bindEvents()
 connection_store.bindEvents()
+// this should be called early on to allow reconnection
+connection_store.getPlayerID()
 </script>
 
 <template>
   <main>
     <ConnectionStatus />
-    <div v-if="game_state.phase == GamePhase.Lobby">
+    <div v-if="game_state.phase == GamePhase.Lobby || game_state.phase == GamePhase.Setup">
       <header>
         <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
         <div class="wrapper">

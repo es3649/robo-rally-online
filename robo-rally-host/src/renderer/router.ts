@@ -15,8 +15,8 @@ const router = createRouter({
             name: 'lobby',
             component: LobbyView
         },{
-            path: '/boardloader',
-            name: 'boardloader',
+            path: '/board-loader',
+            name: 'board_loader',
             component: BoardLoaderView
         },{
             path: '/robots',

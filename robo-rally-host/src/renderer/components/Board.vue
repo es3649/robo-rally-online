@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import BoardTile from './BoardTile.vue'
-import { Board } from '../../main/game_manager/board';
-import { Ref, ref } from 'vue';
+import { BoardData } from '../../main/game_manager/board';
 import { getWalls } from '../../main/game_manager/board';
 
 const props = defineProps<{
     editable: boolean,
-    board: Board|undefined
+    board: BoardData|undefined
 }>()
 
 // const board: Ref<Board> = ref(props.board)
@@ -19,9 +18,9 @@ const props = defineProps<{
             <p>No board Loaded</p>
         </div>
         <div v-else class="board">
-            <div v-for="(col, x) of board.data.spaces" class="col">
+            <div v-for="(col, x) of board.spaces" class="col">
                 <div v-for="(space, y) of col.slice().reverse()">
-                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="getWalls(board, {x:x,y:board.data.y_dim-1-y})"/>
+                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="getWalls(board, {x:x,y:board.y_dim-1-y})"/>
                     <!-- <p>space</p> -->
                 </div>
             </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import router from '../router';
 function beginSetup(): void {
-    router.replace('/boardloader')
+    router.replace('/board-loader')
 }
 </script>
 

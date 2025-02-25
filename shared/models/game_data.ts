@@ -1,6 +1,7 @@
 import type { Player } from "./player"
 import { MovementDirection, RotationDirection, Rotation, type Movement } from "./movement"
 
+export const PROGRAMMING_HAND_SIZE: number = 9
 
 export declare type GameAction = {
     action: ProgrammingCard,
@@ -8,10 +9,12 @@ export declare type GameAction = {
 }
 
 export enum GamePhase {
-    Lobby = -1,
+    Lobby = -2,
+    Setup = -1,
     Upgrade = 0,
     Programming = 1,
-    Activation = 2
+    Activation = 2,
+    Finished = 3
 }
 
 export namespace ProgrammingCard {

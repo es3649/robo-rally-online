@@ -58,6 +58,16 @@ export declare type PartialPlayer = {
 }
 export declare type Player = Required<PartialPlayer>
 
+export type PlayerStateBrief = {
+    priority: number
+    name: PlayerName
+    checkpoints: number
+    active: boolean
+}
+
+// extend the brief type by adding energy value
+export type PlayerStateData = PlayerStateBrief & {energy: number}
+
 export class PlayerState {
     priority: number
     readonly name: PlayerName
@@ -83,5 +93,19 @@ export class PlayerState {
 
     spendEnergy(count:number): void {
         this.energy = Math.max(this.energy - count, 0)
+    }
+
+    /**
+     * prepares an abbreviated summary of the PlayerState including those data which all players
+     * should reasonable be allowed to see
+     * @returns the abbreviated summary
+     */
+    getSummary(): PlayerStateBrief {
+        return {
+            priority: this.priority,
+            name: this.name,
+            checkpoints: this.checkpoints,
+            active: this.active
+        }
     }
 }

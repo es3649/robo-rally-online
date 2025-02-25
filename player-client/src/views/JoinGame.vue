@@ -19,9 +19,10 @@ async function join() {
   // we are loading now
   loading.value = true
   // make the call on the connStore
-  connectionStore.join(player_name.value, () => {
+  connectionStore.join(player_name.value, (message?: string) => {
+    console.log('join request returned')
     // callback, process our results
-    if (connectionStore.join_req.response === "") {
+    if (message === undefined || message === "") {
       // success, goto lobby
       router.push('/lobby')
       router.forward()

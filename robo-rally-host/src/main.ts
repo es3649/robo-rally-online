@@ -5,20 +5,34 @@ import { existsSync } from 'fs';
 import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
-import { Board } from './main/game_manager/board';
-import { Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { senderMaker, type Server2MainMessage } from './main/models/connection';
+import { Board, type BoardData } from './main/game_manager/board';
+import { Main2Render, Main2Server, Render2Main, Server2Main } from './main/models/events';
+import { PlayerStatusUpdate, type Server2MainMessage } from './main/models/connection';
 import { BluetoothManager } from './main/bluetooth';
 import { GameStateManager } from './main/game_manager/game_state';
+import { GameInitializer } from './main/game_manager/initializers';
+import type { PlayerID } from './main/models/player';
+import { error } from 'node:console';
+
+// TODO we might consider moving this functionality to a separate class
+const windows = new Map<number, BrowserWindow>()
+
+function sendToAllWindows(channel: Main2Render, ...args: any[]) {
+    for (const browser_window of windows.values()) {
+        browser_window.webContents.send(channel, ...args)
+    }
+}
 
 // create the game manager
 // this game manager will manage the state of the game through the life of the program
-let game: GameStateManager
+let game: GameStateManager|undefined
+let game_initializer = new GameInitializer()
+let character_initializer: BluetoothManager
 
 // listen and serve
 const modulePath = path.join(__dirname, './server.js')
 if (!existsSync(modulePath)) {
-  throw new Error("Module path doesn't exist")
+    throw new Error("Module path doesn't exist")
 }
 
 console.log(modulePath)
@@ -30,83 +44,95 @@ console.log('starting utility process')
 // })
 
 const child = fork.fork(modulePath, [], {
-  stdio: ['pipe', 'pipe', 'pipe', 'ipc']
+    stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
-  app.quit();
+    app.quit();
 }
 
-const createWindow = () => {
+const createWindow = (): BrowserWindow => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1024,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      webSecurity: false,
-    },
+        width: 1024,
+        height: 600,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            webSecurity: false,
+        },
 
-  });
+    });
 
-  // and load the index.html of the app.
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
-  }
+    // save this window so we can perform event handling correctly later
+    windows.set(mainWindow.id, mainWindow)
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+    // and load the index.html of the app.
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+        mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    } else {
+        mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+    }
+
+    // Open the DevTools.
+    mainWindow.webContents.openDevTools();
+    return mainWindow
 };
 
 /**
  * register the ICP listeners. This is where calls from the renderer will come in
  */
 function registerIPCListeners() {
-  ipcMain.on(Render2Main.BLE_CONNECT, (event: Electron.IpcMainEvent, name: string) => {
-    BluetoothManager.getInstance().connectRobot(name)
-  })
+    ipcMain.on(Render2Main.BLE_CONNECT, (event: Electron.IpcMainEvent, name: string) => {
+        // BluetoothManager.getInstance().connectRobot(name)
+    })
 
-  ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
-    return networkInterfaces()['en0']?.filter(el => el.family === 'IPv4')[0].address
-  })
+    ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
+        return networkInterfaces()['en0']?.filter(el => el.family === 'IPv4')[0].address
+    })
 
-  ipcMain.handle(Render2Main.BOARD.LIST_BOARDS, listBoards)
+    ipcMain.handle(Render2Main.BOARD.LIST_BOARDS, listBoards)
 
-  ipcMain.handle(Render2Main.BOARD.LOAD_BOARD, async (_: Electron.IpcMainInvokeEvent, name: string): Promise<Board> => {
-    console.log(`loading ${name}`)
-    // load the board
-    const board_data = await loadFromJson(name)
-    // load it into the game manager
+    ipcMain.handle(Render2Main.BOARD.LOAD_BOARD, async (_: Electron.IpcMainInvokeEvent, name: string): Promise<BoardData|undefined> => {
+        console.log(`loading ${name}`)
+        // load the board
+        try {
+            const board_data = await loadFromJson(name)
+            // load it into the game manager
+            
+            // create the board
+            const board = new Board(board_data)
+            game_initializer.board = board
+            // return it to the caller
+            return board_data
+        } catch (error) {
+            console.error("Failed to load the requested board", error)
+            return 
+        }
+    })
+
+    ipcMain.handle(Render2Main.GET_READY_STATUS, (): Map<PlayerID, string[]> => {
+        return game_initializer.todo()
+    })
+
+    ipcMain.on(Render2Main.RESET, () => {
+        // tell the server to reset
+        child.send(Main2Server.RESET)
+        // create a new game object
+        game = undefined
+        game_initializer = new GameInitializer()
+    })
     
-    // create the board
-    const board = new Board(board_data)
-    game.useBoard(board)
-    
-    // return it to the caller
-    return board
-  })
-
-  ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
-    console.log('loading board from serial port')
-    console.warn('NOT IMPLEMENTED')
-  })
-
-  ipcMain.on(Render2Main.RESET, () => {
-    // tell the server to reset
-    child.send(Main2Server.RESET)
-    // create a new game object
-    game = new GameStateManager(senderMaker<Main2Server>(process))
-  })
-
-  // ipcMain.on(Render2Main.BOARD.ROTATE)
-  // ipcMain.handle(Render2Main.BOARD.EXTEND)
-  // ipcMain.on(Render2Main.BOARD.READY)
-  // ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
-  // ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
-  // ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
+    // ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
+    //     console.log('loading board from serial port')
+    //     console.warn('NOT IMPLEMENTED')
+    // })
+    // ipcMain.on(Render2Main.BOARD.ROTATE)
+    // ipcMain.handle(Render2Main.BOARD.EXTEND)
+    // ipcMain.on(Render2Main.BOARD.READY)
+    // ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
+    // ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
+    // ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
 
 }
 
@@ -114,21 +140,21 @@ function registerIPCListeners() {
  * define all protocols we want to use. These are the blah:// parts of URLs
  */
 function defineProtocols() {
-  // from documentation example:
-  // https://www.electronjs.org/docs/latest/api/protocol#protocolregisterfileprotocolscheme-handler-completion
-  protocol.handle('res', (request: GlobalRequest): Response|Promise<Response> => {
-    // slice off the protocol
-    const filepath = request.url.slice('res://'.length)
-    const modified = url.pathToFileURL(path.join('assets', filepath)).toString()
-    console.log('Protocol looking up:', modified)
-    return net.fetch(modified)
-  })
+    // from documentation example:
+    // https://www.electronjs.org/docs/latest/api/protocol#protocolregisterfileprotocolscheme-handler-completion
+    protocol.handle('res', (request: GlobalRequest): Response|Promise<Response> => {
+        // slice off the protocol
+        const filepath = request.url.slice('res://'.length)
+        const modified = url.pathToFileURL(path.join('assets', filepath)).toString()
+        console.log('Protocol looking up:', modified)
+        return net.fetch(modified)
+    })
 }
 
 function ready() {
-  registerIPCListeners()
-  defineProtocols()
-  createWindow()
+    registerIPCListeners()
+    defineProtocols()
+    createWindow()
 }
 
 // This method will be called when Electron has finished
@@ -140,40 +166,96 @@ app.on('ready', ready);
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
 });
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
 });
-
 
 // initialize game server (incl board)
 // begin robot connections
 child.on('message', (message: Server2MainMessage<any>) => {
-  switch (message.name) {
-    case Server2Main.PROGRAM_SET:
-      game.setProgram(message.data.name, message.data.program)
-      break
-    case Server2Main.PROGRAM_SHUTDOWN:
-      break
-    case Server2Main.ADD_PLAYER:
-      break
-    case Server2Main.LIST_BOTS:
-      break
-    case Server2Main.SELECT_BOT:
-      break
-    case Server2Main.REQUEST_UPGRADE:
-      break
-    case Server2Main.ADD_UPGRADE:
-      break
-  }
+    switch (message.name) {
+        case Server2Main.PROGRAM_SET:
+            if (game === undefined) {
+                console.error("tried to set program before game was ready")
+                break
+            }
+            try {
+                game.setProgram(message.data.id, message.data.program)
+            } catch (error) {
+                console.log(error)
+            }
+            break
+        case Server2Main.PROGRAM_SHUTDOWN:
+            if (game === undefined) {
+                console.error("tried to set shutdown before game was ready")
+                break
+            }
+            try {
+                game.setShutdown(message.data.id)
+            } catch (error) {
+                console.log(error)
+            }
+            break
+        case Server2Main.ADD_PLAYER:
+            console.log("Recv'd add-player command:", message)
+            if (message.id === undefined) {
+                console.error("Failed to add player when ID was not provided")
+                break
+            }
+            if (game === undefined) {
+                try {
+                    // add the player to the player initializer
+                    const ok = game_initializer.addPlayer(message.data, message.id)
+                    if (!ok) {
+                        console.error("Failed to add player in main which was added in server!")
+                        return
+                    }
+
+                    // update the windows with the player
+                    sendToAllWindows(Main2Render.UPDATE_PLAYER, {
+                        id: message.id,
+                        name: message.data,
+                        status: PlayerStatusUpdate.ADDED
+                    })
+                    
+                    // send a ready status to the renderer
+                    sendToAllWindows(Main2Render.READY_STATUS, game_initializer.todo())
+                } catch (error) {
+                    console.log(error)
+                }
+                break
+            }
+            console.error('tried to add player after game was started')
+            break
+        case Server2Main.SELECT_BOT:
+            if (game === undefined) {
+                try {
+                    game_initializer.setCharacter(message.data.id, message.data.character)
+                    // send a ready status to the renderer
+                    sendToAllWindows(Main2Render.READY_STATUS, game_initializer.todo())
+                } catch (error) {
+                    console.error(error)
+                }
+                break
+            }
+            console.error('tried to select bot after game was started')
+            break
+    }
 })
+
+// add a listener to the server's std streams
+child.stdout?.setEncoding('utf8')
+child.stdout?.on('data', (data: any) => console.log("[server]:", data))
+child.stderr?.setEncoding('utf8')
+child.stderr?.on('data', (data: any) => console.log("[server]:", data))
 
 console.log('started')

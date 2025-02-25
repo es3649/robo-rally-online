@@ -13,8 +13,8 @@ const game_state = useGameStateStore()
             v-if="game_state.action"
             :size="75"
             :value="game_state.action?.action.action" 
-            :fill_color="game_state.action?.actor.colors?.fill_color"
-            :border_color="game_state.action?.actor.colors?.border_color"
+            :fill_color="game_state.action?.actor.character.color?.fill_color"
+            :border_color="game_state.action?.actor.character.color?.border_color"
         />
     </main>
 </template>

@@ -1,9 +1,10 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
-import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray } from "@/models/game_data";
+import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/models/game_data";
 import type { RegisterArray, UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
-import type { PlayerState } from "@/models/player";
+import type { CharacterID, Character, PlayerState } from "@/models/player";
 import { socket } from "@/socket"
 import { Client2Server, Server2Client } from "@/models/events";
+import type { BotAvailabilityUpdate } from "@/models/connection";
 
 export const useGameStateStore = defineStore({
     id: "gameState",
@@ -48,7 +49,12 @@ export const useGameStateStore = defineStore({
                 name: "Michael", energy: 0, checkpoints: 1, priority: 2, active: true,
             },{
                 name: "Jamison", energy: 3, checkpoints: 0, priority: 3, active: false,
-            }] as PlayerState[]
+            }] as PlayerState[],
+
+            // the characters which are not available for selection
+            all_characters: [] as Character[],
+            character: undefined as Character|undefined, 
+            available_characters: new Set<CharacterID>()
         }
     },
     getters: {
@@ -175,7 +181,7 @@ export const useGameStateStore = defineStore({
             this.registers.forEach((card: ProgrammingCard[]) => {
                 // programmed spam and haywire are discarded
                 // if (card === undefined || card.action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card.action)) {
-                if (card.length == 0 || card[0].action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card[0].action)) {
+                if (card.length == 0 || card[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(card[0].action)) {
                     return
                 }
                 // otherwise discard the card
@@ -229,9 +235,16 @@ export const useGameStateStore = defineStore({
                 actor: {
                     name: 'Jamison',
                     id: "abcd-efgh-123456789012",
-                    colors: {
-                        fill_color: lite,
-                        border_color: dark,
+                    character: {
+                        name: "Thor",
+                        id: "hems1234",
+                        sprite_large: "",
+                        sprite_small: "",
+                        color: {
+                            fill_color: lite,
+                            border_color: dark,
+                        },
+                        bluetooth_id: "12:34:56:78:90:AB"
                     }
                 }
             }
@@ -252,8 +265,16 @@ export const useGameStateStore = defineStore({
                 this.action = action
             })
 
-            socket.on(Server2Client.BOT_SELECTED, (name:string) => {
-                
+            socket.on(Server2Client.BOT_SELECTED, (update: BotAvailabilityUpdate) => {
+                console.log("Recv'd bot availability update", update)
+                for (const available of update.newly_available) {
+                    this.available_characters.add(available)
+                }
+                for (const unavailable of update.newly_unavailable) {
+                    if (this.available_characters.has(unavailable)) {
+                        this.available_characters.delete(unavailable)
+                    }
+                }            
             })
 
             socket.on(Server2Client.RESET, () => {

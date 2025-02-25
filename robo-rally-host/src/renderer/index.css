@@ -5,3 +5,9 @@ body {
   max-width: 38rem;
   padding: 2rem;
 }
+
+.error {
+  background-color: pink;
+  color: maroon;
+  font-weight: bold;
+}

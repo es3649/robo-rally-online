@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue';
 import { useGameStateStore } from '@/stores/game_state'
 import ProgrammingCard from './ProgrammingCard.vue'
-import { movement_from_card as Card } from '@/models/game_data';
+import { ProgrammingCard as Card } from '@/models/game_data';
 import draggable from 'vuedraggable';
 import { GamePhase } from '@/models/game_data';
 

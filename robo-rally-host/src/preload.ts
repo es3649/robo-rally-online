@@ -4,31 +4,53 @@
 // setup IPC (inter-process communication)
 // use the BridgeContext API to make some data from the main process visible in the renderer
 // https://www.electronjs.org/docs/latest/tutorial/process-model
-import { contextBridge, ipcRenderer, utilityProcess } from "electron";
-import { Board } from "./main/game_manager/board";
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
+import type { BoardData } from "./main/game_manager/board";
+import { Main2Render, Render2Main } from "./main/models/events";
+import type { PlayerID, PlayerStateBrief } from "./main/models/player";
+import type { PlayerUpdate } from "./main/models/connection";
 
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
-    connectRobot: (name: string): void => ipcRenderer.send('render:ble-connect', name),
-    getIP: (): Promise<string|undefined> => ipcRenderer.invoke('render:get-ip'),
-    listBoards: (): Promise<string[]> => ipcRenderer.invoke('render:boards:list-boards'),
-    loadBoard: (name: string): Promise<Board> => ipcRenderer.invoke('render:boards:load-board', name),
-    loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
+    connectRobot: (name: string): void => ipcRenderer.send(Render2Main.BLE_CONNECT, name),
+    getIP: (): Promise<string|undefined> => ipcRenderer.invoke(Render2Main.GET_IP),
+    listBoards: (): Promise<string[]> => ipcRenderer.invoke(Render2Main.BOARD.LIST_BOARDS),
+    loadBoard: (name: string): Promise<BoardData|undefined> => ipcRenderer.invoke(Render2Main.BOARD.LOAD_BOARD, name),
+    startGame: (): void => ipcRenderer.send(Render2Main.START_GAME),
+    getToDos: (): Promise<Map<PlayerID, string[]>> => ipcRenderer.invoke(Render2Main.GET_READY_STATUS),
+    // loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
+
+    reset: (): void => ipcRenderer.send(Render2Main.RESET),
 
     // TODO: finish signatures
     // in the beginning, these values will be pre-determined by a hard copy board
     // rotateBoard: (id:number, direction:RotationDirection): void => ipcRenderer.send('render:boards:rotate', id, direction),
     // extendBoard: (board_name:string): Promise<Board> => ipcRenderer.invoke('render:boards:extend', board_name),
-    readyBoard: (): void => ipcRenderer.send('render:boards:ready'),
+    // readyBoard: (): void => ipcRenderer.send('render:boards:ready'),
     // toggleCheckpoint: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-checkpoint'),
     // toggleRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:toggle-respawn'),
     // rotateRespawn: (pos:BoardPosition): void => ipcRenderer.send('render:boards:rotate-checkpoint')
 })
 
-contextBridge.exposeInIsolatedWorld(0, 'rendererAPI', {
-
+contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
+    onPlayerUpdate: (callback: (update: PlayerUpdate) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_PLAYER, (_event:IpcRendererEvent, update: PlayerUpdate) => {
+            callback(update)
+        })
+    },
+    onToDo: (callback: (to_dos: Map<PlayerID, string[]>) => void) => {
+        ipcRenderer.on(Main2Render.READY_STATUS, (_event: IpcRendererEvent, to_dos: Map<PlayerID, string[]>) => {
+            callback(to_dos)
+        })
+    },
+    onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateBrief) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_PLAYER_STATE, (_event: IpcRendererEvent, id: PlayerID, update: PlayerStateBrief) => {
+            callback(id, update)
+        })
+    }
 })
+
 // if we want/need to divide the APIs later
 // contextBridge.exposeInMainWorld('bleAPI', {
 // })

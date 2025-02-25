@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { movement_from_card } from '@/models/game_data';
+import { ProgrammingCard } from '@/models/game_data';
+
 defineProps(['fill_color', 'border_color', 'value', 'size'])
 
 </script>
 
 <template>
   <main>
-    <h6>{{ ProgrammingCard.get_text(value) }}</h6>
+    <h6>{{ ProgrammingCard.getText(value) }}</h6>
     <svg :width="size" :height="size" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full">
       <g v-if="value == 'forward1'" transform="scale(1.000000,-1.000000) translate(0,-500)">
         <path v-bind:fill="fill_color" d="M 241.757856 240.371534 L 1.000000 1.000000 L 482.515712 1.000000 Z" transform="scale(1.000000,1.000000) translate(8.242144,248.537893)" opacity="1.000000"></path>

@@ -1,7 +1,23 @@
-import type { GameAction, RegisterArray, UpgradeCard } from './game_data'
-import type { Character } from './player'
+import type { GameAction, GamePhase, RegisterArray, UpgradeCard } from './game_data'
+import type { Character, CharacterID, PlayerID, PlayerStateBrief, PlayerStateData } from './player'
 import { Server2Main, Main2Server } from './events'
-import fork from 'child_process'
+
+export type BotAvailabilityUpdate = {
+    newly_available: CharacterID[],
+    newly_unavailable: CharacterID[]
+}
+
+export enum PlayerStatusUpdate {
+    ADDED,
+    REMOVED
+}
+
+export type PlayerUpdate = {
+    id: PlayerID,
+    name?: string,
+    character?: Character,
+    status?: PlayerStatusUpdate
+}
 
 /**
  * the events which can be sent from the socket to a client, including the data
@@ -9,22 +25,20 @@ import fork from 'child_process'
  * of Server2Client from events.ts
  */
 export interface ServerToClientEvents {
-    noArg: () => void
-    basicEmit: (a:number, b:string, c:boolean) => void
-    withAck: (d:string, callback: (e:number) => void) => void
+    // noArg: () => void
+    // basicEmit: (a:number, b:string, c:boolean) => void
+    // withAck: (d:string, callback: (e:number) => void) => void
 
     // lobby events
+    "server:bot-selected": (update:BotAvailabilityUpdate) => void
     "server:bot-list": (bots: Character[]) => void
-    "server:bot-selected": (name:string) => void
-    playerJoined: (name: string) => void
-    playerUpdated: (robot: Character) => void
-    gameStarted: () => void
-
+    
     // game events
-    "server:phase-update": () => void
+    "server:phase-update": (phase:GamePhase) => void
     "server:game-action": (action: GameAction) => void
-    requestInput: (message: string, image: string, callback: (resp: boolean) => void) => void
-    updatePlayerData: (data:any) => void
+    "server:update-player-states": (data: Map<PlayerID, PlayerStateBrief>) => void
+    "server:update-player-state": (data: Map<PlayerID, PlayerStateData>) => void
+    "server:request-input": (message: string, image: string, callback: (resp: boolean) => void) => void
 
     "server:reset": () => void
 }
@@ -32,22 +46,26 @@ export interface ServerToClientEvents {
 /**
  * the list of events with handler signatures that can be sent to the server from the client
  * the keys here should exactly match the properties of Client2Server from events.ts
- */
+*/
 export interface ClientToServerEvents {
     // lobby events
     "client:join-game": (name:string, callback:(ok:boolean) => void) => void
-    "client:list-bots": (callback:(bots:Character[]) => void) => void
-    "client:select-bots": (name: string, callback: (resp:string) => void) => void
+    "client:leave-game": () => void
+    "client:list-bots": (callback:(bots:Character[], available: CharacterID[]) => void) => void
+    "client:list-available-bots": (callback: (bots: CharacterID[]) => void) => void
+    "client:select-bot": (bot_id: string, callback: (ok: boolean) => void) => void
     "client:get-id": (callback:(id:string) => void) => void
+    "client:use-id": (id: PlayerID, callback:(ok:boolean) => void) => void
 
     // game events
+    "client:confirm-position": () => void
     "client:program-submit": (program: RegisterArray) => void
     "client:program-shutdown": () => void
 
     // upgrade events
-    "client:request-upgrade": (callback: (upgrade: UpgradeCard) => void) => void
-    "client:add-upgrade": (upgrade: UpgradeCard) => void
-    useUpgrade: (upgrade: UpgradeCard) => void
+    // "client:request-upgrade": (callback: (upgrade: UpgradeCard) => void) => void
+    // "client:add-upgrade": (upgrade: UpgradeCard) => void
+    // useUpgrade: (upgrade: UpgradeCard) => void
 }
 
 export const EventsMap = {
