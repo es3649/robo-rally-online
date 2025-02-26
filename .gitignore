@@ -40,8 +40,9 @@ logoist/
 # KiCad schematic backups
 schematics/pcb/pcb-schematics-backups
 
-# KiCad preferences files
+# KiCad auxiliary files
 *.kicad_prl
+**/fp-info-cache
 
 # KiCad project files with the Arduino tests
 bot_drivers/**/*.kicad_pro
