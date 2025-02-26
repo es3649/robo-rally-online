@@ -193,7 +193,7 @@ void move() {
     setMotorWiddershins(MTRR_ORIENTATION_PIN);
   }
 
-  if (movement == Movement::MOVE_FORWARD || Movement::MOVE_BACK) {
+  if (movement == Movement::MOVE_FORWARD || movement == Movement::MOVE_BACK) {
     steps = STEPS_TO_MOVE_ONE_SPACE;
   } else {
     steps = STEPS_TO_ROTATE;
@@ -204,10 +204,10 @@ void move() {
 }
 
 void moveStep() {
-  // use the correct number of steps for forward/back movment, lateral movement, or rotation
+  // use the correct number of steps for forward/back movement, lateral movement, or rotation
   static int steps_taken = 0;
 
-  // begin rotatating the motors
+  // begin rotating the motors
   if (steps_taken < steps) {
     PinStatus clk_state = digitalRead(MTR_CLK_PIN);
     digitalWrite(MTR_CLK_PIN, !clk_state);

@@ -1,0 +1,1769 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "82c1982c-ec6a-4143-a611-4c40838a4888")
+	(paper "A4")
+	(lib_symbols
+		(symbol "Device:Battery"
+			(pin_numbers hide)
+			(pin_names
+				(offset 0) hide)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "BT1"
+				(at -7.62 0.5715 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "9V"
+				(at -5.08 0.5715 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 1.524 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 1.524 90)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Multiple-cell battery"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "batt voltage-source cell"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Battery_0_1"
+				(rectangle
+					(start -2.286 -1.27)
+					(end 2.286 -1.524)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -2.286 1.778)
+					(end 2.286 1.524)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -1.524 -2.032)
+					(end 1.524 -2.54)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(rectangle
+					(start -1.524 1.016)
+					(end 1.524 0.508)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.016) (xy 0 -0.762)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -0.508) (xy 0 -0.254)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 0.254)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 1.778) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 3.048) (xy 1.778 3.048)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 3.556) (xy 1.27 2.54)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Battery_1_1"
+				(pin power_out line
+					(at 0 5.08 270)
+					(length 2.54)
+					(name "+"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 0 -5.08 90)
+					(length 2.54)
+					(name "-"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+		(symbol "MCU_Module:Arduino_Nano_33_BLE"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "A"
+				(at -10.16 23.495 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left bottom)
+				)
+			)
+			(property "Value" "Arduino_Nano_33_BLE"
+				(at 5.08 -24.13 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+			)
+			(property "Footprint" "Module:Arduino_Nano"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(italic yes)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://www.arduino.cc/en/uploads/Main/ArduinoNanoManual23.pdf"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Arduino Nano v2.x"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "Arduino nano microcontroller module USB"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Arduino*Nano*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Arduino_Nano_33_BLE_0_1"
+				(rectangle
+					(start -10.16 22.86)
+					(end 10.16 -22.86)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "Arduino_Nano_33_BLE_1_1"
+				(pin bidirectional line
+					(at -12.7 15.24 0)
+					(length 2.54)
+					(name "D0/TX"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -2.54 0)
+					(length 2.54)
+					(name "D7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -5.08 0)
+					(length 2.54)
+					(name "D8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -7.62 0)
+					(length 2.54)
+					(name "D9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -10.16 0)
+					(length 2.54)
+					(name "D10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -12.7 0)
+					(length 2.54)
+					(name "D11/MOSI"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -15.24 0)
+					(length 2.54)
+					(name "D12/MISO"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 -17.78 0)
+					(length 2.54)
+					(name "D13/CLK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 2.54 25.4 270)
+					(length 2.54)
+					(name "3V3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "17"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 12.7 5.08 180)
+					(length 2.54)
+					(name "AREF"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "18"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "A0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "19"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 12.7 0)
+					(length 2.54)
+					(name "D1/RX"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -2.54 180)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "20"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -5.08 180)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "21"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -7.62 180)
+					(length 2.54)
+					(name "A3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "22"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -10.16 180)
+					(length 2.54)
+					(name "SDA/A4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "23"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -12.7 180)
+					(length 2.54)
+					(name "SCL/A5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "24"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -15.24 180)
+					(length 2.54)
+					(name "A6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "25"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 12.7 -17.78 180)
+					(length 2.54)
+					(name "A7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "26"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 5.08 25.4 270)
+					(length 2.54)
+					(name "+5V"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "27"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 12.7 15.24 180)
+					(length 2.54)
+					(name "~{RESET}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "28"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 2.54 -25.4 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "29"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 12.7 12.7 180)
+					(length 2.54)
+					(name "~{RESET}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -2.54 25.4 270)
+					(length 2.54)
+					(name "VIN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "30"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -25.4 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 10.16 0)
+					(length 2.54)
+					(name "D2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "D3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 5.08 0)
+					(length 2.54)
+					(name "D4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "D5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "D6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+		(symbol "RF_RFID:RC522"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "U"
+				(at -5.08 8.89 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "RC522"
+				(at 0 8.89 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 1.27 -3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(italic yes)
+					)
+					(justify left)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at -6.35 11.43 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "RFID reader board"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "RC522_0_1"
+				(rectangle
+					(start -5.08 7.62)
+					(end 5.08 -7.62)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "RC522_1_1"
+				(pin input line
+					(at -7.62 5.08 0)
+					(length 2.54)
+					(name "SDA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -7.62 2.54 0)
+					(length 2.54)
+					(name "SCK"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -7.62 0 0)
+					(length 2.54)
+					(name "MOSI"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at -7.62 -2.54 0)
+					(length 2.54)
+					(name "MISO"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 7.62 5.08 180)
+					(length 2.54)
+					(name "IRQ"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 7.62 -2.54 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 7.62 2.54 180)
+					(length 2.54)
+					(name "RST"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 7.62 -5.08 180)
+					(length 2.54)
+					(name "3.3v"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
+	)
+	(junction
+		(at 156.21 111.76)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "24e0c02c-0184-4bf1-8c7f-edb317fd323b")
+	)
+	(junction
+		(at 153.67 111.76)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ee0a263c-8d21-4668-91f9-96a483fabace")
+	)
+	(no_connect
+		(at 166.37 71.12)
+		(uuid "0a1fb38b-cb1c-4f5a-9912-78d334f84b9c")
+	)
+	(no_connect
+		(at 166.37 101.6)
+		(uuid "0fee7c5f-9a11-4e86-8841-3fff265752a4")
+	)
+	(no_connect
+		(at 140.97 71.12)
+		(uuid "15ffd19b-f099-4bef-b5bc-eda24916d0c1")
+	)
+	(no_connect
+		(at 166.37 73.66)
+		(uuid "16ea8645-98dc-428b-96c1-0475ffa4fcf3")
+	)
+	(no_connect
+		(at 140.97 93.98)
+		(uuid "3abc3da6-4d65-4b62-864e-e0dacd0bd745")
+	)
+	(no_connect
+		(at 158.75 58.42)
+		(uuid "43924b2c-a4e1-45ab-95c7-6c0700a0cbad")
+	)
+	(no_connect
+		(at 166.37 99.06)
+		(uuid "47053efe-82d9-4cd6-985a-97f4fbdbd69c")
+	)
+	(no_connect
+		(at 140.97 86.36)
+		(uuid "4fac7734-1cdf-464b-a2c5-23486f56711f")
+	)
+	(no_connect
+		(at 166.37 86.36)
+		(uuid "51dcb4de-fbe8-42d7-b859-8ff9184b0999")
+	)
+	(no_connect
+		(at 166.37 91.44)
+		(uuid "572ece0c-a534-4fe6-8c96-ef27b4c56d19")
+	)
+	(no_connect
+		(at 140.97 76.2)
+		(uuid "6275b8fe-80ea-4534-bfc9-5206e89c1d9c")
+	)
+	(no_connect
+		(at 166.37 88.9)
+		(uuid "6b84ce9d-4ed0-4f21-80ed-779df720f39b")
+	)
+	(no_connect
+		(at 140.97 83.82)
+		(uuid "76ddbbaa-3441-44a8-b649-686b32026668")
+	)
+	(no_connect
+		(at 166.37 96.52)
+		(uuid "7a8e5753-7bd2-4ce1-8469-e01ab0c1e40a")
+	)
+	(no_connect
+		(at 140.97 73.66)
+		(uuid "955e8816-538e-49a5-9dcb-8463270e3107")
+	)
+	(no_connect
+		(at 166.37 93.98)
+		(uuid "9a947de5-471a-4e70-9809-f95ccdd3679e")
+	)
+	(no_connect
+		(at 140.97 91.44)
+		(uuid "a3c2c6eb-2a60-47c3-807c-dd7cdae01f5e")
+	)
+	(no_connect
+		(at 140.97 96.52)
+		(uuid "b2e693a3-d3d2-4847-ba75-43078ddffe06")
+	)
+	(no_connect
+		(at 66.04 48.26)
+		(uuid "cefc9e14-8175-40bf-928d-fe876f6c8e05")
+	)
+	(no_connect
+		(at 140.97 81.28)
+		(uuid "e00b8147-a914-4f9e-a361-7ef03618d4e6")
+	)
+	(no_connect
+		(at 156.21 121.92)
+		(uuid "e3e16a38-b5c5-4958-a80b-73b59324b051")
+	)
+	(no_connect
+		(at 140.97 78.74)
+		(uuid "ecfd46b1-d049-4fff-b673-15045d8e50af")
+	)
+	(no_connect
+		(at 166.37 81.28)
+		(uuid "f1841963-2895-4abb-afa2-12e8bdfe5348")
+	)
+	(wire
+		(pts
+			(xy 156.21 111.76) (xy 161.29 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "013df585-3f4d-48c2-a26d-ff30f44b3d0b")
+	)
+	(wire
+		(pts
+			(xy 138.43 124.46) (xy 140.97 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0dce5349-dce6-46df-ac85-bc8ef6107ccf")
+	)
+	(wire
+		(pts
+			(xy 135.89 127) (xy 135.89 99.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "11e4c6fc-fdd9-4ec8-a70a-b6980a529159")
+	)
+	(wire
+		(pts
+			(xy 156.21 129.54) (xy 161.29 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "142ed3c7-a699-44d7-bdeb-78660eabad82")
+	)
+	(wire
+		(pts
+			(xy 173.99 55.88) (xy 173.99 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1bf52821-9aae-444e-aef6-1881b51c7e94")
+	)
+	(wire
+		(pts
+			(xy 168.91 104.14) (xy 168.91 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a22c23e-418b-415e-871e-2bc74b8c38d9")
+	)
+	(wire
+		(pts
+			(xy 140.97 121.92) (xy 130.81 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2fa3e616-4f55-4b53-a250-8aff64656365")
+	)
+	(wire
+		(pts
+			(xy 173.99 55.88) (xy 156.21 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "31a3e9b8-151e-4d9d-bc45-add5cfb69b3a")
+	)
+	(wire
+		(pts
+			(xy 133.35 129.54) (xy 140.97 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "32ee62dd-35ba-4be2-b4c3-85ede9f972ce")
+	)
+	(wire
+		(pts
+			(xy 151.13 50.8) (xy 151.13 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3e4a30c2-5419-4ab5-be5d-e7d49ee4b5ba")
+	)
+	(wire
+		(pts
+			(xy 156.21 132.08) (xy 173.99 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "53c9e539-88ed-4d47-96a1-5f4e705848de")
+	)
+	(wire
+		(pts
+			(xy 130.81 121.92) (xy 130.81 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5863ea10-7438-4ae5-a237-2739b87cde6b")
+	)
+	(wire
+		(pts
+			(xy 156.21 55.88) (xy 156.21 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6d9abd7d-d493-4d20-a731-d2e29d49a928")
+	)
+	(wire
+		(pts
+			(xy 116.84 50.8) (xy 116.84 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "77d7c724-24cb-461a-9d29-599ecae9b0a5")
+	)
+	(wire
+		(pts
+			(xy 138.43 104.14) (xy 138.43 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7c20e4ec-b128-45ba-9460-0f46be0cfe38")
+	)
+	(wire
+		(pts
+			(xy 168.91 124.46) (xy 156.21 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "87709e15-aec3-4b55-b1d8-1d2c073af9f1")
+	)
+	(wire
+		(pts
+			(xy 133.35 101.6) (xy 133.35 129.54)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8eb466d9-69c1-4832-aa7f-857ba0f8f799")
+	)
+	(wire
+		(pts
+			(xy 135.89 99.06) (xy 140.97 99.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9e64e90e-f57f-4117-b0cd-2fb7c158a70d")
+	)
+	(wire
+		(pts
+			(xy 130.81 88.9) (xy 140.97 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a4db538d-f18a-46c5-b33c-fc580fc8b84a")
+	)
+	(wire
+		(pts
+			(xy 158.75 58.42) (xy 158.75 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b01bf139-6181-48ab-8995-d9f67448f3e4")
+	)
+	(wire
+		(pts
+			(xy 116.84 111.76) (xy 153.67 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b1713053-7263-4ad1-9dea-1e20f9570a42")
+	)
+	(wire
+		(pts
+			(xy 127 50.8) (xy 151.13 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5da6b93-5701-4fcb-9033-15920b074be7")
+	)
+	(wire
+		(pts
+			(xy 135.89 127) (xy 140.97 127)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b8f17ef1-7552-4343-9528-0f20d98223fc")
+	)
+	(wire
+		(pts
+			(xy 168.91 104.14) (xy 166.37 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c57bdf1c-0476-44b0-8eef-40ec4014b4c1")
+	)
+	(wire
+		(pts
+			(xy 161.29 129.54) (xy 161.29 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d05e9c78-8c93-4ada-adae-f09fe9154e14")
+	)
+	(wire
+		(pts
+			(xy 133.35 101.6) (xy 140.97 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ddc431e2-6abe-4a90-90a6-6b72da9cce63")
+	)
+	(wire
+		(pts
+			(xy 153.67 111.76) (xy 156.21 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e2bbf71d-60e8-4291-809f-fc78f0740cd3")
+	)
+	(wire
+		(pts
+			(xy 138.43 104.14) (xy 140.97 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f4b84b99-f44e-47e9-b385-129e03c0526c")
+	)
+	(symbol
+		(lib_id "MCU_Module:Arduino_Nano_33_BLE")
+		(at 153.67 86.36 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "240e68b5-f91f-40a0-ab24-3ee2913bf281")
+		(property "Reference" "A1"
+			(at 158.4041 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Arduino_Nano_33_BLE"
+			(at 158.4041 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Module:Arduino_Nano"
+			(at 153.67 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.arduino.cc/en/uploads/Main/ArduinoNanoManual23.pdf"
+			(at 153.67 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Arduino Nano v2.x"
+			(at 153.67 86.36 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "4"
+			(uuid "95665a56-3fcf-4a7a-92e0-616ddffed9a2")
+		)
+		(pin "9"
+			(uuid "9984ee90-d2b8-4549-b22f-eeadb09d5094")
+		)
+		(pin "5"
+			(uuid "077daefb-b6f7-4f27-a72a-4e160ae95c74")
+		)
+		(pin "25"
+			(uuid "f823186c-040b-4eb1-839d-478b45da64f8")
+		)
+		(pin "17"
+			(uuid "f24c859e-4f1d-4f9b-a19f-21d0b80fc2f8")
+		)
+		(pin "10"
+			(uuid "c813ee52-5453-4100-9b22-7c0d4ba1745e")
+		)
+		(pin "24"
+			(uuid "f3b64215-80cf-4056-bfc5-ac418b8c97c1")
+		)
+		(pin "1"
+			(uuid "d94f7878-da72-4047-b826-9367f856b8da")
+		)
+		(pin "3"
+			(uuid "99e15694-b9cb-435f-b649-6b896be79e57")
+		)
+		(pin "30"
+			(uuid "ba12a48a-a1cd-452c-acc6-bf73d08769cf")
+		)
+		(pin "11"
+			(uuid "4c965408-0413-431e-ba1d-a01bdb50ebe4")
+		)
+		(pin "16"
+			(uuid "4da837d5-7d4d-4282-ac8f-543391d2ec00")
+		)
+		(pin "19"
+			(uuid "727a4b30-c76c-4920-ae85-b90681a8d1a8")
+		)
+		(pin "26"
+			(uuid "4c408b1d-751d-4667-bce4-feafca7c63b2")
+		)
+		(pin "6"
+			(uuid "d7c3fc81-e520-4c18-8751-683944132418")
+		)
+		(pin "15"
+			(uuid "e2d720ff-cc71-4865-bbe6-96fc337cc31d")
+		)
+		(pin "8"
+			(uuid "b410d13a-f8c9-43c0-9d77-3c0513080585")
+		)
+		(pin "20"
+			(uuid "adb342d9-f7b0-4469-be22-4be60245e1db")
+		)
+		(pin "21"
+			(uuid "4cc29a85-5810-42b2-89df-6e21d903a629")
+		)
+		(pin "7"
+			(uuid "e6000c95-7af8-4887-91f5-2fdf5492aaa4")
+		)
+		(pin "12"
+			(uuid "ce70c582-f0d6-480a-bd7f-0ba89cefc69c")
+		)
+		(pin "29"
+			(uuid "776a88ee-ac15-494c-a211-47f57eba2609")
+		)
+		(pin "14"
+			(uuid "8629ce7c-802f-4903-8d16-203f168f8f30")
+		)
+		(pin "18"
+			(uuid "21c0eab5-0373-46cb-bb7e-9a5b7dad4a6e")
+		)
+		(pin "13"
+			(uuid "e258463f-fe11-4237-87c9-3393105610ad")
+		)
+		(pin "22"
+			(uuid "cb6c96d5-2bf5-4eb2-8cd8-0965fab6c2e5")
+		)
+		(pin "23"
+			(uuid "3bcc2e7c-58b5-401e-8851-ea7270fffc20")
+		)
+		(pin "2"
+			(uuid "67f0fedd-7b6a-42cc-830c-575d3fef4856")
+		)
+		(pin "28"
+			(uuid "e1a12e9c-5330-420d-a125-8804b313b2db")
+		)
+		(pin "27"
+			(uuid "6a6a9f34-455f-442d-ab7a-59385850bad9")
+		)
+		(instances
+			(project "rfid Test Schematic"
+				(path "/82c1982c-ec6a-4143-a611-4c40838a4888"
+					(reference "A1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "RF_RFID:RC522")
+		(at 148.59 127 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "a67a91e7-4b99-466f-83fc-43b8170c3879")
+		(property "Reference" "J1"
+			(at 148.59 114.3 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "RC522"
+			(at 148.59 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 149.86 130.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+					(italic yes)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 142.24 115.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 148.59 124.46 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "664deaed-2f43-47fe-8e5d-d1abd24c6e7d")
+		)
+		(pin "2"
+			(uuid "03f11a12-8694-4ee4-8ea6-a7e1b565151d")
+		)
+		(pin "6"
+			(uuid "b6ff8263-724f-40c1-b40c-d5a085b07252")
+		)
+		(pin "4"
+			(uuid "99598f23-bee7-4158-a1d8-b4f4b8c7685a")
+		)
+		(pin "5"
+			(uuid "b36f901e-8b7d-4e90-830c-7e86fd6cf6e6")
+		)
+		(pin "8"
+			(uuid "2d6e68af-5849-4f2d-966d-128d2f62df47")
+		)
+		(pin "7"
+			(uuid "89a1b092-fc5c-41a2-a3e9-b79d34bf10d6")
+		)
+		(pin "3"
+			(uuid "6e9a53c7-cf49-4d1e-9d30-5bbc5c84dd50")
+		)
+		(instances
+			(project "rfid Test Schematic"
+				(path "/82c1982c-ec6a-4143-a611-4c40838a4888"
+					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:Battery")
+		(at 121.92 50.8 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "bd0e08f3-de9d-40f5-a78c-bb4ebabd8ab6")
+		(property "Reference" "BT1"
+			(at 122.4915 43.18 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "12V"
+			(at 122.4915 45.72 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector:JWT_A3963_1x02_P3.96mm_Vertical"
+			(at 123.444 50.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 123.444 50.8 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Multiple-cell battery"
+			(at 121.92 50.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "19d07b3c-599a-4c4a-9583-44c65e3d7fc0")
+		)
+		(pin "2"
+			(uuid "0fd80156-8c06-4c9f-83af-c1c0ff8704fb")
+		)
+		(instances
+			(project "rfid Test Schematic"
+				(path "/82c1982c-ec6a-4143-a611-4c40838a4888"
+					(reference "BT1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)
