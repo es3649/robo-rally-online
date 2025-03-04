@@ -11,7 +11,7 @@ setInterval(() => {
 
 <template>
     <h1>Robot Settings</h1>
-    <button @click="router.replace('/lobby')">&lt;&nbsp;Back</button>
+    <button @click="router.back()">&lt;&nbsp;Back</button>
 
     <div v-for="bot of BOTS">
         <Robot :robot="bot" />

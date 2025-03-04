@@ -5,7 +5,7 @@ import { useConnectionStore } from '@/stores/connection';
 import { ref } from 'vue';
 import type { Ref } from 'vue';
 
-const connectionStore = useConnectionStore()
+const c_cs = useConnectionStore()
 
 // define component data
 const player_name: Ref<string> = ref("")
@@ -19,7 +19,7 @@ async function join() {
   // we are loading now
   loading.value = true
   // make the call on the connStore
-  connectionStore.join(player_name.value, (message?: string) => {
+  c_cs.join(player_name.value, (message?: string) => {
     console.log('join request returned')
     // callback, process our results
     if (message === undefined || message === "") {
@@ -39,11 +39,12 @@ async function join() {
   <main>
     <h2>Join Game</h2>
     <div v-if="error" class="error banner">
-      <p>{{ connectionStore.join_req.response }}</p>
+      <p>{{ c_cs.join_req.response }}</p>
     </div>
     <form v-if="!loading" @submit.prevent="join()">
       <label for="player_name">Player Name</label>
-      <input id="player_name" type="text" placeholder="name" v-model="player_name" required> <br/>
+      <input id="player_name" type="text" placeholder="name" maxlength="15" v-model="player_name" required> <br/>
+      <p>{{ player_name.length }}/15</p>
       <input type="submit">
     </form>
     <div v-if="loading">

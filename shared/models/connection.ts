@@ -15,7 +15,7 @@ export enum PlayerStatusUpdate {
 export type PlayerUpdate = {
     id: PlayerID,
     name?: string,
-    character?: Character,
+    character?: CharacterID,
     status?: PlayerStatusUpdate
 }
 

@@ -1,4 +1,4 @@
-import { Color, type Character } from '../models/player'
+import { Color, type Character, type CharacterID } from '../models/player'
 
 /**
  * The bluetooth IDs here need to be filled in with bluetooth device IDs pulled
@@ -64,3 +64,9 @@ export namespace Robots {
 }
 
 export const BOTS: Character[] = [Robots.Twonky, Robots.PanzerX90, Robots.AxelV8, Robots.Bladestorm, Robots.ZephyrM2, Robots.Thor]
+
+// create and populate a BOTS ma
+export const BOTS_MAP = new Map<CharacterID, Character>()
+BOTS.forEach((character: Character) => {
+    BOTS_MAP.set(character.id, character)
+})

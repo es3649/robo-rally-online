@@ -31,9 +31,10 @@ import { createApp } from 'vue';
 import App from './App.vue'
 import router from './router';
 import { createPinia } from 'pinia';
-import { useGameDataStore } from './stores/game_data_store';
+import { useGameDataStore } from './stores/render_game_data_store';
 import { PlayerStatusUpdate, type PlayerUpdate } from '../main/models/connection';
 import type { PlayerID, PlayerStateBrief } from '../main/models/player';
+import { BOTS_MAP } from '../main/data/robots';
 
 // create and mount the Vue app
 const app = createApp(App)
@@ -48,6 +49,7 @@ const game_state = useGameDataStore()
 
 // TODO move this logic into ConnectionsStore, and just pass the game store as an argument
 window.mainEventHandlerAPI.onPlayerUpdate((update: PlayerUpdate): void => {
+    console.log('update', update)
     if (update.status === PlayerStatusUpdate.ADDED) {
         if (update.name === undefined) {
             console.warn("Player to be added but name was not provided")
@@ -61,7 +63,12 @@ window.mainEventHandlerAPI.onPlayerUpdate((update: PlayerUpdate): void => {
     }
 
     if (update.character !== undefined) {
-        game_state.characterSelected(update.id, update.character)
+        const character = BOTS_MAP.get(update.character)
+        if (character === undefined) {
+            console.error(`No bot exists with ID ${update.character}`)
+            return
+        }
+        game_state.characterSelected(update.id, character)
     }
 })
 

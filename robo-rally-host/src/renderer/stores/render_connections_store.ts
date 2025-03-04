@@ -1,4 +1,4 @@
-import type { PlayerID } from "@/main/models/player";
+import type { CharacterID, PlayerID } from "@/main/models/player";
 import { defineStore } from "pinia";
 
 export const useConnectionsStore = defineStore({
@@ -12,6 +12,7 @@ export const useConnectionsStore = defineStore({
     actions: {
         async getIP(): Promise<string|undefined> {
             const ip = await window.mainAPI.getIP()
+            console.log("returned ip:", ip)
             if (ip !== undefined) {
                 this.ip = ip
             }
@@ -23,6 +24,9 @@ export const useConnectionsStore = defineStore({
         sendStart(): void {
             // TODO we also need to advance the phase
             window.mainAPI.startGame()
+        },
+        connectRobot(id: CharacterID) {
+            window.mainAPI.connectRobot(id)
         }
     }
 })

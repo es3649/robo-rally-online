@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useGameDataStore } from '../stores/game_data_store';
+import { useGameDataStore } from '../stores/render_game_data_store';
 import PlayerDataBrief from '../components/shared/PlayerDataBrief.vue';
 import GameEvents from '../components/shared/GameEvents.vue';
 
-const game_data_store = useGameDataStore()
+const r_gds = useGameDataStore()
 
 </script>
 
@@ -23,7 +23,7 @@ const game_data_store = useGameDataStore()
             <!-- Player info, incl names, checkpoints, a sprite of their bot,
              power status, etc -->
             <li>
-                <ul v-for="[id, state] of game_data_store.player_states" :key="id">
+                <ul v-for="[id, state] of r_gds.player_states" :key="id">
                     <PlayerDataBrief :state="state"/>
                 </ul>
             </li>

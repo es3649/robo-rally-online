@@ -41,7 +41,7 @@ export class GameInitializer {
             // * a character
             const player_todo: string[] = []
             if (player.character == undefined) {
-                player_todo.push(`${player.name} must choose an actor`)
+                player_todo.push(`${player.name} must choose a character`)
             }
 
             // if its nonempty, add it

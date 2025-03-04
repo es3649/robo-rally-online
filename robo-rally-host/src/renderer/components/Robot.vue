@@ -3,12 +3,12 @@ import { Character } from '../../main/models/player';
 const props = defineProps<{
     robot: Character
 }>()
-import { useConnectionsStore } from '../stores/connections_store';
+import { useConnectionsStore } from '../stores/render_connections_store';
 
-const connections_store = useConnectionsStore()
+const r_cs = useConnectionsStore()
 
 function reconnect() {
-    window.mainAPI.connectRobot(props.robot.name)
+    r_cs.connectRobot(props.robot.id)
 }
 </script>
 

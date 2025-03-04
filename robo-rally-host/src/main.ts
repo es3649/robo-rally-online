@@ -7,7 +7,7 @@ import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { PlayerStatusUpdate, type Server2MainMessage } from './main/models/connection';
+import { PlayerStatusUpdate, type PlayerUpdate, type Server2MainMessage } from './main/models/connection';
 import { BluetoothManager } from './main/bluetooth';
 import { GameStateManager } from './main/game_manager/game_state';
 import { GameInitializer } from './main/game_manager/initializers';
@@ -237,9 +237,18 @@ child.on('message', (message: Server2MainMessage<any>) => {
             console.error('tried to add player after game was started')
             break
         case Server2Main.SELECT_BOT:
+            if (message.id === undefined) {
+                console.error("Failed to select character when ID was not provided")
+                break
+            }
+            console.log()
             if (game === undefined) {
                 try {
-                    game_initializer.setCharacter(message.data.id, message.data.character)
+                    game_initializer.setCharacter(message.id, message.data)
+                    sendToAllWindows(Main2Render.UPDATE_PLAYER, {
+                        id: message.id,
+                        character: message.data
+                    } as PlayerUpdate)
                     // send a ready status to the renderer
                     sendToAllWindows(Main2Render.READY_STATUS, game_initializer.todo())
                 } catch (error) {

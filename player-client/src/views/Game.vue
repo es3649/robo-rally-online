@@ -10,7 +10,7 @@ import ActionWindow from '../components/game_elements/ActionWindow.vue'
 import PriorityTracker from '../components/game_elements/PriorityTracker.vue'
 import OpponentView from '../components/game_elements/OpponentView.vue'
 import { ref, type Ref } from 'vue';
-const game_state = useGameStateStore()
+const c_gs = useGameStateStore()
 
 const shutdown:Ref<boolean> = ref(false)
 
@@ -21,8 +21,8 @@ function finish(): void {
     // if we're shutting down...
     if (shutdown.value) {
         // submit program, disable programming, reset values
-        game_state.submitProgram(shutdown.value)
-        game_state.programming_enabled = false
+        c_gs.submitProgram(shutdown.value)
+        c_gs.programming_enabled = false
         shutdown.value = false
     }
 }
@@ -31,8 +31,8 @@ function finish(): void {
 <template>
     <main>
         <div class="control">
-            <button @click="game_state.next_phase()">Next Phase (in {{ game_state.phase }})</button>
-            <button @click="game_state.new_action()">New action</button>
+            <button @click="c_gs.next_phase()">Next Phase (in {{ c_gs.phase }})</button>
+            <button @click="c_gs.new_action()">New action</button>
         </div>
         <!-- checkpoints -->
         <CheckpointTracker />
@@ -41,27 +41,27 @@ function finish(): void {
         <PriorityTracker />
         <br>
         <OpponentView />
-        <div v-if="game_state.phase == GamePhase.Activation">
+        <div v-if="c_gs.phase == GamePhase.Activation">
             <ActionWindow />
         </div>
         <!-- list upgrades -->
-         <div v-if="game_state.phase == GamePhase.Upgrade">
+         <div v-if="c_gs.phase == GamePhase.Upgrade">
 
              <!-- current execution (register #, cur player, ) -->
-            <button @click="game_state.draw_upgrade" 
-                :disabled="game_state.energy < 1"
-                :title="game_state.energy < 1 ? 'Insufficient energy' : undefined"
+            <button @click="c_gs.draw_upgrade" 
+                :disabled="c_gs.energy < 1"
+                :title="c_gs.energy < 1 ? 'Insufficient energy' : undefined"
             >Draw Upgrade (1 Energy)</button>
         </div>
         <div v-else>
             <!-- programming registers -->
-            <RegisterArray :disabled="!game_state.programming_enabled"/>
-            <div v-if="game_state.phase == GamePhase.Programming && game_state.programming_enabled">
+            <RegisterArray :disabled="!c_gs.programming_enabled"/>
+            <div v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled">
                 <!-- cards -->
                 <ProgrammingHand />
                 <label for="shutdown">Shutdown</label>
                 <input id="shutdown" type="checkbox" v-model="shutdown">
-                <button :disabled="anyRegisterEmpty(game_state.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
+                <button :disabled="anyRegisterEmpty(c_gs.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
             </div>
         </div>
     </main>

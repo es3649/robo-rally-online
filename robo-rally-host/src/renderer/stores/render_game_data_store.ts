@@ -21,7 +21,12 @@ export const useGameDataStore = defineStore({
             players: new Map<PlayerID, string>(),
             characters: new Map<PlayerID, Character>(),
             player_states: new Map<PlayerID, PlayerStateBrief>(),
-            to_dos: new Map<PlayerID, string[]>()
+            to_dos: new Map<PlayerID, string[]>(),
+
+            qr: {
+                svg_path: "",
+                view_box: ""
+            }
         }
     },
     actions: {

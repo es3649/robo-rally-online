@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { Ref, ref } from 'vue';
-import { SetupPhase, useGameDataStore } from '../stores/game_data_store';
+import { useGameDataStore } from '../stores/render_game_data_store';
 import BoardComponent from '../components/Board.vue'
 import router from '../router';
 import { BoardData } from '../../main/game_manager/board';
 
-const gds = useGameDataStore()
+const r_gds = useGameDataStore()
 const board_name = ref('')
-const board_list: Ref<string[]> = ref([])
 const board: Ref<BoardData|undefined> = ref(undefined)
 const add = ref(true)
 const load_error = ref(false)
 
-if (gds.loadable_boards.length === 0) {
-    gds.listBoards().then(() => {
-        board_list.value = gds.loadable_boards
-    })
+if (r_gds.loadable_boards.length === 0) {
+    console.log("loading boards")
+    r_gds.listBoards()
 }
 
 async function load() {
@@ -25,10 +23,10 @@ async function load() {
         return
     }
     console.log(board_name.value)
-    const ok = await gds.loadBoard(board_name.value)
+    const ok = await r_gds.loadBoard(board_name.value)
     load_error.value = !ok
     if (ok) {
-        board.value = gds.board
+        board.value = r_gds.board
         console.log(board.value)
     }
 }
@@ -45,8 +43,8 @@ function finish() {
             <select id="board_select" v-model="board_name">
                 <option value="" default disabled>Choose a Board</option>
                 <option value="_serial" disabled>From Serial</option>
-                <option v-if="!board_list" disabled>Loading...</option>
-                <option v-for="b of board_list" :value="b">{{ b }}</option>
+                <option v-if="!r_gds.loadable_boards" disabled>Loading...</option>
+                <option v-for="b of r_gds.loadable_boards" :value="b">{{ b }}</option>
             </select>
         </div>
         <button @click="load" :disabled="!board_name">Load Selected</button>

@@ -1,48 +1,34 @@
 <script setup lang="ts">
 import { Ref, ref } from 'vue';
-import { useConnectionsStore } from '../stores/connections_store'
+import { useConnectionsStore } from '../stores/render_connections_store'
 import router from '../router';
 import qrcodegen from 'nayuki-qr-code-generator';
 import { toSvgString } from '../qr';
-import { SetupPhase, useGameDataStore } from '../stores/game_data_store';
+import { SetupPhase, useGameDataStore } from '../stores/render_game_data_store';
 import { PlayerID } from 'src/main/models/player';
 
-const connections_store = useConnectionsStore()
-const game_store = useGameDataStore()
-
-// const boards: Ref<string[]> = ref([])
-
-// window.mainAPI.listBoards().then((listed: string[]) => {
-//     boards.value = listed
-// })
-
-// TODO this should get a default value from the game_data_store
-const lobby_open: Ref<boolean> = ref(false)
-const ip = ref('')
-const view_box = ref('')
-const svg_path = ref('')
+const r_cs = useConnectionsStore()
+const r_gds = useGameDataStore()
 
 function openLobby(): void {
-    connections_store.getIP().then((value: string|undefined):void => {
-        ip.value = value
+    r_cs.getIP().then((value: string|undefined):void => {
         if (value !== undefined) {
-            const qr0 = qrcodegen.QrCode.encodeText(`http://${ip.value}`, qrcodegen.QrCode.Ecc.MEDIUM)
-            view_box.value = `0 0 ${qr0.size + 4} ${qr0.size +4}`
-            svg_path.value = toSvgString(qr0)
+            const qr0 = qrcodegen.QrCode.encodeText(`http://${r_cs.ip}`, qrcodegen.QrCode.Ecc.MEDIUM)
+            r_gds.qr.view_box = `0 0 ${qr0.size + 4} ${qr0.size +4}`
+            r_gds.qr.svg_path = toSvgString(qr0)
         }
     })
-    connections_store.getToDos().then((value: Map<PlayerID, string[]>) => {
-        game_store.to_dos = value
+    r_cs.getToDos().then((value: Map<PlayerID, string[]>) => {
+        r_gds.to_dos = value
     })
-    game_store.setup_status = SetupPhase.Lobby
-    lobby_open.value = true
+    r_gds.setup_status = SetupPhase.Lobby
 }
 
 function start(): void {
     // send a start notification to the main thread
-    connections_store.sendStart()
+    r_cs.sendStart()
     // update our phase
-    game_store.setup_status = SetupPhase.Done
+    r_gds.setup_status = SetupPhase.Done
     // go to the game thread
     router.replace('/game')
 }
@@ -50,36 +36,45 @@ function start(): void {
 
 <template>
     <main>
-        <div v-if="lobby_open">
+        <div v-if="r_gds.setup_status == SetupPhase.Lobby">
 
-            <p>Join IP: <span>{{ ip }}</span></p>
-            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" :view-box="view_box" stroke="none">
-                <rect width="100%" height="100%" fill="#ffffff"/>
-                <path :d="svg_path" fill="#000000" />
-            </svg>
+            <p>Join IP: <span>{{ r_cs.ip }}</span></p>
+            <div v-if="r_cs.ip">
+                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" :view-box="r_gds.qr.view_box" stroke="none">
+                    <rect width="100%" height="100%" fill="#ffffff"/>
+                    <path :d="r_gds.qr.svg_path" fill="#000000" />
+                </svg>
+            </div>
+            <div v-else>
+                <p>Failed to get IP address</p>
+                <ul>
+                    <li>Is network access disabled?</li>
+                    <li>Are you connected to a network?</li>
+                </ul>
+            </div>
 
             <table>
                 <tr>
                     <th>Player</th>
                     <th>Character</th>
                 </tr>
-                <tr v-for="[player_id, name] of game_store.players" :key="player_id">
+                <tr v-for="[player_id, name] of r_gds.players" :key="player_id">
                     <td>{{ name }}</td>
-                    <td>{{ game_store.characters.has(player_id) ? game_store.characters.get(player_id).name : "[No character selected]" }}</td>
+                    <td>{{ r_gds.characters.has(player_id) ? r_gds.characters.get(player_id).name : "[No character selected]" }}</td>
                 </tr>
             </table>
 
-            <div v-if="game_store.to_dos.size > 0">
+            <div v-if="r_gds.to_dos.size > 0">
                 <h4>The following must be addressed before beginning the game</h4>
-                <li v-for="[player, actions] in game_store.to_dos" :key="player">
+                <ul v-for="[player, actions] in r_gds.to_dos" :key="player">
                     <!-- <td>{{ player }}:</td> -->
-                    <ul v-for="line in actions">{{ line }}</ul>
-                </li>
+                    <li v-for="line in actions">{{ line }}</li>
+                </ul>
             </div>
             <div v-else>
                 <p>Ready!</p>
             </div>
-            <button :disabled="game_store.to_dos.size > 0" @click="start">Start Game</button>
+            <button :disabled="r_gds.to_dos.size > 0" @click="start">Start Game</button>
         </div>
         <!--
             - start with selecting board settings and whatnot
@@ -89,8 +84,8 @@ function start(): void {
             
             
             
-        <p>Board: {{ game_store.board_name }}</p>
-        <button v-if="!lobby_open" @click="openLobby">Start Lobby</button>
+        <p>Board: {{ r_gds.board_name }}</p>
+        <button v-if="r_gds.setup_status != SetupPhase.Lobby" @click="openLobby">Start Lobby</button>
     </main>
 </template>
 
