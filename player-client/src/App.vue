@@ -1,28 +1,58 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import { useGameStateStore } from './stores/game_state';
+import { useGameStateStore } from './stores/client_game_state';
 import { GamePhase } from './models/game_data';
 import HelloWorld from './components/HelloWorld.vue'
 import { socket } from './socket';
 import ConnectionStatus from './components/ConnectionStatus.vue';
-import { useConnectionStore } from './stores/connection';
+import { PLAYER_ID_COOKIE, useConnectionStore } from './stores/client_connection';
+import { useCookie } from 'vue-cookie-next';
 
 // disable any listeners (after a hot module reload)
 socket.off()
 
 // set up stores and listeners
-const game_state = useGameStateStore()
-const connection_store = useConnectionStore()
-game_state.bindEvents()
-connection_store.bindEvents()
+const c_gs = useGameStateStore()
+const c_cs = useConnectionStore()
+c_gs.bindEvents()
+c_cs.bindEvents()
 // this should be called early on to allow reconnection
-connection_store.getPlayerID()
+
+const cookie = useCookie()
+// check for an existing ID cookie
+if (cookie.isCookieAvailable(PLAYER_ID_COOKIE)) {
+  console.log("Found id in cookie")
+  const stored_id = cookie.getCookie(PLAYER_ID_COOKIE)
+  if (stored_id) {
+    // if there is a cookie, request the id from the server
+    console.log(`requesting use of ID from cookie: ${stored_id}`)
+    c_cs.id = stored_id
+    c_cs.useID(stored_id, (err: Error, ok: boolean) => {
+      // log error
+      if (err) {
+        console.error(err)
+      }
+      if (!ok) {
+        // if we aren't allowed to use the id we sent, then delete the cookie (so this
+        // branch isn't executed again, and try the ID fetch again)
+        console.log('ID use request was rejected, clearing cookie')
+        cookie.removeCookie(PLAYER_ID_COOKIE)
+        c_cs.getPlayerID((id:string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
+      } else {
+        console.log("ID request accepted")
+      }
+    })
+  }
+} else if (!c_cs.id) {
+  c_cs.getPlayerID((id: string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
+}
+
 </script>
 
 <template>
   <main>
     <ConnectionStatus />
-    <div v-if="game_state.phase == GamePhase.Lobby || game_state.phase == GamePhase.Setup">
+    <div v-if="c_gs.phase == GamePhase.Lobby || c_gs.phase == GamePhase.Setup">
       <header>
         <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
         <div class="wrapper">

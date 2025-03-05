@@ -7,12 +7,12 @@ import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { PlayerStatusUpdate, type PlayerUpdate, type Server2MainMessage } from './main/models/connection';
-import { BluetoothManager } from './main/bluetooth';
+import { PlayerStatusUpdate, senderMaker, type PlayerUpdate, type Server2MainMessage } from './main/models/connection';
+import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager } from './main/game_manager/game_state';
-import { GameInitializer } from './main/game_manager/initializers';
+import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
 import type { PlayerID } from './main/models/player';
-import { error } from 'node:console';
+import { GamePhase } from './main/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
@@ -27,7 +27,7 @@ function sendToAllWindows(channel: Main2Render, ...args: any[]) {
 // this game manager will manage the state of the game through the life of the program
 let game: GameStateManager|undefined
 let game_initializer = new GameInitializer()
-let character_initializer: BluetoothManager
+let character_initializer: BotInitializer
 
 // listen and serve
 const modulePath = path.join(__dirname, './server.js')
@@ -121,6 +121,31 @@ function registerIPCListeners() {
         // create a new game object
         game = undefined
         game_initializer = new GameInitializer()
+    })
+
+    ipcMain.handle(Render2Main.START_GAME, () => {
+        // make sure that we are actually allowed to start the game
+        if (!game_initializer.ready()) {
+            console.error("Tried to start game when initializer was not ready")
+            return false
+        }
+        // notify the server that we are starting
+        child.emit(Main2Server.PHASE_UPDATE, {phase: GamePhase.Setup})
+
+        // create the character initializer and initialize it
+        character_initializer = new BluetoothBotInitializer(
+            game_initializer.getBoard(),
+            Array.from(game_initializer.getPlayers().values())
+        )
+
+        const player = character_initializer.nextPlayer()
+        if (player === undefined) {
+            console.error("failed to get first player")
+            return false
+        }
+        child.emit(Main2Server.REQUEST_POSITION, player)
+
+        return true
     })
     
     // ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
@@ -258,6 +283,26 @@ child.on('message', (message: Server2MainMessage<any>) => {
             }
             console.error('tried to select bot after game was started')
             break
+        case Server2Main.CONFIRM_POSITION:
+            // TODO make sure this is the correct sender
+            // the player has confirmed their position
+            character_initializer.readPlayerPosition()
+            const next = character_initializer.nextPlayer()
+            if (next !== undefined) {
+                child.emit(Main2Server.REQUEST_POSITION, next)
+                return
+            }
+
+            // if it's undefined, then we should be ready to start the game
+            game = new GameStateManager(game_initializer,
+                character_initializer,
+                BluetoothManager.getInstance(),
+                senderMaker<Main2Server>(child))
+            
+            // go to the upgrade phase
+            child.emit(Main2Server.PHASE_UPDATE, GamePhase.Upgrade)
+            // from here, players should be able to advance to programming on their own
+            // once all programs are submitted, the game state will fire independently
     }
 })
 

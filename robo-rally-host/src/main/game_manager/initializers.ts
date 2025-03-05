@@ -3,7 +3,6 @@ import type { Board } from "./board"
 import type { OrientedPosition } from "./move_processors"
 import { BOTS } from "../data/robots"
 import type { BotAvailabilityUpdate } from "../models/connection"
-import { validate } from "uuid"
 
 export const MAX_PLAYERS = 6
 export const MIN_PLAYERS = 2
@@ -184,8 +183,20 @@ export class GameInitializer {
     }
 }
 
+/**
+ * interface for an event-driven initializer
+ * 
+ * It should maintain:
+ * - the priority-ordered list of players (internally)
+ * - which player should currently be connecting
+ * It should provide
+ * - the ability to invoke a position read from the setup apparatus
+ *   - ability to indicate if this position is legal
+ *   - if successful, this should advance to the next player in priority
+ * - ability to get all listed positions
+ */
 export interface BotInitializer {
-    fetchPosition: () => Promise<void>
-    setPosition: (player_id: PlayerID, position: OrientedPosition) => boolean
+    nextPlayer(): PlayerID|undefined
+    readPlayerPosition(): Promise<void>
     getStartingPositions: () => Map<PlayerID, OrientedPosition>
 }

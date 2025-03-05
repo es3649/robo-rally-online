@@ -1,12 +1,10 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { socket } from "@/socket";
-import { Client2Server, Server2Client } from "@/models/events";
+import { Client2Server } from "@/models/events";
 import type { Character, CharacterID, PlayerID } from "@/models/player";
-import { useCookie } from "vue-cookie-next";
-import type { BotAvailabilityUpdate } from "@/models/connection";
 
 const TIMEOUT = 5000
-const PLAYER_ID_COOKIE = 'player-id'
+export const PLAYER_ID_COOKIE = 'player-id'
 
 export declare interface EventHandler {
     game_start_handler(): void,
@@ -26,7 +24,7 @@ class PendingResponse<T> {
 }
 
 export const useConnectionStore = defineStore({
-    id: 'connection',
+    id: 'client_connection',
     state() {
         return {
             // could we change this to a player object and let it hold the connection, or will that just create different issues?
@@ -70,20 +68,9 @@ export const useConnectionStore = defineStore({
         },
         gameStartHandler () {},
         beginProgrammingHandler() {},
-        useID(id: PlayerID) {
-            socket.timeout(TIMEOUT).emit(Client2Server.USE_ID, id, (err: Error, ok: boolean) => {
-                if (err) {
-                    console.error(err) 
-                }
-                if (!ok) {
-                    // if we aren't allowed to use the id we sent, then delete the cookie (so this
-                    // branch isn't executed again, and try the ID fetch again)
-                    console.log('ID use request was rejected')
-                    const cookie = useCookie()
-                    cookie.removeCookie(PLAYER_ID_COOKIE)
-                    this.getPlayerID()
-                }
-            })
+        useID(id: PlayerID, callback: (err: Error, ok: boolean) => void) {
+            console.log("Requesting ID:", id)
+            socket.timeout(TIMEOUT).emit(Client2Server.USE_ID, id, callback)
         },
         /**
          * This should be called early in the page's lifetime.
@@ -91,25 +78,15 @@ export const useConnectionStore = defineStore({
          * we use it. If that ID is denied, request the current ID from the server, set it on the class
          * and in the cookie
          */
-        getPlayerID() {
-            // check for a cookie
-            const cookie = useCookie()
-            if (cookie.isCookieAvailable(PLAYER_ID_COOKIE)) {
-                const stored_id = cookie.getCookie(PLAYER_ID_COOKIE)
-                if (stored_id) {
-                    console.log(`Requesting use of ID from cookie: ${stored_id}`)
-                    this.id = stored_id
-                    this.useID(this.id)
-                    return
-                }
-            }
-            // request the ID from the server
+        getPlayerID(callback: (id: string) => void) {
+            console.log("Looking for existing player ID")
             socket.timeout(TIMEOUT).emit(Client2Server.GET_ID, (err: Error, id: string) => {
                 if (err) {
                     console.error(err)
                 } else {
                     console.log(`got ID from server ${id}`)
                     this.id = id
+                    callback(id)
                 }
             })
         },

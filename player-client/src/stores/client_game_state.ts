@@ -1,13 +1,13 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/models/game_data";
-import type { RegisterArray, UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
+import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
 import type { CharacterID, Character, PlayerState } from "@/models/player";
 import { socket } from "@/socket"
 import { Client2Server, Server2Client } from "@/models/events";
 import type { BotAvailabilityUpdate } from "@/models/connection";
 
 export const useGameStateStore = defineStore({
-    id: "gameState",
+    id: "client_game_state",
     state() {
         return {
             // the programming cards in our hand
@@ -250,6 +250,7 @@ export const useGameStateStore = defineStore({
             }
         },
         draw_upgrade(): void {
+            console.log("drawing upgrade")
             if (this.energy < 1) {
                 return
             }

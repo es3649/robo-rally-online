@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // import JoinGame from '../components/JoinGame.vue'
 import router from '@/router';
-import { useConnectionStore } from '@/stores/connection';
+import { useConnectionStore } from '@/stores/client_connection';
 import { ref } from 'vue';
 import type { Ref } from 'vue';
 

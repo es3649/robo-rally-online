@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Ref } from 'vue';
-import { useGameStateStore } from '@/stores/game_state'
+import { useGameStateStore } from '@/stores/client_game_state'
 import ProgrammingCard from './ProgrammingCard.vue'
 import { ProgrammingCard as Card } from '@/models/game_data';
 import draggable from 'vuedraggable';

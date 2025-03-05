@@ -17,7 +17,7 @@ contextBridge.exposeInMainWorld('mainAPI', {
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke(Render2Main.GET_IP),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke(Render2Main.BOARD.LIST_BOARDS),
     loadBoard: (name: string): Promise<BoardData|undefined> => ipcRenderer.invoke(Render2Main.BOARD.LOAD_BOARD, name),
-    startGame: (): void => ipcRenderer.send(Render2Main.START_GAME),
+    startGame: (): Promise<boolean> => ipcRenderer.invoke(Render2Main.START_GAME),
     getToDos: (): Promise<Map<PlayerID, string[]>> => ipcRenderer.invoke(Render2Main.GET_READY_STATUS),
     // loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
 

@@ -26,11 +26,18 @@ function openLobby(): void {
 
 function start(): void {
     // send a start notification to the main thread
-    r_cs.sendStart()
-    // update our phase
-    r_gds.setup_status = SetupPhase.Done
-    // go to the game thread
-    router.replace('/game')
+    r_cs.sendStart().then((ok: boolean) => {
+        if (!ok) {
+            // log an error message to the display
+            console.warn("Failed to start game")
+            return
+        }
+
+        // update our phase
+        r_gds.setup_status = SetupPhase.Done
+        // go to the game thread
+        router.replace('/game')
+    })
 }
 </script>
 
@@ -41,8 +48,8 @@ function start(): void {
             <p>Join IP: <span>{{ r_cs.ip }}</span></p>
             <div v-if="r_cs.ip">
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" :view-box="r_gds.qr.view_box" stroke="none">
-                    <rect width="100%" height="100%" fill="#ffffff"/>
-                    <path :d="r_gds.qr.svg_path" fill="#000000" />
+                    <!-- <rect width="100%" height="100%" fill="#ffffff"/> -->
+                    <path :d="r_gds.qr.svg_path" fill="#ebebeb" />
                 </svg>
             </div>
             <div v-else>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useConnectionStore } from '@/stores/connection';
+import { useConnectionStore } from '@/stores/client_connection';
 
 const connection_store = useConnectionStore()
 

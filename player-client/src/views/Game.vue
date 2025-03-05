@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // loads of stuff here
-import { useGameStateStore } from '@/stores/game_state';
+import { useGameStateStore } from '@/stores/client_game_state';
 import { GamePhase, anyRegisterEmpty } from "@/models/game_data"
 import EnergyCounter from '../components/game_elements/EnergyCounter.vue'
 import CheckpointTracker from '../components/game_elements/CheckpointTracker.vue'
@@ -10,6 +10,7 @@ import ActionWindow from '../components/game_elements/ActionWindow.vue'
 import PriorityTracker from '../components/game_elements/PriorityTracker.vue'
 import OpponentView from '../components/game_elements/OpponentView.vue'
 import { ref, type Ref } from 'vue';
+import UpgradeManager from '@/components/UpgradeManager.vue';
 const c_gs = useGameStateStore()
 
 const shutdown:Ref<boolean> = ref(false)
@@ -46,12 +47,7 @@ function finish(): void {
         </div>
         <!-- list upgrades -->
          <div v-if="c_gs.phase == GamePhase.Upgrade">
-
-             <!-- current execution (register #, cur player, ) -->
-            <button @click="c_gs.draw_upgrade" 
-                :disabled="c_gs.energy < 1"
-                :title="c_gs.energy < 1 ? 'Insufficient energy' : undefined"
-            >Draw Upgrade (1 Energy)</button>
+            <UpgradeManager />
         </div>
         <div v-else>
             <!-- programming registers -->

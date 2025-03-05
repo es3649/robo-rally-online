@@ -67,8 +67,8 @@ test('GameStateManager.setProgram (Movements, again, pushing, pits, initial shut
     const mock_executor = new MockExecutor()
     const player_initializer = new GameInitializer()
     const bot_initializer: BotInitializer = {
-        async fetchPosition() {},
-        setPosition(player_id: PlayerID, pos: OrientedPosition) { return true },
+        nextPlayer() { return undefined },
+        async readPlayerPosition() {},
         getStartingPositions() {
             const ret = new Map<PlayerID, OrientedPosition>()
             
@@ -404,8 +404,8 @@ test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again
     const mock_executor = new MockExecutor()
     const player_initializer = new GameInitializer()
     const bot_initializer: BotInitializer = {
-        async fetchPosition() {},
-        setPosition(player_id: PlayerID, pos: OrientedPosition) { return true },
+        nextPlayer() { return undefined },
+        async readPlayerPosition() {},
         getStartingPositions() {
             const ret = new Map<PlayerID, OrientedPosition>()
             

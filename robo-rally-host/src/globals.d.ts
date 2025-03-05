@@ -10,7 +10,7 @@ declare global {
             listBoards: () => Promise<string[]>
             loadBoard: (name: string) => Promise<BoardData>
             // loadSerial: () => void
-            startGame: () => void
+            startGame: () => Promise<boolean>
             reset: () => void
             getToDos: () => Promise<Map<PlayerID, string[]>>
         },

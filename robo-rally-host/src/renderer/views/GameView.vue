@@ -4,6 +4,7 @@ import PlayerDataBrief from '../components/shared/PlayerDataBrief.vue';
 import GameEvents from '../components/shared/GameEvents.vue';
 
 const r_gds = useGameDataStore()
+console.log("loading GameView")
 
 </script>
 
@@ -22,17 +23,31 @@ const r_gds = useGameDataStore()
         <div class="left">
             <!-- Player info, incl names, checkpoints, a sprite of their bot,
              power status, etc -->
-            <li>
-                <ul v-for="[id, state] of r_gds.player_states" :key="id">
+            <ul>
+                <li v-for="[id, state] of r_gds.player_states" :key="id">
                     <PlayerDataBrief :state="state"/>
-                </ul>
-            </li>
+                </li>
+            </ul>
         </div>
         <div class="center">
             
         </div>
         <div class="right">
-            <GameEvents :events="[]", :max_events="50"/>
+            <!-- <GameEvents :events="[]", :max_events="50"/> -->
         </div>
     </main>
 </template>
+
+<style lang="css" scoped>
+.right {
+    float: right;
+}
+
+.center {
+    position: relative;
+}
+
+.left {
+    float: left;
+}
+</style>

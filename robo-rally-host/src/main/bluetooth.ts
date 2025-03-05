@@ -5,6 +5,7 @@ import type { MovementExecutor } from "./game_manager/executor";
 import type { OrientedPosition } from "./game_manager/move_processors";
 import type { BotInitializer } from "./game_manager/initializers";
 import type { Board } from "./game_manager/board";
+import { DualKeyMap } from "./game_manager/graph";
 
 /** a timeout value (ms) */
 const TIMEOUT = 15000
@@ -299,6 +300,7 @@ export class BluetoothBotInitializer implements BotInitializer {
     private priority_list: Player[]
     private connecting: number = 0
     private initial_positions = new Map<PlayerID, OrientedPosition>()
+    private used_positions = new DualKeyMap<number, boolean>()
     private board: Board
 
     public constructor(board: Board, priority_list: Player[]) {
@@ -306,7 +308,11 @@ export class BluetoothBotInitializer implements BotInitializer {
         this.priority_list = priority_list
     }
 
-    public async connect(): Promise<void> {
+    /**
+     * connect the next bot in the priority order, and notify the player that it is their
+     * turn to select a position
+     */
+    public async connectCurrent(): Promise<void> {
         const cur = this.priority_list[this.connecting]
         // make sure a Bluetooth connection is established
         if (!await BluetoothManager.getInstance().connectRobot(cur.id, cur.character.id)) {
@@ -317,50 +323,62 @@ export class BluetoothBotInitializer implements BotInitializer {
         // TODO
     }
 
-    setPosition(player_id: PlayerID, position: OrientedPosition): boolean {
-        this.initial_positions.set(player_id, position)
-        return this.initial_positions.size == this.priority_list.length
+    /**
+     * gets the id of the next player who needs to select a position. if all players have
+     * selected, it returns undefined. It also begins notifications for the bluetooth module
+     * so whenever a position is set, we read the new value automatically
+     * @returns the id of the next player
+     */
+    public nextPlayer(): PlayerID | undefined {
+        if (this.connecting < this.priority_list.length) {
+            const cur = this.priority_list[this.connecting].id
+            this.connectCurrent().then(() => {
+                BluetoothManager.getInstance().getPosition(cur, (position_id: string) => {
+                    // look up the position on the board
+                    const pos = this.board.getSpawnLocation(position_id)
+                    if (pos !== undefined) {
+                        // check out current position
+                        const used = this.initial_positions.get(cur)
+                        if (used !== undefined) {
+                            this.used_positions.delete(used.x, used.y)
+                        }
+                        if (this.used_positions.has(pos.x, pos.y)) {
+                            // this is a problem, can't use a used position
+                            // unset any position
+                            this.initial_positions.delete(cur)
+                            return
+                        }
+                        // set the position
+                        this.initial_positions.set(cur, pos)
+                        this.used_positions.set(pos.x, pos.y, true)
+                    }
+                })
+            })
+            return cur
+        }
+
+        return undefined
     }
 
     /**
-     * read the position from the bluetooth connection, store it, then connect the next actor
+     * stops notifications for position changes and advances the "current player" to the
+     * next player
      */
-    async fetchPosition(): Promise<void> {
-        const cur = this.priority_list[this.connecting]
-        
-        // define a callback for setting the position (if it's valid)
-        const callback = (position_id: string) => {
-            const starting = this.board.getSpawnLocation(position_id)
-            
-            // handle illegal values
-            if (starting === undefined) {
-                console.warn("unrecognized spawn location:", starting)
-                return
-            }
-
-            // tell the manager we are done looking for a position
-            // don't bother to await, I think
-            BluetoothManager.getInstance().positionSet(cur.id)
-
-            // set the position we got
-            this.setPosition(cur.id, starting)
-
-            // increment the priority we are connecting for
-            this.connecting++
-            // connect the next guy if we aren't done yet
-            if (this.connecting < this.priority_list.length) {
-                this.connect()
-                this.fetchPosition()
-            } else {
-                this.connecting = 0
-            }
+    public async readPlayerPosition(): Promise<void> {
+        const cur = this.priority_list[this.connecting].id
+        // if there's no position, we keep waiting
+        if (!this.initial_positions.has(cur)) {
+            return
         }
-    
-        // make the first call. We will recurse through the callback until we
-        // have set positions for every character in order
-        BluetoothManager.getInstance().getPosition(cur.id, callback)
+        // read the position from the bluetooth characteristic
+        BluetoothManager.getInstance().positionSet(cur)
+        this.connecting++
     }
 
+    /**
+     * returns a map of all players' starting positions
+     * @returns the map of all players' starting positions
+     */
     public getStartingPositions(): Map<PlayerID, OrientedPosition> {
         return this.initial_positions
     }

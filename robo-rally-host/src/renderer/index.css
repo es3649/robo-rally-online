@@ -4,6 +4,17 @@ body {
   margin: auto;
   max-width: 38rem;
   padding: 2rem;
+  background-color: #181818;
+  color: rgba(235, 235, 235, 0.64);
+}
+
+a {
+  text-decoration: underline;
+  color: rgba(235, 235, 235, 0.64);
+}
+
+a:hover {
+  color: rgba(235, 235, 235, 1);
 }
 
 .error {
