@@ -1,14 +1,15 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/models/game_data";
 import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
-import type { CharacterID, Character, PlayerState } from "@/models/player";
-import { socket } from "@/socket"
+import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/models/player";
+import { socket, TIMEOUT } from "@/socket"
 import { Client2Server, Server2Client } from "@/models/events";
 import type { BotAvailabilityUpdate } from "@/models/connection";
+import { useConnectionStore } from "./client_connection";
 
 export const useGameStateStore = defineStore({
     id: "client_game_state",
-    state() {
+    state() { // TODO should opponent states and game actions be moved into a different store for non-game-pertinent data?
         return {
             // the programming cards in our hand
             programming_hand: [] as ProgrammingCardSlot[],
@@ -39,17 +40,17 @@ export const useGameStateStore = defineStore({
             // whether programming is allowed, so we can lock registers after program submit
             programming_enabled: false,
             // log messages
-            log: [] as string[],
+            log: [] as GameAction[],
             // current action
             action: undefined as GameAction|undefined,
             // the basic states of the opponents
             opponent_states: [{
-                name: "Channing", energy: 7, checkpoints: 0, priority: 1, active: true,
+                name: "Mara", energy: 7, checkpoints: 0, priority: 1, active: true,
             },{
-                name: "Michael", energy: 0, checkpoints: 1, priority: 2, active: true,
+                name: "Manuel", energy: 0, checkpoints: 1, priority: 2, active: true,
             },{
-                name: "Jamison", energy: 3, checkpoints: 0, priority: 3, active: false,
-            }] as PlayerState[],
+                name: "Michelangelo", energy: 3, checkpoints: 0, priority: 3, active: false,
+            }] as PlayerStateData[],
 
             // the characters which are not available for selection
             all_characters: [] as Character[],
@@ -209,12 +210,11 @@ export const useGameStateStore = defineStore({
          * Submit the current program for execution
          */
         submitProgram(shutdown: boolean) {
-            if (shutdown) {
-                // emit a shutdown event
-                socket.emit(Client2Server.PROGRAM_SHUTDOWN)
-            }
             // emit the program
-            socket.emit(Client2Server.PROGRAM_SUBMIT, this.registers)
+            socket.emit(Client2Server.PROGRAM_SUBMIT, {
+                registers: this.registers,
+                shutdown: shutdown
+            })
         },
         new_action(action:GameAction|undefined=undefined) {
             if (action != undefined) {
@@ -257,6 +257,30 @@ export const useGameStateStore = defineStore({
             // pull an upgrade card
             this.energy -= 1
         },
+        processPlayerStates(states: Map<PlayerID, PlayerStateData>) {
+            const c_cs = useConnectionStore()
+            const self = states.get(c_cs.id)
+            if (self === undefined) {
+                console.warn("our ID was not included in player data update")
+            } else {
+                this.energy = self.energy
+                this.active = self.active
+                this.checkpoints = self.checkpoints
+                // name shouldn't change
+                this._priority = self.priority
+                states.delete(c_cs.id)
+            }
+            this.opponent_states = Array.from(states.values())
+        },
+        getPlayerStates() {
+            socket.timeout(TIMEOUT).emit(Client2Server.GET_PLAYER_STATES, (err: Error, states: Map<PlayerID, PlayerStateData>) => {
+                if (err) {
+                    console.error("Error while fetching player states:", err)
+                    return
+                }
+                this.processPlayerStates(states)
+            })
+        },
         bindEvents() {
             socket.on(Server2Client.PHASE_UPDATE, () => {
                 this.next_phase()
@@ -280,6 +304,18 @@ export const useGameStateStore = defineStore({
 
             socket.on(Server2Client.RESET, () => {
                 console.log('reset')
+            })
+
+            socket.on(Server2Client.UPDATE_PLAYER_STATES, (states: Map<PlayerID, PlayerStateData>) => {
+                this.processPlayerStates(states)
+            })
+
+            socket.on(Server2Client.GAME_ACTION, (action: GameAction) => {
+                this.log.push(action)
+            })
+
+            socket.on(Server2Client.REQUEST_INPUT, (request: ProgrammingCard.ActionChoiceData) => {
+                console.log("received input request:", request)
             })
         }
     }

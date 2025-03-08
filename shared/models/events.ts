@@ -15,11 +15,12 @@ export namespace Client2Server {
     // export const ADD_UPGRADE = "client:add-upgrade"
     // export const USE_UPGRADE = "client:use-upgrade"
     export const PROGRAM_SUBMIT = "client:program-submit"
-    export const PROGRAM_SHUTDOWN = "client:program-shutdown"
     export const GET_ID = "client:get-id"
     export const USE_ID = "client:use-id"
     export const CONFIRM_POSITION = "client:confirm-position"
     export const SEND_INPUT = "client:send-input"
+    export const GET_HAND = "client:get-hand"
+    export const GET_PLAYER_STATES = "client:get-player-states"
 }
 export type Client2Server = typeof Client2Server.JOIN_GAME |
     typeof Client2Server.LEAVE_GAME |
@@ -30,11 +31,12 @@ export type Client2Server = typeof Client2Server.JOIN_GAME |
     // typeof Client2Server.ADD_UPGRADE |
     // typeof Client2Server.USE_UPGRADE |
     typeof Client2Server.PROGRAM_SUBMIT |
-    typeof Client2Server.PROGRAM_SHUTDOWN |
     typeof Client2Server.GET_ID |
     typeof Client2Server.USE_ID |
     typeof Client2Server.CONFIRM_POSITION |
-    typeof Client2Server.SEND_INPUT
+    typeof Client2Server.SEND_INPUT |
+    typeof Client2Server.GET_HAND |
+    typeof Client2Server.GET_PLAYER_STATES
 
 /* events emitted by the main desktop process */
 // events sent back to server 
@@ -86,7 +88,6 @@ export namespace Server2Client {
     export const BOT_LIST = "server:bot-list"
     export const RESET = "server:reset"
     export const UPDATE_PLAYER_STATES = "server:update-player-states"
-    export const UPDATE_PLAYER_STATE = "server:update-player-state"
     export const REQUEST_POSITION = "server:request-position"
     export const REQUEST_INPUT = "server:request-input"
 }

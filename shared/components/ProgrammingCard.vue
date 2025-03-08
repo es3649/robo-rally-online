@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ProgrammingCard } from '@/models/game_data';
+import { ProgrammingCard, CardAction } from '../../models/game_data';
 
-defineProps(['fill_color', 'border_color', 'value', 'size'])
+defineProps<{
+  fill_color: string,
+  border_color: string,
+  value: CardAction,
+  size: number
+}>()
 
 </script>
 

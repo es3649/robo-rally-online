@@ -16,36 +16,52 @@ const c_gs = useGameStateStore()
 const c_cs = useConnectionStore()
 c_gs.bindEvents()
 c_cs.bindEvents()
-// this should be called early on to allow reconnection
 
-const cookie = useCookie()
-// check for an existing ID cookie
-if (cookie.isCookieAvailable(PLAYER_ID_COOKIE)) {
-  console.log("Found id in cookie")
-  const stored_id = cookie.getCookie(PLAYER_ID_COOKIE)
-  if (stored_id) {
-    // if there is a cookie, request the id from the server
-    console.log(`requesting use of ID from cookie: ${stored_id}`)
-    c_cs.id = stored_id
-    c_cs.useID(stored_id, (err: Error, ok: boolean) => {
-      // log error
-      if (err) {
-        console.error(err)
-      }
-      if (!ok) {
-        // if we aren't allowed to use the id we sent, then delete the cookie (so this
-        // branch isn't executed again, and try the ID fetch again)
-        console.log('ID use request was rejected, clearing cookie')
-        cookie.removeCookie(PLAYER_ID_COOKIE)
-        c_cs.getPlayerID((id:string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
-      } else {
-        console.log("ID request accepted")
-      }
-    })
+/**
+ * get the session ID. First check if a cookie is present. If so, request that the server
+ * let us use that cookie, as it may represent an in-progress session. If the request is
+ * denied, request our assigned ID and save it in a cookie in the event of a disconnect
+ * 
+ * The method is defined here because the cookie module only works inside of components
+ * (otherwise I would put it in the client_connection module bc that makes more sense)
+ */
+function setupSessionID() {
+  // this should be called early on to allow reconnection
+  const cookie = useCookie()
+  // check for an existing ID cookie
+  if (cookie.isCookieAvailable(PLAYER_ID_COOKIE)) {
+    console.log("Found id in cookie")
+    const stored_id = cookie.getCookie(PLAYER_ID_COOKIE)
+    if (stored_id) {
+      // if there is a cookie, request the id from the server
+      console.log(`requesting use of ID from cookie: ${stored_id}`)
+      c_cs.id = stored_id
+      c_cs.useID(stored_id, (err: Error, ok: boolean) => {
+        // log error
+        if (err) {
+          console.error(err)
+        }
+        if (!ok) {
+          // if we aren't allowed to use the id we sent, then delete the cookie (so this
+          // branch isn't executed again, and try the ID fetch again)
+          console.log('ID use request was rejected, clearing cookie')
+          cookie.removeCookie(PLAYER_ID_COOKIE)
+          c_cs.getPlayerID((id:string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
+        } else {
+          console.log("ID request accepted")
+        }
+      })
+    }
   }
-} else if (!c_cs.id) {
-  c_cs.getPlayerID((id: string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
+  // after all this, if there is still no ID set, we need to get the id
+  if (!c_cs.id) {
+    // set it on a cookie after as well
+    c_cs.getPlayerID((id: string) => cookie.setCookie(PLAYER_ID_COOKIE, id))
+  }
 }
+
+// this needs to be called early on
+setupSessionID()
 
 </script>
 

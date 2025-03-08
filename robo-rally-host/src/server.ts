@@ -3,13 +3,13 @@ import express, { type Express } from 'express'
 import { createServer } from 'http'
 import { randomUUID } from 'crypto'
 import { Server, Socket } from 'socket.io'
-import { GamePhase, type RegisterArray } from "./main/models/game_data"
+import { GamePhase, ProgrammingCard, type GameAction, type Program, type RegisterArray } from "./main/models/game_data"
 import { Client2Server, Default, Server2Main, Main2Server, Server2Client } from './main/models/events'
 import { senderMaker } from './main/models/connection'
 import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage } from './main/models/connection'
 import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
 import { GameInitializer } from './main/game_manager/initializers'
-import type { PlayerID, Character, PlayerState, Player, CharacterID } from './main/models/player'
+import type { PlayerID, Character, PlayerState, CharacterID, PlayerStateData } from './main/models/player'
 import { BOTS } from './main/data/robots'
 
 export const app: Express = express()
@@ -32,7 +32,7 @@ const S2MSender = senderMaker<Server2Main>(process)
 
 // this connections map will hold all the socket connections in case we need to
 // send a message to a particular user
-const connections: Map<string, Socket> = new Map<string,Socket>()
+const connections = new Map<PlayerID, Socket>()
 
 // set up an initializer, which we will maintain locally and use to quickly process join
 // and character update requests from clients. This will also allow us to maintain 2-way
@@ -43,7 +43,7 @@ let initializer = new GameInitializer()
 // as far as we know them, and the current phase, so that clients can quickly query these
 // data if they disconnect or something
 let cur_phase = GamePhase.Lobby
-const player_data = new Map<PlayerID, PlayerState>()
+let player_data = new Map<PlayerID, PlayerStateData>()
 
 // handle the connection event
 io.on(Default.CONNECTION, (socket) => {
@@ -132,19 +132,17 @@ io.on(Default.CONNECTION, (socket) => {
     })
 
     // when a program is submitted
-    socket.on(Client2Server.PROGRAM_SUBMIT, (program:RegisterArray) => {
-        S2MSender<RegisterArray>({
+    socket.on(Client2Server.PROGRAM_SUBMIT, (program: Program) => {
+        S2MSender<Program>({
             name: Server2Main.PROGRAM_SET,
             id: socket.id,
             data: program
         })
     })
 
-    // when a shutdown is submitted
-    socket.on(Client2Server.PROGRAM_SHUTDOWN, () => S2MSender<never>({
-        name: Server2Main.PROGRAM_SHUTDOWN,
-        id: socket.data.id
-    }))
+    socket.on(Client2Server.GET_PLAYER_STATES, (callback: (states: Map<PlayerID, PlayerStateData>) => void ) => {
+        callback(player_data)
+    })
 
     // socket.on(Client2Server.REQUEST_UPGRADE, () => {console.log('client:request-upgrade is not implemented')})
     // socket.on(Client2Server.ADD_UPGRADE, () => {console.log('client:add-upgrade is not implemented')})
@@ -152,12 +150,14 @@ io.on(Default.CONNECTION, (socket) => {
 
 // determine which message was received, send it back
 process.on('message', (message: Main2ServerMessage<any>) => {
+    console.log("Received message:", message.name)
     switch (message.name) {
         case Main2Server.GAME_ACTION:
             io.emit(Server2Client.GAME_ACTION, message.data)
             break
         case Main2Server.PHASE_UPDATE:
             io.emit(Server2Client.PHASE_UPDATE, message.data)
+            cur_phase = message.data
             break
         case Main2Server.RESET:
             io.emit(Server2Client.RESET)
@@ -166,16 +166,51 @@ process.on('message', (message: Main2ServerMessage<any>) => {
         case Main2Server.GET_INPUT:
             if (message.id === undefined) {
                 console.error("Input requested but no ID provided")
-                return
+                break
             }
             const sock = connections.get(message.id)
             if (sock === undefined) {
                 console.error("")
-                return
+                break
             }
             // TODO
+            break
         case Main2Server.REQUEST_POSITION:
             break
+        case Main2Server.UPDATE_PLAYER_STATES:
+            // save the player data for faster distribution later
+            player_data = message.data as Map<PlayerID, PlayerState>
+            // emit the player_data summaries to each player
+            for (const sock of connections.values()) {
+                sock.emit(Server2Client.UPDATE_PLAYER_STATES, player_data)
+            }
+            break
+        case Main2Server.GAME_ACTION:
+            console.log("Recv'd new GameAction event")
+            // send this to all the clients
+            const action = message.data as GameAction
+            if (action === undefined) {
+                console.log('got an empty GameAction event')
+                break
+            }
+            // emit the game action to all listeners
+            io.emit(Server2Client.GAME_ACTION, action)
+            break
+        case Main2Server.GET_INPUT:
+            console.log("recv'd new GetInput event")
+            const request = message.data as ProgrammingCard.ActionChoiceData
+            if (request === undefined || message.id === undefined) {
+                console.error("Received malformed event data")
+                break
+            }
+            if (!connections.has(message.id)) {
+                console.error("trying to get input for nonexistent player")
+                break
+            }
+            connections.get(message.id)?.emit(Server2Client.REQUEST_INPUT, message.data)
+            break
+        default:
+            console.error(`No handling for event: ${message.name}`)
     }
 })
 

@@ -3,14 +3,14 @@
  * represents a state transition. The state awareness allows the class to return and the entire
  * program to go dormant while awaiting player/bluetooth input.
  */
-import { type PlayerID } from "../models/player"
+import { PlayerState, type PlayerID } from "../models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
 import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import type { Main2Server } from "../models/events"
 import type { Sender } from "../models/connection"
 import { isRotation, Orientation, type Movement } from "../models/movement"
-import type { RegisterArray } from "../models/game_data"
+import type { GameAction, ProgrammingCard, RegisterArray } from "../models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
 import { ActionFrame, BotMovement, BotState, type MovementExecutor } from "./executor"
 
@@ -28,6 +28,11 @@ enum TurnPhase {
     CHECKPOINTS
 }
 
+export interface Notifier {
+    gameAction(action: GameAction): void
+    getInput(player: PlayerID, request: ProgrammingCard.ActionChoice): void
+}
+
 /**
  * This class needs to be implemented like so:
  *  every minute operation (resolving a movement, resolving a register, inflicting damage) needs its own
@@ -36,8 +41,8 @@ enum TurnPhase {
  *  to reflect the current state, then return. If there are no responses needed, we may continue: call the
  *  function for the next operation.
  * 
- * NOTE: this seems like it would create massive call stacks, however, due to tail call optimization, it may not consume
- * any stack frames at all. The call for the next operation just has to happen last
+ * NOTE: this seems like it would create massive call stacks, however, due to tail call optimization, it may
+ * not consume any stack frames at all. The call for the next operation just has to happen last
  */
 export class GameStateManager {
     
@@ -54,13 +59,13 @@ export class GameStateManager {
     private readonly player_manager: PlayerManager
     private readonly board: Board
     private readonly movement_executor: MovementExecutor
-    private readonly sender: Sender<Main2Server>
+    private readonly notifier: Notifier
     // private game_manager: GameManager
 
     public constructor(player_initializer: GameInitializer,
             bot_initializer: BotInitializer,
             executor: MovementExecutor,
-            event_sender: Sender<Main2Server>) {
+            notifier: Notifier) {
         // this.game_manager = new GameManager()
         this.player_count = player_initializer.players.size
         // set up the player manager
@@ -69,7 +74,7 @@ export class GameStateManager {
         
         this.board = player_initializer.getBoard()
         this.movement_executor = executor
-        this.sender = event_sender
+        this.notifier = notifier
     }
 
     /**
@@ -550,5 +555,9 @@ export class GameStateManager {
                 return actor
             }
         }
+    }
+
+    public getPlayerStates(): Map<PlayerID, PlayerState> {
+        return this.player_manager.getPlayerStates()
     }
 }

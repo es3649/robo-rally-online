@@ -8,4 +8,6 @@ console.log(`using ${URL}`)
 // export const socket: Socket<ClientToServerEvents, ServerToClientEvents> = io(URL);
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(URL);
 
+export const TIMEOUT = 5000
+
 // io: undefined as  Socket<ClientToServerEvents, ServerToClientEvents>|undefined,

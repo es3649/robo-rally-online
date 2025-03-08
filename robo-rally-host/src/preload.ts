@@ -7,8 +7,9 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { BoardData } from "./main/game_manager/board";
 import { Main2Render, Render2Main } from "./main/models/events";
-import type { PlayerID, PlayerStateBrief } from "./main/models/player";
+import { PlayerState, type PlayerID, type PlayerStateData } from "./main/models/player";
 import type { PlayerUpdate } from "./main/models/connection";
+import type { GameAction } from "./main/models/game_data";
 
 
 // load up ipc APIs
@@ -44,9 +45,19 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
             callback(to_dos)
         })
     },
-    onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateBrief) => void) => {
-        ipcRenderer.on(Main2Render.UPDATE_PLAYER_STATE, (_event: IpcRendererEvent, id: PlayerID, update: PlayerStateBrief) => {
+    onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateData) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_PLAYER_STATE, (_event: IpcRendererEvent, id: PlayerID, update: PlayerStateData) => {
             callback(id, update)
+        })
+    },
+    onGameAction: (callback: (action: GameAction) => void) => {
+        ipcRenderer.on(Main2Render.GAME_ACTION, (_event: IpcRendererEvent, action: GameAction) => {
+            callback(action)
+        })
+    },
+    onGetInputNotification: (callback: (player: PlayerID) => void) => {
+        ipcRenderer.on(Main2Render.GET_INFO_NOTIFICATION, (_event: IpcRendererEvent, id: PlayerID) => {
+            callback(id)
         })
     }
 })

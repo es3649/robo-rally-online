@@ -1,9 +1,8 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
-import { socket } from "@/socket";
+import { socket, TIMEOUT } from "@/socket";
 import { Client2Server } from "@/models/events";
 import type { Character, CharacterID, PlayerID } from "@/models/player";
 
-const TIMEOUT = 5000
 export const PLAYER_ID_COOKIE = 'player-id'
 
 export declare interface EventHandler {
@@ -78,7 +77,7 @@ export const useConnectionStore = defineStore({
          * we use it. If that ID is denied, request the current ID from the server, set it on the class
          * and in the cookie
          */
-        getPlayerID(callback: (id: string) => void) {
+        getPlayerID(callback?: (id: string) => void) {
             console.log("Looking for existing player ID")
             socket.timeout(TIMEOUT).emit(Client2Server.GET_ID, (err: Error, id: string) => {
                 if (err) {
@@ -86,7 +85,10 @@ export const useConnectionStore = defineStore({
                 } else {
                     console.log(`got ID from server ${id}`)
                     this.id = id
-                    callback(id)
+                    // if there's a callback, call back
+                    if (callback !== undefined) {
+                        callback(id)
+                    }
                 }
             })
         },

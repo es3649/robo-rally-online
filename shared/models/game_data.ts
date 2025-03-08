@@ -28,9 +28,11 @@ export namespace ProgrammingCard {
     export const again = "again"
     export const power_up = "power_up"
     export const spam = "spam"
-    export declare interface ActionChoice {
+    export declare interface ActionChoiceData {
         prompt: string
         options: string[]
+    }
+    export declare interface ActionChoice extends ActionChoiceData {
         choice: (option: string) => Movement[]
     }
     export declare interface Haywire {
@@ -475,7 +477,6 @@ export function newRegisterArray(): RegisterArray {
     return [[], [], [], [], []]
 }
 
-
 /**
  * Check whether a RegisterArray contains any empty slots
  * @param arr an array of ProgrammingCardSlots to check
@@ -495,4 +496,9 @@ export function anyRegisterEmpty(arr:RegisterArray): boolean {
         return prev || cur.length === 0
     }
     return arr.reduce<boolean>(anyUndefinedReducer, false)
+}
+
+export type Program = {
+    shutdown: boolean,
+    registers: RegisterArray
 }

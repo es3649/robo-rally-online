@@ -1,7 +1,8 @@
-import { type Character, type PlayerID, type PlayerStateBrief } from "@/main/models/player";
+import { type Character, type PlayerID, type PlayerStateData } from "@/main/models/player";
 import type { BoardData } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 import { MAX_PLAYERS } from "../../main/game_manager/initializers";
+import type { GameAction } from "../../main/models/game_data";
 
 export enum SetupPhase {
     PreSetup,
@@ -20,13 +21,15 @@ export const useGameDataStore = defineStore({
             loadable_boards: [] as string[],
             players: new Map<PlayerID, string>(),
             characters: new Map<PlayerID, Character>(),
-            player_states: new Map<PlayerID, PlayerStateBrief>(),
+            player_states: new Map<PlayerID, PlayerStateData>(),
             to_dos: new Map<PlayerID, string[]>(),
 
             qr: {
                 svg_path: "",
                 view_box: ""
-            }
+            },
+
+            game_events: [] as GameAction[]
         }
     },
     actions: {
@@ -117,7 +120,7 @@ export const useGameDataStore = defineStore({
             }
             this.to_dos = to_dos
         },
-        setPlayerData(id: PlayerID, update: PlayerStateBrief): void {
+        setPlayerData(id: PlayerID, update: PlayerStateData): void {
             this.player_states.set(id, update)
         }
     }

@@ -7,19 +7,19 @@ import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { PlayerStatusUpdate, senderMaker, type PlayerUpdate, type Server2MainMessage } from './main/models/connection';
+import { PlayerStatusUpdate, senderMaker, type BotAvailabilityUpdate, type Main2ServerMessage, type PlayerUpdate, type Sender, type Server2MainMessage } from './main/models/connection';
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
-import { GameStateManager } from './main/game_manager/game_state';
+import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import type { PlayerID } from './main/models/player';
-import { GamePhase } from './main/models/game_data';
+import { PlayerState, type PlayerID } from './main/models/player';
+import { GamePhase, ProgrammingCard, type GameAction, type Program } from './main/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
 
-function sendToAllWindows(channel: Main2Render, ...args: any[]) {
+function sendToAllWindows<T>(channel: Main2Render, data: T) {
     for (const browser_window of windows.values()) {
-        browser_window.webContents.send(channel, ...args)
+        browser_window.webContents.send(channel, data)
     }
 }
 
@@ -46,6 +46,8 @@ console.log('starting utility process')
 const child = fork.fork(modulePath, [], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
+
+const M2SSender = senderMaker<Main2Server>(process)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -117,7 +119,7 @@ function registerIPCListeners() {
 
     ipcMain.on(Render2Main.RESET, () => {
         // tell the server to reset
-        child.send(Main2Server.RESET)
+        M2SSender<never>({name: Main2Server.RESET})
         // create a new game object
         game = undefined
         game_initializer = new GameInitializer()
@@ -204,56 +206,89 @@ app.on('activate', () => {
     }
 });
 
+class ServerRenderNotifier implements Notifier {
+    private m2s_sender: Sender<Main2Server>
+    private render_sender: <T>(channel: Main2Render, data: T) => void
+
+    constructor(m2s_sender: Sender<Main2Server>, render_sender: <T>(channel: Main2Render, data: T) => void) {
+        this.m2s_sender = m2s_sender
+        this.render_sender = render_sender
+    }
+
+    gameAction(action: GameAction): void {
+        // tell the server to send the game action notification
+        this.m2s_sender<GameAction>({
+            name: Main2Server.GAME_ACTION,
+            data: action
+        })
+        // send to the render as well
+        this.render_sender<GameAction>(Main2Render.GAME_ACTION, action)
+    }
+
+    getInput(player: PlayerID, request: ProgrammingCard.ActionChoiceData): void {
+        // send the full request to the server to be forwarded to the player
+        this.m2s_sender<ProgrammingCard.ActionChoiceData>({
+            name: Main2Server.GET_INPUT,
+            id: player,
+            data: request
+        })
+
+        // send a short notification to the renderer that input is required
+        this.render_sender<PlayerID>(Main2Render.GET_INFO_NOTIFICATION, player)
+    }
+}
+
 // initialize game server (incl board)
 // begin robot connections
 child.on('message', (message: Server2MainMessage<any>) => {
     switch (message.name) {
         case Server2Main.PROGRAM_SET:
+            const program_set_msg = message.data as Server2MainMessage<Program>
             if (game === undefined) {
                 console.error("tried to set program before game was ready")
                 break
-            }
-            try {
-                game.setProgram(message.data.id, message.data.program)
-            } catch (error) {
-                console.log(error)
-            }
-            break
-        case Server2Main.PROGRAM_SHUTDOWN:
-            if (game === undefined) {
-                console.error("tried to set shutdown before game was ready")
+            } else if (program_set_msg.id === undefined || program_set_msg.data === undefined) {
+                console.error("malformed program, missing ID or program")
                 break
             }
             try {
-                game.setShutdown(message.data.id)
+                // set shutdown first, as setting program may trigger activation
+                if (program_set_msg.data.shutdown) {
+                    game.setShutdown(program_set_msg.id)
+                }
+                game.setProgram(program_set_msg.id, program_set_msg.data.registers)
             } catch (error) {
                 console.log(error)
             }
             break
         case Server2Main.ADD_PLAYER:
             console.log("Recv'd add-player command:", message)
-            if (message.id === undefined) {
+            const add_player_msg = message as Server2MainMessage<string>
+            if (add_player_msg.id === undefined) {
                 console.error("Failed to add player when ID was not provided")
+                break
+            } else if (add_player_msg.data === undefined) {
+                console.error("Failed to add player with empty name")
                 break
             }
             if (game === undefined) {
                 try {
                     // add the player to the player initializer
-                    const ok = game_initializer.addPlayer(message.data, message.id)
+                    const ok = game_initializer.addPlayer(add_player_msg.data, add_player_msg.id)
                     if (!ok) {
                         console.error("Failed to add player in main which was added in server!")
                         return
                     }
 
                     // update the windows with the player
-                    sendToAllWindows(Main2Render.UPDATE_PLAYER, {
-                        id: message.id,
-                        name: message.data,
+                    sendToAllWindows<PlayerUpdate>(Main2Render.UPDATE_PLAYER, {
+                        id: add_player_msg.id,
+                        name: add_player_msg.data,
                         status: PlayerStatusUpdate.ADDED
                     })
                     
                     // send a ready status to the renderer
-                    sendToAllWindows(Main2Render.READY_STATUS, game_initializer.todo())
+                    sendToAllWindows<Map<PlayerID, string[]>>(Main2Render.READY_STATUS, game_initializer.todo())
                 } catch (error) {
                     console.log(error)
                 }
@@ -262,20 +297,24 @@ child.on('message', (message: Server2MainMessage<any>) => {
             console.error('tried to add player after game was started')
             break
         case Server2Main.SELECT_BOT:
-            if (message.id === undefined) {
+            const select_bot_msg = message as Server2MainMessage<string>
+            if (select_bot_msg.id === undefined) {
                 console.error("Failed to select character when ID was not provided")
+                break
+            } else if (select_bot_msg.data === undefined) {
+                console.error("Bot select notification is missing availability update")
                 break
             }
             console.log()
             if (game === undefined) {
                 try {
-                    game_initializer.setCharacter(message.id, message.data)
-                    sendToAllWindows(Main2Render.UPDATE_PLAYER, {
-                        id: message.id,
-                        character: message.data
-                    } as PlayerUpdate)
+                    game_initializer.setCharacter(select_bot_msg.id, select_bot_msg.data)
+                    sendToAllWindows<PlayerUpdate>(Main2Render.UPDATE_PLAYER, {
+                        id: select_bot_msg.id,
+                        character: select_bot_msg.data
+                    })
                     // send a ready status to the renderer
-                    sendToAllWindows(Main2Render.READY_STATUS, game_initializer.todo())
+                    sendToAllWindows<Map<PlayerID,string[]>>(Main2Render.READY_STATUS, game_initializer.todo())
                 } catch (error) {
                     console.error(error)
                 }
@@ -284,12 +323,16 @@ child.on('message', (message: Server2MainMessage<any>) => {
             console.error('tried to select bot after game was started')
             break
         case Server2Main.CONFIRM_POSITION:
+            // const confirm_position_msg = message as Server2MainMessage<never>
             // TODO make sure this is the correct sender
             // the player has confirmed their position
             character_initializer.readPlayerPosition()
             const next = character_initializer.nextPlayer()
             if (next !== undefined) {
-                child.emit(Main2Server.REQUEST_POSITION, next)
+                M2SSender<PlayerID>({
+                    name: Main2Server.REQUEST_POSITION,
+                    data: next
+                })
                 return
             }
 
@@ -297,12 +340,22 @@ child.on('message', (message: Server2MainMessage<any>) => {
             game = new GameStateManager(game_initializer,
                 character_initializer,
                 BluetoothManager.getInstance(),
-                senderMaker<Main2Server>(child))
+                new ServerRenderNotifier(M2SSender, sendToAllWindows))
             
             // go to the upgrade phase
-            child.emit(Main2Server.PHASE_UPDATE, GamePhase.Upgrade)
+            M2SSender<GamePhase>({
+                name: Main2Server.PHASE_UPDATE,
+                data: GamePhase.Upgrade
+            })
             // from here, players should be able to advance to programming on their own
             // once all programs are submitted, the game state will fire independently
+
+            // send over initial player data to the server
+            M2SSender<Map<PlayerID, PlayerState>>({
+                name: Main2Server.UPDATE_PLAYER_STATES,
+                data: game.getPlayerStates()
+            })
+            break
     }
 })
 

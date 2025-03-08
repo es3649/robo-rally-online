@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useGameStateStore } from '@/stores/client_game_state'
-import ProgrammingCard from './ProgrammingCard.vue'
+import ProgrammingCard from '../shared/ProgrammingCard.vue'
 import draggable from 'vuedraggable';
 import { GamePhase } from '@/models/game_data';
 import { ref } from 'vue';

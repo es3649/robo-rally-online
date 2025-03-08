@@ -18,6 +18,8 @@ declare global {
             onPlayerUpdate: (callback: (update: PlayerUpdate) => void) => void
             onToDo: (callback: (todos:Map<PlayerID, string[]>) => void) => void
             onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateBrief) => void) => void
+            onGameAction: (callback: (action: GameAction) => void) => void
+            onGetInputNotification: (callback: (player: PlayerID) => void) => void
         },
     }
 

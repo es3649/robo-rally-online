@@ -33,8 +33,10 @@ import router from './router';
 import { createPinia } from 'pinia';
 import { useGameDataStore } from './stores/render_game_data_store';
 import { PlayerStatusUpdate, type PlayerUpdate } from '../main/models/connection';
-import type { PlayerID, PlayerStateBrief } from '../main/models/player';
+import type { PlayerID } from '../main/models/player';
 import { BOTS_MAP } from '../main/data/robots';
+import type { PlayerStateData } from './models/player';
+import type { GameAction } from './models/game_data';
 
 // create and mount the Vue app
 const app = createApp(App)
@@ -77,7 +79,15 @@ window.mainEventHandlerAPI.onToDo((to_dos: Map<PlayerID, string[]>): void => {
     game_state.setToDos(to_dos)
 })
 
-window.mainEventHandlerAPI.onPlayerDataUpdated((id: PlayerID, update: PlayerStateBrief) => {
+window.mainEventHandlerAPI.onPlayerDataUpdated((id: PlayerID, update: PlayerStateData) => {
     console.log(id, update)
     game_state.setPlayerData(id, update)
+})
+
+window.mainEventHandlerAPI.onGameAction((action: GameAction) => {
+    game_state.game_events.push(action)
+})
+
+window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID) => {
+    console.log("Received GetData event for:", player)
 })

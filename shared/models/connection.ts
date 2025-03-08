@@ -1,5 +1,5 @@
-import type { GameAction, GamePhase, RegisterArray, UpgradeCard } from './game_data'
-import type { Character, CharacterID, PlayerID, PlayerStateBrief, PlayerStateData } from './player'
+import type { GameAction, GamePhase, Program, ProgrammingCard } from './game_data'
+import type { Character, CharacterID, PlayerID, PlayerStateData } from './player'
 import { Server2Main, Main2Server } from './events'
 
 export type BotAvailabilityUpdate = {
@@ -36,9 +36,8 @@ export interface ServerToClientEvents {
     // game events
     "server:phase-update": (phase:GamePhase) => void
     "server:game-action": (action: GameAction) => void
-    "server:update-player-states": (data: Map<PlayerID, PlayerStateBrief>) => void
-    "server:update-player-state": (data: Map<PlayerID, PlayerStateData>) => void
-    "server:request-input": (message: string, image: string, callback: (resp: boolean) => void) => void
+    "server:update-player-states": (states: Map<PlayerID, PlayerStateData>) => void
+    "server:request-input": (message: ProgrammingCard.ActionChoiceData) => void
 
     "server:reset": () => void
 }
@@ -56,10 +55,12 @@ export interface ClientToServerEvents {
     "client:select-bot": (bot_id: string, callback: (ok: boolean) => void) => void
     "client:get-id": (callback:(id:string) => void) => void
     "client:use-id": (id: PlayerID, callback:(ok:boolean) => void) => void
+    "client:get-player-states": (callback: (states: Map<PlayerID, PlayerStateData>) => void) => void
+    "client:send-input": (selection: string) => void
 
     // game events
     "client:confirm-position": () => void
-    "client:program-submit": (program: RegisterArray) => void
+    "client:program-submit": (program: Program) => void
     "client:program-shutdown": () => void
 
     // upgrade events
