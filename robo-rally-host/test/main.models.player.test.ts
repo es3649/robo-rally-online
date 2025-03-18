@@ -1,5 +1,5 @@
 import { expect, test } from '@jest/globals'
-import { PlayerState } from '../src/main/models/player'
+import { PlayerState } from '../src/shared/models/player'
 
 test('PlayerState.constructor', () => {
     const name = 'Dennis'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Space, SpaceBoundaries, WallType } from '../../main/game_manager/board';
-import { Rotation, RotationDirection } from '../../main/models/movement';
+import { Rotation, RotationDirection } from '../../shared/models/movement';
 import { ref } from 'vue'
 import { SpaceCoverType } from '../../main/game_manager/board'
 

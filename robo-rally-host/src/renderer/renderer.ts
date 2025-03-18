@@ -32,11 +32,11 @@ import App from './App.vue'
 import router from './router';
 import { createPinia } from 'pinia';
 import { useGameDataStore } from './stores/render_game_data_store';
-import { PlayerStatusUpdate, type PlayerUpdate } from '../main/models/connection';
-import type { PlayerID } from '../main/models/player';
-import { BOTS_MAP } from '../main/data/robots';
-import type { PlayerStateData } from './models/player';
-import type { GameAction } from './models/game_data';
+import { PlayerStatusUpdate, type PlayerUpdate } from '../shared/models/connection';
+import type { PlayerID } from '../shared/models/player';
+import { BOTS_MAP } from '../shared/data/robots';
+import type { PlayerStateData } from '../shared/models/player';
+import type { GameAction } from '../shared/models/game_data';
 
 // create and mount the Vue app
 const app = createApp(App)

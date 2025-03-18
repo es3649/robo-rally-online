@@ -1,5 +1,5 @@
 import { expect, test } from '@jest/globals'
-import { BOTS } from '../src/main/data/robots'
+import { BOTS } from '../src/shared/data/robots'
 import { MAX_PLAYERS } from '../src/main/game_manager/initializers'
 
 test('bots', () => {

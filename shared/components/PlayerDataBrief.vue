@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { PlayerStateBrief } from 'src/main/models/player';
+import type { PlayerStateData } from '../models/player';
 
 const props = defineProps<{
-    state: PlayerStateBrief
+    state: PlayerStateData
 }>()
 </script>
 
 <template>
-    <h4>{{ state.name }} ({{ state.active ? "Active" : "Shutdown" }})</h4>
+    {{ state.priority }}:&nbsp;{{ state.name }}&nbsp;{{ state.active ? "🟢" : "🔴" }}
+    <br />
+    🏁:&nbsp;{{ state.checkpoints }}&nbsp;⚡️:&nbsp;{{ state.energy }}
+    <!-- <h4>{{ state.name }} ({{ state.active ? "Active" : "Shutdown" }})</h4>
     <table>
         <tr>
             <td>Priority</td>
@@ -17,5 +20,9 @@ const props = defineProps<{
             <td>Checkpoints</td>
             <td>{{ state.checkpoints }}</td>
         </tr>
-    </table>
+        <tr>
+            <td>Energy</td>
+            <td>{{ state.energy }}</td>
+        </tr>
+    </table> -->
 </template>

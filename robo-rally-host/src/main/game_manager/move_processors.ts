@@ -1,5 +1,5 @@
-import { isAbsoluteMovement, isRelativeMovement, isRotation, MovementDirection, Orientation, Rotation, RotationDirection } from "../models/movement"
-import type { AbsoluteMovement, Movement } from "../models/movement"
+import { isAbsoluteMovement, isRelativeMovement, isRotation, MovementDirection, Orientation, Rotation, RotationDirection } from "../../shared/models/movement"
+import type { AbsoluteMovement, Movement } from "../../shared/models/movement"
 
 // this is an orientation-agnostic position on the board. the Oriented position extends it
 export interface BoardPosition {

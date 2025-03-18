@@ -13,6 +13,8 @@ import { RouterLink, RouterView } from 'vue-router';
             <RouterLink to="/robots">Robots</RouterLink>
             &nbsp;
             <RouterLink to="/board">Board</RouterLink>
+            &nbsp;
+            <RouterLink to="/game">Game (dev)</RouterLink>
         </nav>
         <RouterView />
     </div>

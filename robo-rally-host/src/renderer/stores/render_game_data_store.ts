@@ -1,8 +1,9 @@
-import { type Character, type PlayerID, type PlayerStateData } from "@/main/models/player";
+import { type Character, type PlayerID, type PlayerStateData } from "../../shared/models/player";
 import type { BoardData } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 import { MAX_PLAYERS } from "../../main/game_manager/initializers";
-import type { GameAction } from "../../main/models/game_data";
+import type { GameAction } from "../../shared/models/game_data";
+import { ProgrammingCard } from "../../shared/models/game_data";
 
 export enum SetupPhase {
     PreSetup,
@@ -29,7 +30,47 @@ export const useGameDataStore = defineStore({
                 view_box: ""
             },
 
-            game_events: [] as GameAction[]
+            game_events: [{
+                action: {
+                    id: 0,
+                    action: ProgrammingCard.left
+                },
+                actor: {
+                    name: "Gemma",
+                    id: "saph1234",
+                    character: {
+                        name: 'bro',
+                        id: "ruby1234",
+                        sprite_large: "",
+                        sprite_small: "",
+                        color: {
+                            fill_color: "#6789AB",
+                            border_color: "#123456"
+                        },
+                        bluetooth_id: "", 
+                    }
+                }
+            },{
+                action: {
+                    id: 0,
+                    action: ProgrammingCard.left
+                },
+                actor: {
+                    name: "Fitz",
+                    id: "emer1234",
+                    character: {
+                        name: 'sci',
+                        id: "topaz1234",
+                        sprite_large: "",
+                        sprite_small: "",
+                        color: {
+                            fill_color: "#FEDCBA",
+                            border_color: "#987654"
+                        },
+                        bluetooth_id: "", 
+                    }
+                }
+            }] as GameAction[]
         }
     },
     actions: {

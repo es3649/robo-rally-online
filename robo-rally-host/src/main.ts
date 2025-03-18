@@ -6,13 +6,13 @@ import fork from 'child_process'
 import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
-import { Main2Render, Main2Server, Render2Main, Server2Main } from './main/models/events';
-import { PlayerStatusUpdate, senderMaker, type BotAvailabilityUpdate, type Main2ServerMessage, type PlayerUpdate, type Sender, type Server2MainMessage } from './main/models/connection';
+import { Main2Render, Main2Server, Render2Main, Server2Main } from './shared/models/events';
+import { PlayerStatusUpdate, senderMaker, type BotAvailabilityUpdate, type Main2ServerMessage, type PlayerUpdate, type Sender, type Server2MainMessage } from './shared/models/connection';
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import { PlayerState, type PlayerID } from './main/models/player';
-import { GamePhase, ProgrammingCard, type GameAction, type Program } from './main/models/game_data';
+import { PlayerState, type PlayerID } from './shared/models/player';
+import { GamePhase, ProgrammingCard, type GameAction, type Program } from './shared/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()

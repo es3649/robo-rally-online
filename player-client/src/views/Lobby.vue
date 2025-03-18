@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Character, CharacterID } from '@/models/player';
+import type { Character, CharacterID } from '@/shared/models/player';
 import { useConnectionStore } from '@/stores/client_connection';
 import { useGameStateStore } from '@/stores/client_game_state';
 import { ref } from 'vue';

@@ -1,4 +1,4 @@
-import { type Character } from "../main/models/player"
+import { type Character } from "../shared/models/player"
 import { BOTS } from "../main/data/robots"
 
 // create a mapping of the bots

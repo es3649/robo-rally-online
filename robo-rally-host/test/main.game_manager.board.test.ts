@@ -1,6 +1,6 @@
 import { expect, test } from '@jest/globals'
 import { Board, BoardData, getWalls, isValidBoardData, LaserPosition, Space, SpaceCoverType, SpaceType, Wall, WallType } from '../src/main/game_manager/board'
-import { isAbsoluteMovement, isRotation, Orientation, RotationDirection } from '../src/main/models/movement'
+import { isAbsoluteMovement, isRotation, Orientation, RotationDirection } from '../src/shared/models/movement'
 import { DualKeyMap } from '../src/main/game_manager/graph'
 import { BoardPosition, MovementArrayWithResults, MovementStatus, OrientedPosition } from '../src/main/game_manager/move_processors'
 

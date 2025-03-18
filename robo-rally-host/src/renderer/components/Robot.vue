@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Character } from '../../main/models/player';
+import { Character } from '../../shared/models/player';
 const props = defineProps<{
     robot: Character
 }>()

@@ -1,6 +1,6 @@
 import { expect, test } from '@jest/globals'
 import { MovementForest, DualKeyMap } from "../src/main/game_manager/graph";
-import { AbsoluteMovement, isAbsoluteMovement, isRotation, Orientation, Rotation, RotationDirection } from '../src/main/models/movement';
+import { AbsoluteMovement, isAbsoluteMovement, isRotation, Orientation, Rotation, RotationDirection } from '../src/shared/models/movement';
 import { AbsoluteStep, MovementFrame, MovementResult, MovementStatus, OrientedPosition, Turn } from '../src/main/game_manager/move_processors';
 
 // populate the forest

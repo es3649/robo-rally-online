@@ -1,5 +1,5 @@
-import { Orientation, RotationDirection, isRotation } from "../models/movement"
-import type { PlayerID } from "../models/player"
+import { Orientation, RotationDirection, isRotation } from "../../shared/models/movement"
+import type { PlayerID } from "../../shared/models/player"
 import { DualKeyMap, MovementForest } from "./graph"
 import { applyOrientationStep, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, Turn, type BoardPosition, type MovementResult, type OrientedPosition } from "./move_processors"
 

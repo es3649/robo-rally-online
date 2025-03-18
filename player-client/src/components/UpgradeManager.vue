@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GamePhase } from '@/models/game_data';
+import { GamePhase } from '@/shared/models/game_data';
 import { useGameStateStore } from '@/stores/client_game_state';
 
 const c_gs = useGameStateStore()

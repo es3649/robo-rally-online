@@ -1,5 +1,5 @@
 import { applyAbsoluteMovement, applyOrientationStep, applyRotation, BoardPosition, MovementArrayResultsBuilder, MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementResult, MovementStatus, OrientedPosition, Turn, type AbsoluteStep } from "../src/main/game_manager/move_processors"
-import { AbsoluteMovement, isAbsoluteMovement, isRotation, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from "../src/main/models/movement"
+import { AbsoluteMovement, isAbsoluteMovement, isRotation, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from "../src/shared/models/movement"
 import { expect, test } from '@jest/globals'
 
 test('applyOrientationStep', () => {

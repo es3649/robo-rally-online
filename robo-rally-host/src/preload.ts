@@ -6,11 +6,10 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { BoardData } from "./main/game_manager/board";
-import { Main2Render, Render2Main } from "./main/models/events";
-import { PlayerState, type PlayerID, type PlayerStateData } from "./main/models/player";
-import type { PlayerUpdate } from "./main/models/connection";
-import type { GameAction } from "./main/models/game_data";
-
+import { Main2Render, Render2Main } from "./shared/models/events";
+import { type PlayerID, type PlayerStateData } from "./shared/models/player";
+import type { PlayerUpdate } from "./shared/models/connection";
+import type { GameAction } from "./shared/models/game_data";
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {

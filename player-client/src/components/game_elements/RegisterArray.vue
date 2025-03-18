@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { Ref } from 'vue';
 import { useGameStateStore } from '@/stores/client_game_state'
-import ProgrammingCard from '../shared/ProgrammingCard.vue'
-import { ProgrammingCard as Card } from '@/models/game_data';
+import ProgrammingCard from '@/shared/components/ProgrammingCard.vue'
+import { ProgrammingCard as Card } from '@/shared/models/game_data';
 import draggable from 'vuedraggable';
-import { GamePhase } from '@/models/game_data';
+import { GamePhase } from '@/shared/models/game_data';
 
 const props = defineProps<{
     disabled: boolean
@@ -63,7 +61,7 @@ function rebalance(): void  {
                 item-key="id"
             >
                 <template #item="{ element: card }">
-                    <ProgrammingCard fill_color="#456" border_color="#123" :value="card.action"></ProgrammingCard>
+                    <ProgrammingCard fill_color="#456" border_color="#123" :value="card.action" :size="50"></ProgrammingCard>
                 </template>
             </draggable>
         </div>

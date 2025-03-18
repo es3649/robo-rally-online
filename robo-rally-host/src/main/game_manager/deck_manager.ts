@@ -1,4 +1,4 @@
-import { newStandardDeck, ProgrammingCard, PROGRAMMING_HAND_SIZE, type ProgrammingCardSlot, type RegisterArray } from "../models/game_data";
+import { newStandardDeck, ProgrammingCard, PROGRAMMING_HAND_SIZE, type ProgrammingCardSlot, type RegisterArray } from "../../shared/models/game_data";
 
 export class DeckManager {
     private hand = [] as ProgrammingCardSlot[]

@@ -1,5 +1,5 @@
-import { isRotation, Orientation, RotationDirection } from "../models/movement";
-import type { PlayerID } from "../models/player";
+import { isRotation, Orientation, RotationDirection } from "../../shared/models/movement";
+import type { PlayerID } from "../../shared/models/player";
 import type { MovementFrame } from "./move_processors";
 
 export namespace BotState {

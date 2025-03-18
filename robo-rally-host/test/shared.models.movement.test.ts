@@ -1,5 +1,5 @@
-import { Orientation, Rotation, isAbsoluteMovement, MovementDirection, RotationDirection, isRelativeMovement, isRotation } from "../src/main/models/movement";
-import type { AbsoluteMovement, RelativeMovement } from "../src/main/models/movement"
+import { Orientation, Rotation, isAbsoluteMovement, MovementDirection, RotationDirection, isRelativeMovement, isRotation } from "../src/shared/models/movement";
+import type { AbsoluteMovement, RelativeMovement } from "../src/shared/models/movement"
 import { expect, test } from '@jest/globals'
 
 test('isAbsoluteMovement/isRelativeMovement/isRotation', () => {

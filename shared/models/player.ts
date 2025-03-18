@@ -1,4 +1,3 @@
-
 export namespace Color {
     export declare type Set = {
         fill_color: string,

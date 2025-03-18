@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import type { ClientToServerEvents, ServerToClientEvents } from "./models/connection";
+import type { ClientToServerEvents, ServerToClientEvents } from "./shared/models/connection";
 // import type { ClientToServerEvents, ServerToClientEvents } from "./models/connection";
 
 const URL = process.env.NODE_ENV === "production" ? '/' : 'http://localhost'

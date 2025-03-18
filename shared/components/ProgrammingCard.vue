@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ProgrammingCard, CardAction } from '../../models/game_data';
+import { ProgrammingCard, type CardAction } from '../models/game_data';
 
 defineProps<{
   fill_color: string,

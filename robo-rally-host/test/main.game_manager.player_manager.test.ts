@@ -1,10 +1,10 @@
 import { expect, jest, test } from '@jest/globals'
 import { PlayerManager } from '../src/main/game_manager/player_manager'
-import { Player, PlayerID, PlayerState } from '../src/main/models/player'
+import { Player, PlayerID, PlayerState } from '../src/shared/models/player'
 import { MovementFrame, MovementResult, MovementStatus, OrientedPosition, Turn } from '../src/main/game_manager/move_processors'
-import { Robots } from '../src/main/data/robots'
-import { AbsoluteMovement, isAbsoluteMovement, isRotation, Movement, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from '../src/main/models/movement'
-import { ProgrammingCard, RegisterArray } from '../src/main/models/game_data'
+import { Robots } from '../src/shared/data/robots'
+import { AbsoluteMovement, isAbsoluteMovement, isRotation, Movement, MovementDirection, Orientation, RelativeMovement, Rotation, RotationDirection } from '../src/shared/models/movement'
+import { ProgrammingCard, RegisterArray } from '../src/shared/models/game_data'
 import { Evaluator } from 'src/main/game_manager/board'
 
 function getPlayerList(): Map<PlayerID, Player> {

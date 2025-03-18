@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ProgrammingCard from '../shared/ProgrammingCard.vue'
+import ProgrammingCard from '@/shared/components/ProgrammingCard.vue'
 import { useGameStateStore } from '@/stores/client_game_state'
 
 const game_state = useGameStateStore()

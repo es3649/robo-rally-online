@@ -1,7 +1,6 @@
-import { Robots } from "../src/main/data/robots"
+import { Robots } from "../src/shared/data/robots"
 import { Board, BoardData } from "../src/main/game_manager/board"
 import { GameInitializer } from "../src/main/game_manager/initializers"
-import { senderMaker } from "../src/main/models/connection"
 
 const trivial_board: BoardData = {
     spaces: [],

@@ -3,13 +3,13 @@ import express, { type Express } from 'express'
 import { createServer } from 'http'
 import { randomUUID } from 'crypto'
 import { Server, Socket } from 'socket.io'
-import { GamePhase, ProgrammingCard, type GameAction, type Program, type RegisterArray } from "./main/models/game_data"
-import { Client2Server, Default, Server2Main, Main2Server, Server2Client } from './main/models/events'
-import { senderMaker } from './main/models/connection'
-import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage } from './main/models/connection'
+import { GamePhase, ProgrammingCard, type GameAction, type Program, type RegisterArray } from "./shared/models/game_data"
+import { Client2Server, Default, Server2Main, Main2Server, Server2Client } from './shared/models/events'
+import { PlayerStatusUpdate, type PlayerUpdate, senderMaker } from './shared/models/connection'
+import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage } from './shared/models/connection'
 import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
 import { GameInitializer } from './main/game_manager/initializers'
-import type { PlayerID, Character, PlayerState, CharacterID, PlayerStateData } from './main/models/player'
+import type { PlayerID, Character, PlayerState, CharacterID, PlayerStateData } from './shared/models/player'
 import { BOTS } from './main/data/robots'
 
 export const app: Express = express()
@@ -45,6 +45,10 @@ let initializer = new GameInitializer()
 let cur_phase = GamePhase.Lobby
 let player_data = new Map<PlayerID, PlayerStateData>()
 
+// a mapping of player IDs to timeout counters, the resolution of which will delete the player
+// from the game
+const timeout_counters = new Map<PlayerID, NodeJS.Timeout>()
+
 // handle the connection event
 io.on(Default.CONNECTION, (socket) => {
     console.log('a user connected')
@@ -64,6 +68,25 @@ io.on(Default.CONNECTION, (socket) => {
             name: Server2Main.PLAYER_DISCONNECTED,
             id: socket.data.id
         })
+
+        // TODO: set a timeout for this user after which they will be removed from the game
+        // make it generous, like 5 or 10 minutes
+        const to = setTimeout(() => {
+            // remove the user
+            connections.delete(id)
+            // request that main remove the player from the game
+            S2MSender<PlayerUpdate>({
+                name: Server2Main.PLAYER_DISCONNECTED,
+                id: socket.data.id,
+                data: {
+                    id: socket.data.id,
+                    status: PlayerStatusUpdate.REMOVED
+                }
+            })
+        }, 600000)
+
+        // save this timer so we can cancel it if needed
+        timeout_counters.set(socket.data.id, to)
     })
     
     // lobby events
@@ -96,6 +119,21 @@ io.on(Default.CONNECTION, (socket) => {
         if (initializer.players.has(id)) {
             socket.data.id = id
             callback(true)
+
+            // check if there is a timer on this user at the end of which they will be removed
+            // from the game (set in on DISCONNECT)
+            const to_counter = timeout_counters.get(socket.data.id)
+            if (to_counter !== undefined) {
+                // cancel any such timer, as the player is back
+                clearTimeout(to_counter)
+                timeout_counters.delete(socket.data.id)
+            }
+
+            // emit game data to this player. They likely lost it
+
+            // TODO, check if there is a pending request for this player, if so, then they have likely
+            // lost this information if they are requesting an existing ID; send a new notification
+            // that we need information from them
         } else {
             callback(false)
         }

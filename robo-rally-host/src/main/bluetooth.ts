@@ -1,5 +1,5 @@
 import { createBluetooth, type Adapter, type Device, type GattService } from "node-ble";
-import type { CharacterID, Player, PlayerID } from "./models/player"
+import type { CharacterID, Player, PlayerID } from "../shared/models/player"
 import { ActionFrame, BotMovement, BotState } from "./game_manager/executor";
 import type { MovementExecutor } from "./game_manager/executor";
 import type { OrientedPosition } from "./game_manager/move_processors";

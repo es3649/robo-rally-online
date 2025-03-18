@@ -1,5 +1,5 @@
-import { isAbsoluteMovement, isNoOp, type Orientation, type RotationDirection } from "../models/movement"
-import { type PlayerID } from "../models/player"
+import { isAbsoluteMovement, isNoOp, type Orientation, type RotationDirection } from "../../shared/models/movement"
+import { type PlayerID } from "../../shared/models/player"
 import { applyAbsoluteMovement, MovementStatus, Turn, type AbsoluteStep, type BoardPosition, type MovementFrame, type MovementResult, type OrientedPosition } from "./move_processors"
 
 /**

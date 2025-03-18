@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
 import { useGameStateStore } from './stores/client_game_state';
-import { GamePhase } from './models/game_data';
+import { GamePhase } from './shared/models/game_data';
 import HelloWorld from './components/HelloWorld.vue'
 import { socket } from './socket';
 import ConnectionStatus from './components/ConnectionStatus.vue';

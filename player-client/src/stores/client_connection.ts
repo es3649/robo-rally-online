@@ -1,7 +1,7 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { socket, TIMEOUT } from "@/socket";
-import { Client2Server } from "@/models/events";
-import type { Character, CharacterID, PlayerID } from "@/models/player";
+import { Client2Server } from "@/shared/models/events";
+import type { Character, CharacterID, PlayerID } from "@/shared/models/player";
 
 export const PLAYER_ID_COOKIE = 'player-id'
 

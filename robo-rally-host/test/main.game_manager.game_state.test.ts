@@ -1,13 +1,13 @@
 import { expect, jest, test } from '@jest/globals'
 import { GameStateManager } from "../src/main/game_manager/game_state"
-import { senderMaker } from "../src/main/models/connection"
+import { senderMaker } from "../src/shared/models/connection"
 import { ActionFrame, BotMovement, BotState, MovementExecutor } from '../src/main/game_manager/executor'
-import { PlayerID } from '../src/main/models/player'
+import { PlayerID } from '../src/shared/models/player'
 import { BotInitializer, GameInitializer } from '../src/main/game_manager/initializers'
 import { OrientedPosition } from '../src/main/game_manager/move_processors'
-import { MovementDirection, Orientation, Rotation, RotationDirection } from '../src/main/models/movement'
-import { ProgrammingCard, RegisterArray } from '../src/main/models/game_data'
-import { Robots } from '../src/main/data/robots'
+import { MovementDirection, Orientation, Rotation, RotationDirection } from '../src/shared/models/movement'
+import { ProgrammingCard, RegisterArray } from '../src/shared/models/game_data'
+import { Robots } from '../src/shared/data/robots'
 import { loadFromJson } from '../src/main/game_manager/board_loader'
 import { Board } from '../src/main/game_manager/board'
 import { mock } from 'node:test'

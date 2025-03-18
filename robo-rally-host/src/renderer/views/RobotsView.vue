@@ -2,7 +2,7 @@
 import router from '../router'
 import Robot from '../components/Robot.vue'
 
-import { BOTS } from '../../main/data/robots';
+import { BOTS } from '../../shared/data/robots';
 
 setInterval(() => {
     // call the main process back to get the status of this robot, and see if anyone is using it

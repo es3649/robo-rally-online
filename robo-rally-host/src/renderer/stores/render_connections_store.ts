@@ -1,4 +1,4 @@
-import type { CharacterID, PlayerID } from "@/main/models/player";
+import type { CharacterID, PlayerID } from "@/shared/models/player";
 import { defineStore } from "pinia";
 
 export const useConnectionsStore = defineStore({

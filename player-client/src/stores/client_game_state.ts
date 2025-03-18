@@ -1,10 +1,10 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
-import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/models/game_data";
-import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/models/game_data";
-import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/models/player";
+import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/shared/models/game_data";
+import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/shared/models/game_data";
+import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/shared/models/player";
 import { socket, TIMEOUT } from "@/socket"
-import { Client2Server, Server2Client } from "@/models/events";
-import type { BotAvailabilityUpdate } from "@/models/connection";
+import { Client2Server, Server2Client } from "@/shared/models/events";
+import type { BotAvailabilityUpdate } from "@/shared/models/connection";
 import { useConnectionStore } from "./client_connection";
 
 export const useGameStateStore = defineStore({

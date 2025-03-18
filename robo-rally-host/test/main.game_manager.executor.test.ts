@@ -1,7 +1,7 @@
 import { expect, test } from '@jest/globals'
 import { ActionFrame, BotMovement, BotState } from '../src/main/game_manager/executor'
 import { Turn } from '../src/main/game_manager/move_processors'
-import { Orientation, Rotation, RotationDirection } from '../src/main/models/movement'
+import { Orientation, Rotation, RotationDirection } from '../src/shared/models/movement'
 
 test('BotMovement.fromFrame', () => {
     expect(BotMovement.fromFrame({direction: Orientation.N, distance: 1}, Orientation.N)).toBe(BotMovement.MOVE_FORWARD)

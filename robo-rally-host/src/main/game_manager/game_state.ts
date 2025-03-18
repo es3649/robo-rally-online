@@ -3,14 +3,12 @@
  * represents a state transition. The state awareness allows the class to return and the entire
  * program to go dormant while awaiting player/bluetooth input.
  */
-import { PlayerState, type PlayerID } from "../models/player"
+import { PlayerState, type PlayerID } from "../../shared/models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
 import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
-import type { Main2Server } from "../models/events"
-import type { Sender } from "../models/connection"
-import { isRotation, Orientation, type Movement } from "../models/movement"
-import type { GameAction, ProgrammingCard, RegisterArray } from "../models/game_data"
+import { isRotation, Orientation, type Movement } from "../../shared/models/movement"
+import type { GameAction, ProgrammingCard, RegisterArray } from "../../shared/models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
 import { ActionFrame, BotMovement, BotState, type MovementExecutor } from "./executor"
 

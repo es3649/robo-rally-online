@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GameAction } from '../../models/game_data';
+import type { GameAction } from '../models/game_data'
 import GameEvent from "./GameEvent.vue"
 
 const props = defineProps<{
@@ -19,7 +19,7 @@ const props = defineProps<{
 
 <style scoped>
 /* fill all the space that the holder gets, then scroll the overflow */
-li {
+ul {
     width: 100%;
     height: 100%;
     overflow: scroll;

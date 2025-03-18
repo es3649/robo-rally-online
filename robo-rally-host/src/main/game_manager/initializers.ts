@@ -1,8 +1,8 @@
-import type { Character, CharacterID, PartialPlayer, Player, PlayerID } from "../models/player"
+import type { Character, CharacterID, PartialPlayer, Player, PlayerID } from "../../shared/models/player"
 import type { Board } from "./board"
 import type { OrientedPosition } from "./move_processors"
-import { BOTS } from "../data/robots"
-import type { BotAvailabilityUpdate } from "../models/connection"
+import { BOTS } from "../../shared/data/robots"
+import type { BotAvailabilityUpdate } from "../../shared/models/connection"
 
 export const MAX_PLAYERS = 6
 export const MIN_PLAYERS = 2

@@ -1,8 +1,8 @@
-import {  PlayerState, type Player, type PlayerID } from "../models/player"
-import { newDamageDeck, newRegisterArray, ProgrammingCard, type RegisterArray } from '../models/game_data'
+import {  PlayerState, type Player, type PlayerID } from "../../shared/models/player"
+import { newDamageDeck, newRegisterArray, ProgrammingCard, type RegisterArray } from '../../shared/models/game_data'
 import type { Evaluator } from "./board"
 import { DeckManager } from "./deck_manager"
-import { MovementDirection, type Movement, isRotation, isAbsoluteMovement } from "../models/movement"
+import { MovementDirection, type Movement, isRotation, isAbsoluteMovement } from "../../shared/models/movement"
 import { MovementForest } from "./graph"
 import { applyAbsoluteMovement, applyRotation, MovementFrame, MovementStatus, type MovementResult, type OrientedPosition } from "./move_processors"
 

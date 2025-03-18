@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // loads of stuff here
 import { useGameStateStore } from '@/stores/client_game_state';
-import { GamePhase, anyRegisterEmpty } from "@/models/game_data"
-import EnergyCounter from '../components/game_elements/EnergyCounter.vue'
-import CheckpointTracker from '../components/game_elements/CheckpointTracker.vue'
-import RegisterArray from '../components/game_elements/RegisterArray.vue'
-import ProgrammingHand from '../components/game_elements/ProgrammingHand.vue'
-import ActionWindow from '../components/game_elements/ActionWindow.vue'
-import PriorityTracker from '../components/game_elements/PriorityTracker.vue'
-import OpponentView from '../components/game_elements/OpponentView.vue'
+import { GamePhase, anyRegisterEmpty } from "@/shared/models/game_data"
+import EnergyCounter from '@/components/game_elements/EnergyCounter.vue'
+import CheckpointTracker from '@/components/game_elements/CheckpointTracker.vue'
+import RegisterArray from '@/components/game_elements/RegisterArray.vue'
+import ProgrammingHand from '@/components/game_elements/ProgrammingHand.vue'
+import ActionWindow from '@/components/game_elements/ActionWindow.vue'
+import PriorityTracker from '@/components/game_elements/PriorityTracker.vue'
+import OpponentView from '@/components/game_elements/OpponentView.vue'
 import { ref, type Ref } from 'vue';
 import UpgradeManager from '@/components/UpgradeManager.vue';
 const c_gs = useGameStateStore()
