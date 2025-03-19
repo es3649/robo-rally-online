@@ -8,7 +8,7 @@ import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
 import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import { isRotation, Orientation, type Movement } from "../../shared/models/movement"
-import type { GameAction, ProgrammingCard, RegisterArray } from "../../shared/models/game_data"
+import type { GameAction, ProgrammingCard, ProgrammingHand, RegisterArray } from "../../shared/models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
 import { ActionFrame, BotMovement, BotState, type MovementExecutor } from "./executor"
 
@@ -80,7 +80,7 @@ export class GameStateManager {
      * @param player_id the id of the player submitting the program
      * @param program the program to be submitted
      */
-    public setProgram(player_id: PlayerID, program: RegisterArray): void {
+    public setProgram(player_id: PlayerID, program: RegisterArray): boolean {
         const ready = this.player_manager.setProgram(player_id, program)
         if (ready) {
             console.log("All programs received, beginning execution")
@@ -91,6 +91,7 @@ export class GameStateManager {
             // continue to execution
             this.resolveRegister()
         }
+        return ready
     }
 
     /**
@@ -108,6 +109,23 @@ export class GameStateManager {
         }
 
         this.resume()
+    }
+
+    /**
+     * gets the next registers from the player manager, as well as resetting
+     * the current programs and discarding their cards. It's non const
+     * @returns the set of partially-pre-filled registers for the next round
+     */
+    public resetPrograms(): Map<PlayerID, RegisterArray> {
+        return this.player_manager.resetPrograms()
+    }
+
+    /**
+     * gets new hands for the players from the player manager
+     * @returns the new hands
+     */
+    public getNextHands(): Map<PlayerID, ProgrammingHand> {
+        return this.player_manager.getHands()
     }
 
     // this guy is going to be a bugger

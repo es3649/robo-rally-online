@@ -1,5 +1,5 @@
 import {  PlayerState, type Player, type PlayerID } from "../../shared/models/player"
-import { newDamageDeck, newRegisterArray, ProgrammingCard, type RegisterArray } from '../../shared/models/game_data'
+import { newDamageDeck, newRegisterArray, ProgrammingCard, type ProgrammingHand, type RegisterArray } from '../../shared/models/game_data'
 import type { Evaluator } from "./board"
 import { DeckManager } from "./deck_manager"
 import { MovementDirection, type Movement, isRotation, isAbsoluteMovement } from "../../shared/models/movement"
@@ -130,7 +130,8 @@ export class PlayerManager {
 
     /**
      * rebuilds the internal players_by_priority list using the priority values set
-     * in the player states
+     * in the player states. It is called by updatePriority after the priority values
+     * have been set on the player states
      */
     private rebuildPriority(): void {
         this.players_by_priority = []
@@ -171,6 +172,7 @@ export class PlayerManager {
 
     /**
      * sets the priority lock, so that the next call to update priority does nothing
+     * (except remove the lock)
      */
     public lockPriority() {
         this.priority_lock = true
@@ -244,9 +246,29 @@ export class PlayerManager {
             // reactivate the actor
             const state = this.player_states.get(player)
             if (state === undefined) {
-                console.warn("Player state missing for actor:", player)
+                console.warn("Player state missing for player:", player)
             } else {
                 state.active = true
+            }
+
+            const program = this.programs.get(player)
+            // I think the program could still be undefined if the player shuts down
+            if (program !== undefined) {
+
+                // discard that player's hand as well
+                const deck = this.decks.get(player)
+                if (deck === undefined) {
+                    console.error("Deck missing for player:", player)
+                } else {
+                    const damages = deck.clearProgram(program)
+
+                    // discard all damage cards removed
+                    damages.forEach((card: ProgrammingCard) => {
+                        this.damage_deck.discard(card)
+                    })
+
+                    deck.drawHand()
+                }
             }
 
             // set their program to undefined
@@ -342,7 +364,7 @@ export class PlayerManager {
         if (card.action == ProgrammingCard.spam) {
             const deck = (this.decks.get(player_id) as DeckManager)
             do {
-                card = deck.drawCard()
+                card = deck.draw()
             } while (card.action == ProgrammingCard.spam)
             // discard the card, it wasn't actually in the register
             // any spam drawn don't have to be discarded
@@ -414,7 +436,7 @@ export class PlayerManager {
         let has_haywire = ProgrammingCard.isHaywire((this.next_programs.get(player_id) as RegisterArray)[register][0]?.action)
         for (let i = 0; i < damage; i++) {
             // get the damage card
-            const damage = this.damage_deck.drawCard()
+            const damage = this.damage_deck.draw()
             if (ProgrammingCard.isHaywire(damage.action)) {
                 // if there's already a haywire, then ignore this card
                 if (has_haywire) {
@@ -546,5 +568,28 @@ export class PlayerManager {
         }
 
         return ret
+    }
+
+    /**
+     * gets the new programming hands from the deck managers
+     * @returns a mapping of the new hands for the players
+     */
+    public getHands(): Map<PlayerID, ProgrammingHand> {
+        const ret = new Map<PlayerID, ProgrammingHand>()
+
+        for (const [player, deck] of this.decks.entries()) {
+            ret.set(player, deck.getHand())
+        }
+
+        return ret
+    }
+
+    /**
+     * returns the :next registers" which are registers containing any cards which
+     * were force-placed during this activation, such as haywire cards
+     * @returns the next registers
+     */
+    public getNextRegisters(): Map<PlayerID, RegisterArray> {
+        return this.next_programs
     }
 }

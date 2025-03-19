@@ -38,7 +38,7 @@ export class DeckManager {
      * deck if the deck is empty. This is the only way the deck should be accessed
      * @returns the top card from the programming deck
      */
-    drawCard(): ProgrammingCard {
+    draw(): ProgrammingCard {
         // shuffle the discard into the deck
         if (this.deck.length == 0) {
             this.deck = this.discard_pile
@@ -47,6 +47,14 @@ export class DeckManager {
         }
         // this should never be undefined
         return (this.deck.pop() as ProgrammingCard)
+    }
+
+    /**
+     * places a card into the discard pile associated with this deck
+     * @param card the card to be discarded
+     */
+    discard(card: ProgrammingCard): void {
+        this.discard_pile.push(card)
     }
 
     /**
@@ -71,7 +79,7 @@ export class DeckManager {
 
         // draw up to 9
         while (this.hand.length < PROGRAMMING_HAND_SIZE) {
-            this.hand.push(this.drawCard())
+            this.hand.push(this.draw())
         }
 
         // sort the remaining cards. People like this
@@ -82,8 +90,8 @@ export class DeckManager {
         })
     }
 
-    getHand(): ProgrammingCardSlot[] {
-        return this.hand
+    getHand(): ProgrammingCard[] {
+        return this.hand.filter((slot: ProgrammingCardSlot) => slot !== undefined)
     }
 
     /**
@@ -99,20 +107,18 @@ export class DeckManager {
             // programmed spam and haywire are discarded
             if (register.length == 0) {
                 return
-            } else if (register[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(register[0].action)) {
-                // return the damage to the damage deck
-                damage_cards.push(register[0])
             }
             // otherwise discard the card(s)
             register.forEach((card: ProgrammingCard) => {
-                this.discard_pile.push(card)
+                if (card.action == ProgrammingCard.spam || ProgrammingCard.isHaywire(card.action)) {
+                    // return the damage to the damage deck
+                    damage_cards.push(card)
+                } else {
+                    this.discard_pile.push(card)
+                }
             })
         })
 
         return damage_cards
-    }
-
-    discard(card: ProgrammingCard): void {
-        this.discard_pile.push(card)
     }
 }

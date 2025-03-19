@@ -1,6 +1,6 @@
 import { anyRegisterEmpty, newDamageDeck, newRegisterArray, newStandardDeck, ProgrammingCard, type RegisterArray } from '../src/shared/models/game_data'
 import { isRelativeMovement, isRotation, Movement, MovementDirection, Rotation, RotationDirection, type RelativeMovement } from '../src/shared/models/movement'
-import { expect, jest, test } from '@jest/globals'
+import { expect, test } from '@jest/globals'
 
 test('ProgrammingCard.isActionChoice/isHaywire', () => {
     const h1: ProgrammingCard.Haywire = {

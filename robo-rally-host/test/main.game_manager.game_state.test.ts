@@ -1,5 +1,5 @@
 import { expect, jest, test } from '@jest/globals'
-import { GameStateManager } from "../src/main/game_manager/game_state"
+import { GameStateManager, Notifier } from "../src/main/game_manager/game_state"
 import { senderMaker } from "../src/shared/models/connection"
 import { ActionFrame, BotMovement, BotState, MovementExecutor } from '../src/main/game_manager/executor'
 import { PlayerID } from '../src/shared/models/player'
@@ -10,7 +10,6 @@ import { ProgrammingCard, RegisterArray } from '../src/shared/models/game_data'
 import { Robots } from '../src/shared/data/robots'
 import { loadFromJson } from '../src/main/game_manager/board_loader'
 import { Board } from '../src/main/game_manager/board'
-import { mock } from 'node:test'
 
 // we will (later) use bluetooth calls to be sure that the desired behavior is correct
 // we mock bluetooth to get these values
@@ -19,13 +18,14 @@ import { mock } from 'node:test'
 // needs to be mocked for the board loader
 jest.mock('node:original-fs')
 
-function send(message: any,
-    sendHandle?: any,
-    options?: { keepOpen?: boolean|undefined } | undefined,
-    callback?: ((error: Error|null) => void) | undefined
-): boolean {
-    return true
-}
+const notifier: Notifier = {
+    gameAction(action) {
+        return
+    },
+    getInput(player, request) {
+        return
+    },
+} 
 
 declare type ExecutorCallState = {
     set_action_calls: Map<PlayerID, ActionFrame>
@@ -59,11 +59,6 @@ class MockExecutor implements MovementExecutor {
 }
 
 test('GameStateManager.setProgram (Movements, again, pushing, pits, initial shutdowns, and conveyor2s)', async () => {
-    // mock the sender
-    const has_send = {
-        send: jest.fn(send)
-    }
-    const sender = senderMaker(has_send)
     const mock_executor = new MockExecutor()
     const player_initializer = new GameInitializer()
     const bot_initializer: BotInitializer = {
@@ -100,7 +95,7 @@ test('GameStateManager.setProgram (Movements, again, pushing, pits, initial shut
         player_initializer,
         bot_initializer,
         mock_executor,
-        sender
+        notifier
     )
 
     // set some programs on here
@@ -396,11 +391,6 @@ test('GameStateManager.setProgram (Movements, again, pushing, pits, initial shut
 })
 
 test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again)', async () => {
-    // mock the sender
-    const has_send = {
-        send: jest.fn(send)
-    }
-    const sender = senderMaker(has_send)
     const mock_executor = new MockExecutor()
     const player_initializer = new GameInitializer()
     const bot_initializer: BotInitializer = {
@@ -437,7 +427,7 @@ test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again
         player_initializer,
         bot_initializer,
         mock_executor,
-        sender
+        notifier
     )
 
     // set some programs on here
