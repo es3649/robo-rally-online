@@ -1,17 +1,13 @@
 <script setup lang="ts">
 import { useConnectionStore } from '@/stores/client_connection';
 
-const connection_store = useConnectionStore()
+const c_cs = useConnectionStore()
 
 </script>
 
 <template>
-    <main>
-        <div v-if="connection_store.connected" class="connected"><p>Connected</p></div>
-        <div v-else class="disconnected">
-            <button @click="connection_store.connect()">Reconnect</button>
-        </div>
-    </main>
+    <div v-if="c_cs.connected" class="connected">🟢</div>
+    <div v-else class="disconnected">🔴</div>
 </template>
 
 <style scoped>

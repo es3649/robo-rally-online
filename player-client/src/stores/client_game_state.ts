@@ -4,22 +4,36 @@ import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/shared/mode
 import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/shared/models/player";
 import { socket, TIMEOUT } from "@/socket"
 import { Client2Server, Server2Client } from "@/shared/models/events";
-import type { BotAvailabilityUpdate } from "@/shared/models/connection";
+import type { BotAvailabilityUpdate, ProgrammingData } from "@/shared/models/connection";
 import { useConnectionStore } from "./client_connection";
+
+export enum GameWindows {
+    DEFAULT,
+    UPGRADE,
+    PLAYER_INFO,
+    SETTINGS
+}
 
 export const useGameStateStore = defineStore({
     id: "client_game_state",
     state() { // TODO should opponent states and game actions be moved into a different store for non-game-pertinent data?
         return {
             // the programming cards in our hand
-            programming_hand: [] as ProgrammingCardSlot[],
-            programming_deck: newStandardDeck(),
-            programming_discard: [] as ProgrammingCard[],
-            in_play: [] as ProgrammingCardSlot[],
+            programming_hand: [
+                {action: ProgrammingCard.forward1, id: 0},
+                {action: ProgrammingCard.right, id: 1},
+                {action: ProgrammingCard.left, id: 2},
+                {action: ProgrammingCard.forward2, id: 3},
+                {action: ProgrammingCard.forward3, id: 4},
+                {action: ProgrammingCard.back, id: 5},
+                {action: ProgrammingCard.u_turn, id: 6},
+                {action: ProgrammingCard.again, id: 7},
+                {action: ProgrammingCard.power_up, id: 8}
+            ] as ProgrammingCardSlot[],
+            // in_play: [] as ProgrammingCardSlot[],
 
             // the cards we have programmed
             registers: newRegisterArray(),
-            next_registers: newRegisterArray(),
             // the energy we have
             energy: 3,
             // the checkpoints we have
@@ -55,7 +69,9 @@ export const useGameStateStore = defineStore({
             // the characters which are not available for selection
             all_characters: [] as Character[],
             character: undefined as Character|undefined, 
-            available_characters: new Set<CharacterID>()
+            available_characters: new Set<CharacterID>(),
+
+            game_display: GameWindows.DEFAULT
         }
     },
     getters: {
@@ -112,99 +128,42 @@ export const useGameStateStore = defineStore({
         next_phase() {
             switch(this.phase) {
                 case GamePhase.Lobby:
-                    this.shuffleProgrammingDeck()
-                case GamePhase.Activation:
-                    // go to the upgrade phase
-                    this.phase = GamePhase.Upgrade
-                    // move any placed haywire into the current registers
-                    // then clear the previous registers
-                    this.clearRegisters()
-                    this.registers = this.next_registers
-                    this.next_registers = newRegisterArray()
                     break
                 case GamePhase.Upgrade:
-                    this.phase = GamePhase.Programming
+                    break
+                case GamePhase.Programming:
                     this.programming_enabled = true
                     // draw a new hand
                     this.drawProgrammingHand()
                     break
-                case GamePhase.Programming:
-                    this.phase = GamePhase.Activation
-                    // clear the hand
+                case GamePhase.Activation:
+                    this.programming_enabled = false
                     this.clearProgrammingHand()
                     break
             }
         },
         /**
-         * draws a new hand of cards, pulling from the programming deck, then the discard if
-         * the deck is empty
+         * polls the server for the new hand of cards and new registers
          */
         drawProgrammingHand(): void {
-            // Nothing but spam should be in the hand going into this.
-            this.programming_hand = this.programming_hand.filter((card:ProgrammingCardSlot) => {
-                return card != undefined && card.action == ProgrammingCard.spam
-            })
-            // draw up to 9
-            while (this.programming_hand.length < PROGRAMMING_HAND_SIZE) {
-                // make sure
-                if (this.programming_deck.length == 0) {
-                                // make the assignment so tht the shuffled discard is now the deck
-                    this.programming_deck = this.programming_discard
-                    this.programming_discard = []
-                    this.shuffleProgrammingDeck()
+            // request the data from the server
+            socket.emit(Client2Server.GET_PROGRAMMING_DATA, (data:ProgrammingData) => {
+                if (data.hand.length === 0) {
+                    console.warn("We may have received an error response")
                 }
-                const card = this.programming_deck.pop()
-                // card should not be undefined
-                this.programming_hand.push(card as ProgrammingCard)
-            }
-            this.programming_hand.sort((a: ProgrammingCardSlot, b:ProgrammingCardSlot): number => {
-                if (a === undefined) return -1
-                if (b === undefined) return 1
-                return a.action < b.action ? -1 : 1
+                this.registers = data.new_registers
+                this.programming_hand = data.hand
+                this.programming_hand.sort((a: ProgrammingCardSlot, b:ProgrammingCardSlot): number => {
+                    if (a === undefined) return -1
+                    if (b === undefined) return 1
+                    return a.action < b.action ? -1 : 1
+                })
             })
+            
+            
         },
         clearProgrammingHand(): void {
-            this.programming_hand.forEach((card:ProgrammingCardSlot, idx:number) => {
-                // ignore undefined and spam
-                // spam stays, undefined will be filtered later
-                if (card === undefined || card.action == ProgrammingCard.spam) {
-                    return
-                }
-                // discard the card
-                this.programming_discard.push(card)
-                this.programming_hand[idx] = undefined
-            })
-        },
-        /**
-         * clear the registers
-         */
-        clearRegisters(): void {
-            this.registers.forEach((card: ProgrammingCard[]) => {
-                // programmed spam and haywire are discarded
-                // if (card === undefined || card.action == ProgrammingCard.spam || ProgrammingCard.is_haywire(card.action)) {
-                if (card.length == 0 || card[0].action == ProgrammingCard.spam || ProgrammingCard.isHaywire(card[0].action)) {
-                    return
-                }
-                // otherwise discard the card
-                this.programming_discard.push(card[0])
-            })
-        },
-        /** 
-         * randomly reorders the programming discard pile, then assigns it as the programming deck
-         */
-        shuffleProgrammingDeck(): void {
-            // do a Fisher-Yates (Knuth) shuffle
-            let cur: number = this.programming_deck.length
-
-            // the shuffle algo
-            while (cur != 0 ) {
-                const random_idx: number = Math.floor(Math.random() * cur)
-                cur--
-
-                const tmp = this.programming_deck[cur]
-                this.programming_deck[cur] = this.programming_deck[random_idx]
-                this.programming_deck[random_idx] = tmp
-            }
+            this.programming_hand = []
         },
         /**
          * Submit the current program for execution
@@ -282,7 +241,8 @@ export const useGameStateStore = defineStore({
             })
         },
         bindEvents() {
-            socket.on(Server2Client.PHASE_UPDATE, () => {
+            socket.on(Server2Client.PHASE_UPDATE, (phase: GamePhase) => {
+                this.phase = phase
                 this.next_phase()
             })
 

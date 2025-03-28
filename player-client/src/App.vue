@@ -7,6 +7,7 @@ import { socket } from './socket';
 import ConnectionStatus from './components/ConnectionStatus.vue';
 import { PLAYER_ID_COOKIE, useConnectionStore } from './stores/client_connection';
 import { useCookie } from 'vue-cookie-next';
+import router from './router';
 
 // disable any listeners (after a hot module reload)
 socket.off()
@@ -60,6 +61,27 @@ function setupSessionID() {
   }
 }
 
+function lobby() {
+  c_gs.phase = GamePhase.Lobby
+  router.replace('/lobby')
+}
+
+function game() {
+  router.replace('/game')
+}
+
+function programming() {
+  c_gs.programming_enabled = true
+  c_gs.phase = GamePhase.Programming
+}
+
+function upgrade() {
+  c_gs.phase = GamePhase.Upgrade
+}
+
+function activation() {
+  c_gs.phase = GamePhase.Activation
+}
 // this needs to be called early on
 setupSessionID()
 
@@ -67,9 +89,16 @@ setupSessionID()
 
 <template>
   <main>
-    <ConnectionStatus />
+    <div class="flex-buttons">
+      <button @click="lobby">Lobby</button>
+      <button @click="game">Game</button>
+      <button @click="upgrade">Upgrade</button>
+      <button @click="programming">Programming</button>
+      <button @click="activation">Activation</button>
+    </div>
     <div v-if="c_gs.phase == GamePhase.Lobby || c_gs.phase == GamePhase.Setup">
       <header>
+        <ConnectionStatus />
         <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
         <div class="wrapper">
           <HelloWorld msg="RoboRally Online!" />
@@ -89,6 +118,10 @@ setupSessionID()
 header {
   line-height: 1.5;
   max-height: 100vh;
+}
+
+.flex-buttons {
+  display: flex;
 }
 
 .logo {

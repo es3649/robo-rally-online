@@ -5,5 +5,5 @@ const game_state = useGameStateStore()
 </script>
 
 <template>
-    Priority: {{ game_state.priority }}
+    🕹️:&nbsp;{{ game_state.priority }}
 </template>
