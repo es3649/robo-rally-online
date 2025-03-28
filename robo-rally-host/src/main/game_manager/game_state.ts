@@ -52,6 +52,7 @@ export class GameStateManager {
     private movements_position: number = 0
     private movement_frames = new Map<PlayerID, MovementArrayWithResults>()
     private movement_frames_position: number = 0
+    private upgrade_requests = new Map<PlayerID, any>()
     private damage = new Map<PlayerID, number>()
     private readonly player_count: number
     private readonly player_manager: PlayerManager
@@ -128,7 +129,14 @@ export class GameStateManager {
         return this.player_manager.getHands()
     }
 
-    // this guy is going to be a bugger
+    /**
+     * resume execution based on the current internal state. Priority is given to movement
+     * frames which need to be executed, then to movements which are partially executed, then
+     * to damage not yet inflicted. If none of those are found, it picks up based on the
+     * internally set TurnPhase. If input was requested from one of these functions, it
+     * should first look up the info requested and process it. After that, execution will
+     * continue as expected
+     */
     private resume(): void {
         // if there are movement frames to execute, then execute them
         if (this.movement_frames.size > 0) {
@@ -137,6 +145,18 @@ export class GameStateManager {
         } else if (this.movements.length > 0) {
             // if there are movements, then execute those (as active priority player)
             this.executeMovements()
+            return
+        } else if (this.upgrade_requests.size > 0) {
+            // handle upgrade requests
+            /** TODO: the idea is that upgrades which are activated (not triggered), can be added to an array here.
+             * They will then be able be invoked and handled whenever a resume is called. To do this, however, we
+             * may need to have our state functions proceed by re-invoking resume, instead of passing to their
+             * known next state.
+             * In implementing this, we will also need to determine a type for this.upgrade_requests
+             */
+            console.error("NOT IMPLEMENTED: clearing to prevent infinite recursion")
+            this.upgrade_requests.clear()
+            this.resume()
             return
         } else if (this.damage.size > 0) {
             this.applyDamage()

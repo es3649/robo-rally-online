@@ -446,7 +446,7 @@ export class PlayerManager {
                 (this.next_programs.get(player_id) as RegisterArray)[register] = [damage]
                 // we now have a haywire
                 has_haywire = true
-            } else {
+            } else if (damage !== undefined) {
                 // this card should be spam, discard it to the player's deck
                 // TODO, log that damage was taken
                 (this.decks.get(player_id)?.discard(damage))

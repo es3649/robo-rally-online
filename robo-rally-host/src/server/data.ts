@@ -1,8 +1,8 @@
-import { GameInitializer } from "@/main/game_manager/initializers"
-import { senderMaker, type ClientToServerEvents, type PendingActionChoice, type ProgrammingData, type ServerToClientEvents, type SocketData } from "@/shared/models/connection"
-import type { Server2Main } from "@/shared/models/events"
-import { GamePhase } from "@/shared/models/game_data"
-import type { PlayerID, PlayerStateData } from "@/shared/models/player"
+import { GameInitializer } from "../main/game_manager/initializers"
+import { senderMaker, type ClientToServerEvents, type PendingActionChoice, type ProgrammingData, type ServerToClientEvents, type SocketData } from "../shared/models/connection"
+import type { Server2Main } from "../shared/models/events"
+import { GamePhase } from "../shared/models/game_data"
+import type { PlayerID, PlayerStateData } from "../shared/models/player"
 import type { EventsMap } from "node_modules/socket.io/dist/typed-events"
 import type { Server, Socket } from "socket.io"
 

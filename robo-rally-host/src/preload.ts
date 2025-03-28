@@ -54,9 +54,9 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
             callback(action)
         })
     },
-    onGetInputNotification: (callback: (player: PlayerID) => void) => {
-        ipcRenderer.on(Main2Render.GET_INFO_NOTIFICATION, (_event: IpcRendererEvent, id: PlayerID) => {
-            callback(id)
+    onGetInputNotification: (callback: (player: PlayerID, timeout?: number) => void) => {
+        ipcRenderer.on(Main2Render.GET_INFO_NOTIFICATION, (_event: IpcRendererEvent, id: PlayerID, timeout?: number) => {
+            callback(id, timeout)
         })
     }
 })

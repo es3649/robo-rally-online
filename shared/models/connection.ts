@@ -1,4 +1,4 @@
-import type { GameAction, GamePhase, Program, ProgrammingCard } from './game_data'
+import { ProgrammingCard, type GameAction, type GamePhase, type Program, type ProgrammingHand, type RegisterArray } from './game_data'
 import type { Character, CharacterID, PlayerID, PlayerStateData } from './player'
 import { Server2Main, Main2Server } from './events'
 
@@ -19,6 +19,14 @@ export type PlayerUpdate = {
     status?: PlayerStatusUpdate
 }
 
+export interface PendingActionChoice extends ProgrammingCard.ActionChoiceData {
+    expiration: number
+}
+
+export type ProgrammingData = {
+    new_registers: RegisterArray,
+    hand: ProgrammingHand
+}
 /**
  * the events which can be sent from the socket to a client, including the data
  * types, returns, and callback types. The keys should exactly match the properties
@@ -37,7 +45,7 @@ export interface ServerToClientEvents {
     "server:phase-update": (phase:GamePhase) => void
     "server:game-action": (action: GameAction) => void
     "server:update-player-states": (states: Map<PlayerID, PlayerStateData>) => void
-    "server:request-input": (message: ProgrammingCard.ActionChoiceData) => void
+    "server:request-input": (message: PendingActionChoice) => void
 
     "server:reset": () => void
 }
@@ -57,6 +65,7 @@ export interface ClientToServerEvents {
     "client:use-id": (id: PlayerID, callback:(ok:boolean) => void) => void
     "client:get-player-states": (callback: (states: Map<PlayerID, PlayerStateData>) => void) => void
     "client:send-input": (selection: string) => void
+    "client:get-programming-data": (callback:(data: ProgrammingData) => void) => void
 
     // game events
     "client:confirm-position": () => void

@@ -1,6 +1,6 @@
 import type { BotState } from "../game_manager/executor";
 import type { MovementFrame } from "../game_manager/move_processors";
-import type { CharacterID } from "../models/player";
+import type { CharacterID } from "../../shared/models/player";
 
 export type MoveBotCall = {
     botID: CharacterID,

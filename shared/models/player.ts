@@ -1,5 +1,5 @@
 export namespace Color {
-    export declare type Set = {
+    export type Set = {
         fill_color: string,
         border_color: string
     }
@@ -38,7 +38,7 @@ export namespace Color {
 
 export declare type CharacterID = string
 
-export declare type Character = {
+export type Character = {
     readonly name: string,
     readonly id: CharacterID,
     readonly sprite_small: string,
@@ -50,12 +50,12 @@ export declare type Character = {
 export declare type PlayerName = string
 export declare type PlayerID = string
 
-export declare type PartialPlayer = {
+export type PartialPlayer = {
     name: PlayerName,
     id: PlayerID,
     character?: Character,
 }
-export declare type Player = Required<PartialPlayer>
+export type Player = Required<PartialPlayer>
 
 export type PlayerStateData = {
     priority: number

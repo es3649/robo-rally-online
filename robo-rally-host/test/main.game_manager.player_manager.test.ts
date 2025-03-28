@@ -71,7 +71,6 @@ function curry_evaluator(illegal: OrientedPosition[], status: MovementStatus = M
     return evaluator
 }
 
-
 test('PlayerManager.constructor', () => {
     // make sure all player positions are set correctly, and player states are initialized
     const players = getPlayerList()
@@ -215,7 +214,7 @@ test('PlayerManager.updatePositions',  () => {
     expect(pos_map.has('miles1234')).toBeFalsy()
 })
 
-test('PlayerManager.updatePriority/getPlayerByPriority',  () => {
+test('PlayerManager.updatePriority/getPlayerByPriority/lockPriority',  () => {
     const players = getPlayerList()
     const positions = getStartingPositions()
     const pm = new PlayerManager(players, positions)

@@ -24,6 +24,10 @@ export const useGameDataStore = defineStore({
             characters: new Map<PlayerID, Character>(),
             player_states: new Map<PlayerID, PlayerStateData>(),
             to_dos: new Map<PlayerID, string[]>(),
+            get_input: {
+                player: undefined as PlayerID|undefined,
+                timeout: 0
+            },
 
             qr: {
                 svg_path: "",
@@ -73,6 +77,7 @@ export const useGameDataStore = defineStore({
             }] as GameAction[]
         }
     },
+    getters: {},
     actions: {
         async loadBoard(name: string): Promise<boolean> {
             const ret = await window.mainAPI.loadBoard(name)

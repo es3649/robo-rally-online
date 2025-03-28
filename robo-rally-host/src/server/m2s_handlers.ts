@@ -1,9 +1,9 @@
-import { type Main2ServerMessage, type ProgrammingData } from "@/shared/models/connection";
-import { Server2Client } from "@/shared/models/events";
-import { GamePhase, ProgrammingCard, type GameAction } from "@/shared/models/game_data";
+import { type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
+import { Server2Client } from "../shared/models/events";
+import { GamePhase, ProgrammingCard, type GameAction } from "../shared/models/game_data";
 import { connections, store, type RRSocketServer } from "./data";
-import { GameInitializer } from "@/main/game_manager/initializers";
-import type { PlayerID, PlayerState } from "@/shared/models/player";
+import { GameInitializer } from "../main/game_manager/initializers";
+import type { PlayerID, PlayerState } from "../shared/models/player";
 
 /**
  * handles a gameAction message. This is done by forwarding it to all listening sockets

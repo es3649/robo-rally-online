@@ -1,9 +1,9 @@
-import { Server2Client, Server2Main } from "@/shared/models/events"
+import { Server2Client, Server2Main } from "../shared/models/events"
 import { connections, S2MSend, store, type RRSocketConnection, type RRSocketServer } from "./data"
-import { PlayerStatusUpdate, type PlayerUpdate, type ProgrammingData } from "@/shared/models/connection"
-import type { Character, CharacterID, PlayerID, PlayerStateData } from "@/shared/models/player"
-import { BOTS } from "@/shared/data/robots"
-import { newRegisterArray, type Program } from "@/shared/models/game_data"
+import { PlayerStatusUpdate, type PlayerUpdate, type ProgrammingData } from "../shared/models/connection"
+import type { Character, CharacterID, PlayerID, PlayerStateData } from "../shared/models/player"
+import { BOTS } from "../shared/data/robots"
+import { newRegisterArray, type Program } from "../shared/models/game_data"
 
 /**
  * created a disconnect handler which will 1) notify the main that a player disconnected,
@@ -12,7 +12,7 @@ import { newRegisterArray, type Program } from "@/shared/models/game_data"
  * @param socket the socket which this disconnect handler will be put onto
  * @returns a new disconnect handler
  */
-export function makeDisconnectHandler(socket: RRSocketConnection): () => void {
+export function makeDisconnectHandle(socket: RRSocketConnection): () => void {
     return () => {
         console.log('a user disconnected')
         // remove the user from the connections

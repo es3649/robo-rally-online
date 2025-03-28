@@ -7,12 +7,12 @@ import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './shared/models/events';
-import { PlayerStatusUpdate, senderMaker, type BotAvailabilityUpdate, type Main2ServerMessage, type PlayerUpdate, type Sender, type Server2MainMessage } from './shared/models/connection';
+import { PlayerStatusUpdate, senderMaker, type PlayerUpdate, type ProgrammingData, type Sender, type Server2MainMessage } from './shared/models/connection';
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import { PlayerState, type PlayerID } from './shared/models/player';
-import { GamePhase, ProgrammingCard, type GameAction, type Program } from './shared/models/game_data';
+import type { PlayerStateData, PlayerID } from './shared/models/player';
+import { GamePhase, newRegisterArray, ProgrammingCard, type GameAction, type Program } from './shared/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
@@ -38,16 +38,11 @@ if (!existsSync(modulePath)) {
 console.log(modulePath)
 console.log('starting utility process')
 
-// const child = utilityProcess.fork(modulePath, [], {
-  // stdio: 'pipe',
-//   serviceName: 'HttpServer'
-// })
-
 const child = fork.fork(modulePath, [], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
 
-const M2SSender = senderMaker<Main2Server>(process)
+const M2SSend = senderMaker<Main2Server>(process)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -61,7 +56,7 @@ const createWindow = (): BrowserWindow => {
         height: 600,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            webSecurity: false,
+            webSecurity: false, // TODO: turn off in production
         },
 
     });
@@ -119,7 +114,7 @@ function registerIPCListeners() {
 
     ipcMain.on(Render2Main.RESET, () => {
         // tell the server to reset
-        M2SSender<never>({name: Main2Server.RESET})
+        M2SSend<never>({name: Main2Server.RESET})
         // create a new game object
         game = undefined
         game_initializer = new GameInitializer()
@@ -131,8 +126,12 @@ function registerIPCListeners() {
             console.error("Tried to start game when initializer was not ready")
             return false
         }
+
         // notify the server that we are starting
-        child.emit(Main2Server.PHASE_UPDATE, {phase: GamePhase.Setup})
+        M2SSend<GamePhase>({
+            name: Main2Server.PHASE_UPDATE,
+            data: GamePhase.Setup
+        })
 
         // create the character initializer and initialize it
         character_initializer = new BluetoothBotInitializer(
@@ -145,7 +144,11 @@ function registerIPCListeners() {
             console.error("failed to get first player")
             return false
         }
-        child.emit(Main2Server.REQUEST_POSITION, player)
+        M2SSend<never>({
+            name: Main2Server.REQUEST_POSITION,
+            id: player
+        })
+        sendToAllWindows(Main2Render.GET_INFO_NOTIFICATION, player)
 
         return true
     })
@@ -238,6 +241,50 @@ class ServerRenderNotifier implements Notifier {
     }
 }
 
+/**
+ * perform all the updates related to starting a new round
+ */
+function startNewRound() {
+    if (game === undefined) {
+        console.error("starting round when game is undefined")
+        return
+    }
+    const states = game.getPlayerStates()
+    // get the player data and broadcast it
+    M2SSend<Map<PlayerID, PlayerStateData>>({
+        name: Main2Server.UPDATE_PLAYER_STATES,
+        data: states
+    })
+    
+    // go to the upgrade phase
+    M2SSend<GamePhase>({
+        name: Main2Server.PHASE_UPDATE,
+        data: GamePhase.Upgrade
+    })
+    // from here, players should be able to advance to programming on their own
+    // once all programs are submitted, the game state will fire independently
+
+    // send them their new hands so that everything is ready
+    const next_registers = game.resetPrograms()
+    const next_hands = game.getNextHands()
+
+    // zip the hands and registers
+    const programming_data = new Map<PlayerID, ProgrammingData>()
+    for (const [player_id, next_hand] of next_hands.entries()) {
+        const next_register = next_registers.get(player_id)
+
+        programming_data.set(player_id, {
+            hand: next_hand,
+            new_registers: next_register === undefined ? newRegisterArray() : next_register
+        })
+    }
+
+    M2SSend<Map<PlayerID,ProgrammingData>>({
+        name: Main2Server.PROGRAMMING_DATA,
+        data: programming_data
+    })
+}
+
 // initialize game server (incl board)
 // begin robot connections
 child.on('message', (message: Server2MainMessage<any>) => {
@@ -256,7 +303,11 @@ child.on('message', (message: Server2MainMessage<any>) => {
                 if (program_set_msg.data.shutdown) {
                     game.setShutdown(program_set_msg.id)
                 }
-                game.setProgram(program_set_msg.id, program_set_msg.data.registers)
+                const did_run = game.setProgram(program_set_msg.id, program_set_msg.data.registers)
+
+                if (did_run) {
+                    startNewRound()
+                }
             } catch (error) {
                 console.log(error)
             }
@@ -329,10 +380,11 @@ child.on('message', (message: Server2MainMessage<any>) => {
             character_initializer.readPlayerPosition()
             const next = character_initializer.nextPlayer()
             if (next !== undefined) {
-                M2SSender<PlayerID>({
+                M2SSend<never>({
                     name: Main2Server.REQUEST_POSITION,
-                    data: next
+                    id: next
                 })
+                sendToAllWindows(Main2Render.GET_INFO_NOTIFICATION, next)
                 return
             }
 
@@ -340,21 +392,12 @@ child.on('message', (message: Server2MainMessage<any>) => {
             game = new GameStateManager(game_initializer,
                 character_initializer,
                 BluetoothManager.getInstance(),
-                new ServerRenderNotifier(M2SSender, sendToAllWindows))
-            
-            // go to the upgrade phase
-            M2SSender<GamePhase>({
-                name: Main2Server.PHASE_UPDATE,
-                data: GamePhase.Upgrade
-            })
-            // from here, players should be able to advance to programming on their own
-            // once all programs are submitted, the game state will fire independently
+                new ServerRenderNotifier(M2SSend, sendToAllWindows)
+            )
 
-            // send over initial player data to the server
-            M2SSender<Map<PlayerID, PlayerState>>({
-                name: Main2Server.UPDATE_PLAYER_STATES,
-                data: game.getPlayerStates()
-            })
+            // TODO issue 3 upgrade cards to each player
+            
+            startNewRound()
             break
     }
 })

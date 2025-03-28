@@ -3,6 +3,7 @@ import { useGameDataStore } from '../stores/render_game_data_store';
 import PlayerDataBrief from '../../shared/components/PlayerDataBrief.vue';
 import GameEvents from '../../shared/components/GameEvents.vue';
 import Timer from '../../shared/components/Timer.vue';
+import GetInput from '../components/GetInput.vue';
 
 const r_gds = useGameDataStore()
 console.log("loading GameView")
@@ -56,9 +57,8 @@ const time_up = () => console.log("Time's up")
                 </li>
             </ul>
         </div>
-        <div class="center">
-            <p>Game on!</p>
-            <Timer :timeout="15" @time-up="time_up"/>
+        <div v-if="r_gds.get_input.player !==  undefined" class="center">
+            <GetInput />
         </div>
         <div class="right">
             <GameEvents :events="r_gds.game_events" :max_events="50"/>

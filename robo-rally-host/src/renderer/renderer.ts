@@ -47,7 +47,7 @@ app.mount('#app')
 console.log('👋 This message is being logged by "renderer.ts", included via Vite');
 
 // add communication listeners
-const game_state = useGameDataStore()
+const r_gds = useGameDataStore()
 
 // TODO move this logic into ConnectionsStore, and just pass the game store as an argument
 window.mainEventHandlerAPI.onPlayerUpdate((update: PlayerUpdate): void => {
@@ -58,10 +58,10 @@ window.mainEventHandlerAPI.onPlayerUpdate((update: PlayerUpdate): void => {
             return
         }
         console.log(`Adding player: ${update.name} (${update.id})`)
-        game_state.addPlayer(update.id, update.name)
+        r_gds.addPlayer(update.id, update.name)
     } else if (update.status === PlayerStatusUpdate.REMOVED) {
         console.log(`Removing player: ${update.name} (${update.id})`)
-        game_state.removePlayer(update.id)
+        r_gds.removePlayer(update.id)
     }
 
     if (update.character !== undefined) {
@@ -70,24 +70,26 @@ window.mainEventHandlerAPI.onPlayerUpdate((update: PlayerUpdate): void => {
             console.error(`No bot exists with ID ${update.character}`)
             return
         }
-        game_state.characterSelected(update.id, character)
+        r_gds.characterSelected(update.id, character)
     }
 })
 
 window.mainEventHandlerAPI.onToDo((to_dos: Map<PlayerID, string[]>): void => {
     console.log(to_dos)
-    game_state.setToDos(to_dos)
+    r_gds.setToDos(to_dos)
 })
 
 window.mainEventHandlerAPI.onPlayerDataUpdated((id: PlayerID, update: PlayerStateData) => {
     console.log(id, update)
-    game_state.setPlayerData(id, update)
+    r_gds.setPlayerData(id, update)
 })
 
 window.mainEventHandlerAPI.onGameAction((action: GameAction) => {
-    game_state.game_events.push(action)
+    r_gds.game_events.push(action)
 })
 
-window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID) => {
+window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID, timeout?: number) => {
     console.log("Received GetData event for:", player)
+    r_gds.get_input.timeout = timeout ? timeout : 30
+    r_gds.get_input.player = player
 })

@@ -3,7 +3,7 @@ import { MovementDirection, RotationDirection, Rotation, type Movement } from ".
 
 export const PROGRAMMING_HAND_SIZE: number = 9
 
-export declare type GameAction = {
+export type GameAction = {
     action: ProgrammingCard,
     actor: Player
 }
@@ -28,14 +28,14 @@ export namespace ProgrammingCard {
     export const again = "again"
     export const power_up = "power_up"
     export const spam = "spam"
-    export declare interface ActionChoiceData {
+    export interface ActionChoiceData {
         prompt: string
         options: string[]
     }
-    export declare interface ActionChoice extends ActionChoiceData {
+    export interface ActionChoice extends ActionChoiceData {
         choice: (option: string) => Movement[]
     }
-    export declare interface Haywire {
+    export interface Haywire {
         text: string,
         actions: Movement[] | ActionChoice
         special?(...args: any): any // this should be used for 
@@ -167,13 +167,13 @@ export namespace ProgrammingCard {
         export const U_turn: Movement = new Rotation(RotationDirection.CW, 2)
     }
 }
-export declare type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
-export declare type ProgrammingCard = {
+export type CardAction = "left" | "right" | "u_turn" | "forward1" | "forward2" | "forward3" | "back" | "again" | "power_up" | "spam" | ProgrammingCard.Haywire
+export type ProgrammingCard = {
     id: number,
     action: CardAction
 }
 
-export declare interface UpgradeCard {
+export interface UpgradeCard {
     name: string,
     cost: number,
     // to implement these, gameplay should probably have hooks, that the upgrades attach to
@@ -470,7 +470,6 @@ export function newDamageDeck(): ProgrammingCard[] {
 
 export declare type ProgrammingHand = ProgrammingCard[]
 export declare type ProgrammingCardSlot = ProgrammingCard|undefined
-// export declare type RegisterArray = [ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot, ProgrammingCardSlot]
 export declare type RegisterArray = [ProgrammingCard[], ProgrammingCard[], ProgrammingCard[], ProgrammingCard[], ProgrammingCard[]]
 
 export function newRegisterArray(): RegisterArray {

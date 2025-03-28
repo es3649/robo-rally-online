@@ -13,7 +13,7 @@ import type { PlayerID, Character, PlayerState, CharacterID, PlayerStateData } f
 import { BOTS } from './shared/data/robots'
 import { gameActionHandle, getInputHandle, phaseUpdateHandle, programmingDataHandle, requestPositionHandle, resetHandle, updatePlayerStatesHandle } from './server/m2s_handlers'
 import { connections } from './server/data'
-import { confirmPositionHandle, getPlayerStatesHandle, listAvailableBotsHandle, listBotsHandle, makeDisconnectHandler, makeGetIDHandle, makeGetProgrammingDataHandle, makeJoinGameHandle, makeProgramSubmitHandle, makeSelectBotHandle, makeUseIDHandle } from './server/c2s_hndlers'
+import { confirmPositionHandle, getPlayerStatesHandle, listAvailableBotsHandle, listBotsHandle, makeDisconnectHandle, makeGetIDHandle, makeGetProgrammingDataHandle, makeJoinGameHandle, makeProgramSubmitHandle, makeSelectBotHandle, makeUseIDHandle } from './server/c2s_handlers'
 
 export const app: Express = express()
 const port = process.env.PORT || 80
@@ -42,7 +42,7 @@ io.on(Default.CONNECTION, (socket) => {
     socket.data.id = id
 
     // connection events
-    socket.on(Default.DISCONNECT, makeDisconnectHandler(socket))
+    socket.on(Default.DISCONNECT, makeDisconnectHandle(socket))
     
     // lobby events
     socket.on(Client2Server.JOIN_GAME, makeJoinGameHandle(socket))

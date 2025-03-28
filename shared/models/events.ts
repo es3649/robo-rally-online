@@ -19,7 +19,7 @@ export namespace Client2Server {
     export const USE_ID = "client:use-id"
     export const CONFIRM_POSITION = "client:confirm-position"
     export const SEND_INPUT = "client:send-input"
-    export const GET_HAND = "client:get-hand"
+    export const GET_PROGRAMMING_DATA = "client:get-programming-data"
     export const GET_PLAYER_STATES = "client:get-player-states"
 }
 export type Client2Server = typeof Client2Server.JOIN_GAME |
@@ -35,7 +35,7 @@ export type Client2Server = typeof Client2Server.JOIN_GAME |
     typeof Client2Server.USE_ID |
     typeof Client2Server.CONFIRM_POSITION |
     typeof Client2Server.SEND_INPUT |
-    typeof Client2Server.GET_HAND |
+    typeof Client2Server.GET_PROGRAMMING_DATA |
     typeof Client2Server.GET_PLAYER_STATES
 
 /* events emitted by the main desktop process */
@@ -48,6 +48,7 @@ export namespace Main2Server {
     export const GET_INPUT = "main:get-input"
     export const UPDATE_BOT_CONNECTION = "main:update-bot-connection"
     export const UPDATE_PLAYER_STATES = "main:update-player-states"
+    export const PROGRAMMING_DATA = "main:programming-data"
 }
 export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.PHASE_UPDATE |
@@ -55,7 +56,8 @@ export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.REQUEST_POSITION |
     typeof Main2Server.GET_INPUT |
     typeof Main2Server.UPDATE_BOT_CONNECTION |
-    typeof Main2Server.UPDATE_PLAYER_STATES
+    typeof Main2Server.UPDATE_PLAYER_STATES |
+    typeof Main2Server.PROGRAMMING_DATA
 
 // events sent to renderer
 export namespace Main2Render {
