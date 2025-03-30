@@ -5,5 +5,5 @@ const game_state = useGameStateStore()
 </script>
 
 <template>
-    ⚡️:&nbsp;{{ game_state.energy }}
+    <span>⚡️:&nbsp;{{ game_state.energy }}</span>
 </template>

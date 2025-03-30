@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import type { GameAction } from '../models/game_data'
 import GameEvent from "./GameEvent.vue"
 
@@ -11,7 +12,7 @@ const props = defineProps<{
 
 <template>
     <ul>
-        <li v-for="event of events">
+        <li v-for="event of props.events.slice(-max_events).reverse()">
             <GameEvent :event="event" />
         </li>
     </ul>
@@ -20,9 +21,16 @@ const props = defineProps<{
 <style scoped>
 /* fill all the space that the holder gets, then scroll the overflow */
 ul {
-    width: 100%;
-    height: 100%;
-    overflow: scroll;
+    height: 40vh;
+    overflow: hidden;
     /* set text wrapping */
 }
+
+ul:hover, ul:focus, ul:active {
+    overflow: auto;
+}
+
+/* ul::-webkit-scrollbar {
+    display: none;
+} */
 </style>

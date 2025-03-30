@@ -70,18 +70,6 @@ function game() {
   router.replace('/game')
 }
 
-function programming() {
-  c_gs.programming_enabled = true
-  c_gs.phase = GamePhase.Programming
-}
-
-function upgrade() {
-  c_gs.phase = GamePhase.Upgrade
-}
-
-function activation() {
-  c_gs.phase = GamePhase.Activation
-}
 // this needs to be called early on
 setupSessionID()
 
@@ -89,20 +77,11 @@ setupSessionID()
 
 <template>
   <main>
-    <div class="flex-buttons">
-      <button @click="lobby">Lobby</button>
-      <button @click="game">Game</button>
-      <button @click="upgrade">Upgrade</button>
-      <button @click="programming">Programming</button>
-      <button @click="activation">Activation</button>
-    </div>
     <div v-if="c_gs.phase == GamePhase.Lobby || c_gs.phase == GamePhase.Setup">
       <header>
-        <ConnectionStatus />
-        <img alt="AI-generated robot image" class="logo" src="@/assets/robot_race2.jpg" width="125" height="125" />
-        <div class="wrapper">
-          <HelloWorld msg="RoboRally Online!" />
-          
+        <div class="flex-buttons">
+          <button @click="lobby">Lobby</button>
+          <button @click="game">Game</button>
         </div>
       </header>
       
@@ -122,11 +101,6 @@ header {
 
 .flex-buttons {
   display: flex;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
 }
 
 nav {
@@ -159,16 +133,6 @@ nav a:first-of-type {
     display: flex;
     place-items: center;
     padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
   }
 
   nav {

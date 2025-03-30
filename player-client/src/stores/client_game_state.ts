@@ -4,7 +4,7 @@ import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/shared/mode
 import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/shared/models/player";
 import { socket, TIMEOUT } from "@/socket"
 import { Client2Server, Server2Client } from "@/shared/models/events";
-import type { BotAvailabilityUpdate, ProgrammingData } from "@/shared/models/connection";
+import type { BotAvailabilityUpdate, PendingActionChoice, ProgrammingData } from "@/shared/models/connection";
 import { useConnectionStore } from "./client_connection";
 
 export enum GameWindows {
@@ -53,10 +53,8 @@ export const useGameStateStore = defineStore({
             phase: -1 as GamePhase,
             // whether programming is allowed, so we can lock registers after program submit
             programming_enabled: false,
-            // log messages
-            log: [] as GameAction[],
             // current action
-            action: undefined as GameAction|undefined,
+            action_log: [] as GameAction[],
             // the basic states of the opponents
             opponent_states: [{
                 name: "Mara", energy: 7, checkpoints: 0, priority: 1, active: true,
@@ -66,12 +64,24 @@ export const useGameStateStore = defineStore({
                 name: "Michelangelo", energy: 3, checkpoints: 0, priority: 3, active: false,
             }] as PlayerStateData[],
 
+            request: {
+                prompt: "Choose one of these bodacious options",
+                options: [
+                    "Battleship",
+                    "Clue",
+                    "Electric Football",
+                    "Twister"
+                ],
+                expiration: 30
+            } as PendingActionChoice|undefined,
+
             // the characters which are not available for selection
             all_characters: [] as Character[],
             character: undefined as Character|undefined, 
             available_characters: new Set<CharacterID>(),
 
-            game_display: GameWindows.DEFAULT
+            game_display: GameWindows.DEFAULT,
+            help_open: false
         }
     },
     getters: {
@@ -97,6 +107,9 @@ export const useGameStateStore = defineStore({
             }
             return ret
         },
+        has_request(): boolean {
+            return this.request !== undefined
+        }
     },
     actions: {
         /**
@@ -126,21 +139,7 @@ export const useGameStateStore = defineStore({
         //     return true
         // },
         next_phase() {
-            switch(this.phase) {
-                case GamePhase.Lobby:
-                    break
-                case GamePhase.Upgrade:
-                    break
-                case GamePhase.Programming:
-                    this.programming_enabled = true
-                    // draw a new hand
-                    this.drawProgrammingHand()
-                    break
-                case GamePhase.Activation:
-                    this.programming_enabled = false
-                    this.clearProgrammingHand()
-                    break
-            }
+            console.log("We don't do that here")
         },
         /**
          * polls the server for the new hand of cards and new registers
@@ -159,8 +158,6 @@ export const useGameStateStore = defineStore({
                     return a.action < b.action ? -1 : 1
                 })
             })
-            
-            
         },
         clearProgrammingHand(): void {
             this.programming_hand = []
@@ -177,7 +174,7 @@ export const useGameStateStore = defineStore({
         },
         new_action(action:GameAction|undefined=undefined) {
             if (action != undefined) {
-                this.action = action
+                this.action_log.push(action)
                 return
             }
 
@@ -189,7 +186,7 @@ export const useGameStateStore = defineStore({
 
             const DECK = newStandardDeck()
 
-            this.action = {
+            this.action_log.push({
                 action: DECK[Math.floor(Math.random() * DECK.length)],
                 actor: {
                     name: 'Jamison',
@@ -206,7 +203,7 @@ export const useGameStateStore = defineStore({
                         bluetooth_id: "12:34:56:78:90:AB"
                     }
                 }
-            }
+            })
         },
         draw_upgrade(): void {
             console.log("drawing upgrade")
@@ -247,7 +244,7 @@ export const useGameStateStore = defineStore({
             })
 
             socket.on(Server2Client.GAME_ACTION, (action:GameAction) => {
-                this.action = action
+                this.action_log.push(action)
             })
 
             socket.on(Server2Client.BOT_SELECTED, (update: BotAvailabilityUpdate) => {
@@ -271,7 +268,7 @@ export const useGameStateStore = defineStore({
             })
 
             socket.on(Server2Client.GAME_ACTION, (action: GameAction) => {
-                this.log.push(action)
+                this.action_log.push(action)
             })
 
             socket.on(Server2Client.REQUEST_INPUT, (request: ProgrammingCard.ActionChoiceData) => {

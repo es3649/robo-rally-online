@@ -9,7 +9,7 @@ const props = defineProps<{
     disabled: boolean
 }>()
 
-const game_state = useGameStateStore()
+const c_gs = useGameStateStore()
 
 declare type onMoveEvent<T> = {
     to: HTMLElement,
@@ -37,13 +37,13 @@ declare type onMoveEvent<T> = {
 function rebalance(): void  {
     // TODO: if we have crab legs, the length is 2, and it contains one turn and a move forward,
     // then move the cards elsewhere to hold, and create a move right/left
-    game_state.registers.forEach((register:Card[]) => {
+    c_gs.registers.forEach((register:Card[]) => {
         // make sure that the register isn't too full
         while (register.length > 1) {
             // take the card off
             const card = register.pop()
             // put it back in the hand
-            game_state.programming_hand.push(card)
+            c_gs.programming_hand.push(card)
         }
     })
 }
@@ -51,11 +51,11 @@ function rebalance(): void  {
 
 <template>
     <div class="register-array">
-        <div v-for="(_, idx) in game_state.registers">
+        <div v-for="(_, idx) in c_gs.registers">
             <draggable
                 class="register"
-                :disabled="game_state.phase != GamePhase.Programming"
-                v-model="game_state.registers[idx]"
+                :disabled="!c_gs.programming_enabled"
+                v-model="c_gs.registers[idx]"
                 @add="rebalance"
                 group="in_play"
                 item-key="id"
@@ -66,11 +66,6 @@ function rebalance(): void  {
             </draggable>
         </div>
     </div>
-
-
-
-
-    
 </template>
 
 <style scoped>
