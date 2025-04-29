@@ -44,5 +44,9 @@ schematics/pcb/pcb-schematics-backups
 *.kicad_prl
 **/fp-info-cache
 
+# KiCad Gerber and Drill files
+schematics/pcb/*_fab
+schematics/pcb/*.zip
+
 # KiCad project files with the Arduino tests
 bot_drivers/**/*.kicad_pro
