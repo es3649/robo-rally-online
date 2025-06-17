@@ -51,9 +51,9 @@ function rebalance(): void  {
 
 <template>
     <div class="register-array">
-        <div v-for="(_, idx) in c_gs.registers">
+        <div v-for="(_, idx) in c_gs.registers" class="card register">
             <draggable
-                class="register"
+                class="drop-area"
                 :disabled="!c_gs.programming_enabled"
                 v-model="c_gs.registers[idx]"
                 @add="rebalance"
@@ -71,10 +71,12 @@ function rebalance(): void  {
 <style scoped>
 .register-array {
     display: flex;
+    flex-direction: column;
 }
 .empty-slot, .register {
     min-width: 100px;
-    height: 117px;
+    height: 11vh;
+    margin: .25rem;
     overflow: hidden;
     background-color: #808080;
     border-color: #353535;
@@ -82,4 +84,10 @@ function rebalance(): void  {
     border-width: 3px;
     border-radius: 10px;
 }
+
+.drop-area {
+    width: 100%;
+    height: 100%;
+}
+
 </style>

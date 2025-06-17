@@ -1,3 +1,12 @@
+/* define fonts */
+.tektur {
+    font-family: "Tektur", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: normal;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+}
+
 /* color palette from <https://github.com/vuejs/theme> */
 :root {
   --vt-c-white: #ffffff;
@@ -50,40 +59,22 @@
   }
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  font-weight: normal;
+html {
+    /* set font families */
+    box-sizing: border-box;
 }
 
-body {
-  min-height: 100vh;
-  color: var(--color-text);
-  /* background: var(--color-background); */
-  background: slategray;
-  background-image: url("@/assets/tread-plate-tile.svg");
-  background-repeat: repeat;
-  transition:
-    color 0.5s,
-    background-color 0.5s;
-  line-height: 1.6;
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  font-size: 20pt;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+.card {
+  width: 11vh;
+  height: 11vh;
+}
+
+.programming-card {
+  border: 0.5rem solid var(--color-border);
+  border-radius: 1rem;
+  padding: auto;
 }

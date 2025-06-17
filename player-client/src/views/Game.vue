@@ -5,7 +5,6 @@ import EnergyCounter from '@/components/game_elements/EnergyCounter.vue'
 import CheckpointTracker from '@/components/game_elements/CheckpointTracker.vue'
 import RegisterArray from '@/components/game_elements/RegisterArray.vue'
 import ProgrammingHand from '@/components/game_elements/ProgrammingHand.vue'
-import ActionWindow from '@/components/game_elements/ActionWindow.vue'
 import PriorityTracker from '@/components/game_elements/PriorityTracker.vue'
 import OpponentView from '@/components/game_elements/OpponentView.vue'
 import UpgradeManager from '@/components/UpgradeManager.vue';
@@ -82,17 +81,15 @@ function selection_made(selection:string) {
 
 <template>
     <main>
-        <div class="side-nav">
-            <img class="ico" src="@/assets/ico/home.svg" alt="Default" @click="show_default"><br/>
-            <img class="ico" src="@/assets/ico/wrench.svg" alt="Upgrades" @click="show_upgrades"/><br />
-            <img class="ico" src="@/assets/ico/info.svg" alt="Player Info" @click="show_player_info"/><br />
-            <div class="nav-footer">
-                <CheckpointTracker /><br />
-                <EnergyCounter /><br />
-                <PriorityTracker /><br />
-                <ConnectionStatus /><br />
-                <img class="ico" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/><br />
-            </div>
+        <div class="gridded nav">
+            <img class="ico" src="@/assets/ico/home.svg" alt="Default" @click="show_default">
+            <img class="ico" src="@/assets/ico/wrench.svg" alt="Upgrades" @click="show_upgrades"/>
+            <img class="ico" src="@/assets/ico/info.svg" alt="Player Info" @click="show_player_info"/>
+            <img class="ico" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/>
+            <CheckpointTracker class="tracker" />
+            <EnergyCounter class="tracker" />
+            <PriorityTracker class="tracker" />
+            <ConnectionStatus class="tracker" />
         </div>
         <div class="body-content">
             <button @click="upgrade">Upgrade</button>
@@ -116,16 +113,16 @@ function selection_made(selection:string) {
                 <div v-if="c_gs.phase == GamePhase.Upgrade">
                     <UpgradeManager />
                 </div>
-                <div v-else>
+                <div v-else class="gridded programming-grid">
                     <!-- programming registers -->
                     <RegisterArray :disabled="!c_gs.programming_enabled"/>
                     <div v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled">
                         <!-- cards -->
                         <ProgrammingHand />
-                        <label for="shutdown">Shutdown</label>
-                        <input id="shutdown" type="checkbox" v-model="shutdown">
-                        <button :disabled="anyRegisterEmpty(c_gs.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
                     </div>
+                    <label for="shutdown">Shutdown</label>
+                    <input id="shutdown" type="checkbox" v-model="shutdown">
+                    <button :disabled="anyRegisterEmpty(c_gs.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
                 </div>
             </div>
             <div v-else-if="c_gs.game_display == GameWindows.UPGRADE">
@@ -145,45 +142,47 @@ function selection_made(selection:string) {
 
 <style scoped>
 .ico {
-    width: 100%;
-    margin-top: 2%;
+    flex: 1;
+    max-height: 3rem;
+    padding: .5rem;
+    border-bottom-right-radius: .5em;
+    border-bottom-left-radius: .5em;
+    border-style: solid;
+    border-color: var(--color-border);
 }
 
 .ico:hover {
-    background-color: #606060;
+    /* background-color: #606060; */
+    border-width: 3px;
+    border-style: solid;
+    border-color: rgba(0,0,0,0);
+    border-radius: 5px;
 }
 
 .body-content {
     height: 100%;
     width: 90%;
-    position: fixed;
+    /* position: fixed;
     top: 0;
-    left: 10%;
+    left: 10%; */
     padding: 3%;
 }
 
-.side-nav {
-    height: 100%;
-    width: 5%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    overflow-x: hidden;
-    font-size: 18pt;
-    padding: 0.5%;
+.nav {
+    grid-template-columns: repeat(4, 1fr);
+    background-color: var(--color-background-soft);
+    box-shadow: 0px 2px 5px var(--color-background-soft);
 }
 
-.nav-footer {
-    position: fixed;
-    bottom: 0;
+.tracker {
+    display: inline;
+}
+
+.programming-grid {
+    grid-template-columns: 2fr 1fr;
 }
 
 .info-tray {
-    height: 100%;
-    width: 20%;
-    position: fixed;
-    top: 0;
-    right: 0;
     font-size: 12pt;
     padding: 1%;
 }

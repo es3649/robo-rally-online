@@ -15,6 +15,11 @@ const c_cs = useConnectionStore()
                 <button @click="c_cs.connect()">Reconnect</button>
             </span>
         </p>
+        <h3>Credits</h3>
+        <p>Development by: Eric Steadman.
+            Game Design: Richard Garfield and Renegade Game Studios.
+            This project is not affiliated with nor endorsed by Richard Garfield nor Renegade Game Studios.
+        </p>
     </main>
 </template>
 

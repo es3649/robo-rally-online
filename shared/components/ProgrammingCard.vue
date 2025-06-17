@@ -11,9 +11,9 @@ defineProps<{
 </script>
 
 <template>
-  <main>
-    <h6>{{ ProgrammingCard.getText(value) }}</h6>
-    <svg :width="size" :height="size" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full">
+  <main class="card programming-card">
+    <!-- <h6>{{ ProgrammingCard.getText(value) }}</h6> -->
+    <svg :width="size" :height="size" :title="ProgrammingCard.getText(value)" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full">
       <g v-if="value == 'forward1'" transform="scale(1.000000,-1.000000) translate(0,-500)">
         <path v-bind:fill="fill_color" d="M 241.757856 240.371534 L 1.000000 1.000000 L 482.515712 1.000000 Z" transform="scale(1.000000,1.000000) translate(8.242144,248.537893)" opacity="1.000000"></path>
         <path v-bind:fill="fill_color" d="M 9.000000 1.000000 L 196.598372 1.000000 C 201.016650 1.000000 204.598372 4.581722 204.598372 9.000000 L 204.598372 240.371534 C 204.598372 240.371534 204.598372 240.371534 204.598372 240.371534 L 1.000000 240.371534 C 1.000000 240.371534 1.000000 240.371534 1.000000 240.371534 L 1.000000 9.000000 C 1.000000 4.581722 4.581722 1.000000 9.000000 1.000000 Z" transform="scale(1.000000,1.000000) translate(147.200814,9.166359)" opacity="1.000000"></path>
@@ -76,5 +76,6 @@ defineProps<{
 <style scoped>
 main {
   align-items: center;
+  justify-content: center;
 }
 </style>

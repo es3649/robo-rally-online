@@ -182,7 +182,7 @@ export const useGameStateStore = defineStore({
             const g = Math.floor(Math.random()*205)
             const b = Math.floor(Math.random()*205)
             const dark = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`
-            const lite = `#${(r+50).toString(16).padStart(2,)}${(g+50).toString(16)}${(b+50).toString(16)}`
+            const lite = `#${(r+50).toString(16).padStart(2)}${(g+50).toString(16)}${(b+50).toString(16)}`
 
             const DECK = newStandardDeck()
 

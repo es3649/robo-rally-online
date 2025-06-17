@@ -52,7 +52,13 @@ function select(character: Character) {
       <h2>Waiting for the host to start the game</h2>
       <p>Character: {{ c_gs.character.name }}</p>
       <img :src="c_gs.character.sprite_large">
-      <img :src="`src/assets/loading/${loading_image}`">
+      <img class="loading" :src="`src/assets/loading/${loading_image}`">
     </div>
   </main>
 </template>
+
+<style lang="css" scoped>
+main {
+  max-width: 100%;
+}
+</style>

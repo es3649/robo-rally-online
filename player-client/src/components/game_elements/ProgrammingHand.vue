@@ -21,9 +21,11 @@ const drag = ref(false)
 .a-card {
     width: 100px;
     height: 100px;
+    flex: 1;
 }
 
 .hand {
     display: flex;
+    flex-wrap: wrap;
 }
 </style>
