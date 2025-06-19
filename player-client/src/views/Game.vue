@@ -82,14 +82,14 @@ function selection_made(selection:string) {
 <template>
     <main>
         <div class="gridded nav">
-            <img class="ico" src="@/assets/ico/home.svg" alt="Default" @click="show_default">
-            <img class="ico" src="@/assets/ico/wrench.svg" alt="Upgrades" @click="show_upgrades"/>
-            <img class="ico" src="@/assets/ico/info.svg" alt="Player Info" @click="show_player_info"/>
-            <img class="ico" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/>
             <CheckpointTracker class="tracker" />
             <EnergyCounter class="tracker" />
             <PriorityTracker class="tracker" />
             <ConnectionStatus class="tracker" />
+            <img class="ico" :class="{active: c_gs.game_display==GameWindows.DEFAULT}" src="@/assets/ico/home.svg" alt="Default" @click="show_default">
+            <img class="ico" :class="{active: c_gs.game_display==GameWindows.UPGRADE}" src="@/assets/ico/wrench.svg" alt="Upgrades" @click="show_upgrades"/>
+            <img class="ico" :class="{active: c_gs.game_display==GameWindows.PLAYER_INFO}" src="@/assets/ico/info.svg" alt="Player Info" @click="show_player_info"/>
+            <img class="ico" :class="{active: c_gs.game_display==GameWindows.SETTINGS}" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/>
         </div>
         <div class="body-content">
             <button @click="upgrade">Upgrade</button>
@@ -102,7 +102,7 @@ function selection_made(selection:string) {
                 <button @click="get_input">Get Input</button>
             </div>
             <div v-if="c_gs.game_display == GameWindows.DEFAULT">
-                <div v-if="c_gs.has_request">
+                <div v-if="c_gs.has_request" class="popup-fullscreen">
                     <GetInput :request="(c_gs.request as PendingActionChoice)" @selected="selection_made"/>
                 </div>
 
@@ -136,46 +136,66 @@ function selection_made(selection:string) {
                 <SettingsManager />
             </div>
         </div>
-        <HelpInfo v-if="c_gs.help_open" class="info-tray"/>
+        <HelpInfo v-if="c_gs.help_open" class="right-tray"/>
     </main>
 </template>
 
 <style scoped>
+main {
+    width: 100vw;
+}
 .ico {
+    width: 100%;
     flex: 1;
     max-height: 3rem;
     padding: .5rem;
-    border-bottom-right-radius: .5em;
-    border-bottom-left-radius: .5em;
+    border-bottom-right-radius: .25em;
+    border-bottom-left-radius: .25em;
     border-style: solid;
-    border-color: var(--color-border);
+    border-color: var(--color-background-soft);
+    background-color: var(--primary);
+    z-index: 1;
 }
 
-.ico:hover {
-    /* background-color: #606060; */
-    border-width: 3px;
-    border-style: solid;
-    border-color: rgba(0,0,0,0);
-    border-radius: 5px;
+@media screen and (min-width: 720px) {
+    /* hover supercedes active/focus, so we define this one here */
+    .ico:hover {
+        background-color: var(--secondary);
+        /* border-radius: 5px; */
+    }
+}
+
+.active,
+.ico:focus,
+.ico:active {
+    border-bottom-right-radius: .5em;
+    border-bottom-left-radius: .5em;
+    /* padding-top: .25rem; */
+    /* border-color: var(--primary); */
+    background-color: var(--accent);
 }
 
 .body-content {
-    height: 100%;
-    width: 90%;
-    /* position: fixed;
-    top: 0;
-    left: 10%; */
-    padding: 3%;
+    margin: 8px;
 }
 
 .nav {
+    position: sticky;
+    top: 0px;
     grid-template-columns: repeat(4, 1fr);
-    background-color: var(--color-background-soft);
     box-shadow: 0px 2px 5px var(--color-background-soft);
 }
 
 .tracker {
+    /* padding-top: 1em;
+    margin-top: -1em; */
     display: inline;
+    text-align: center;
+    border-style: solid;
+    background-color: var(--secondary);
+    border-color: var(--color-background-mute);
+    /* border-bottom-right-radius: .25em;
+    border-bottom-left-radius: .25em; */
 }
 
 .programming-grid {
@@ -186,4 +206,6 @@ function selection_made(selection:string) {
     font-size: 12pt;
     padding: 1%;
 }
+
+
 </style>

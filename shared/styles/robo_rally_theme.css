@@ -1,0 +1,134 @@
+/* * {
+  /* Optional color pallets to use
+  color: #41463D/#9D8DF1/#B8CDF8/#95F2D9/#1CFEBA;
+  color: #020202/#697268/#95A3A4/#B7D1DA/#E2E8DD;
+  color: #0E131F/#38405F/#59546C/#8B939C/#FF0035
+} */
+
+/* load fonts */
+@font-face {
+  font-family: 'tekturregular';
+  src: url('/src/assets/styles/shared/fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff2') format('woff2'),
+        url('/src/assets/styles/shared/fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff') format('woff'),
+        url('/src/assets/styles/shared/fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype'),
+        url('./fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff2') format('woff2'),
+        url('./fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff') format('woff'),
+        url('./fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* color palette */
+:root {
+  --background-light: #fbfdfe;
+  --background-light-soft: #f5f6f8;
+  --background-light-mute: #eff0f2;
+
+  --text-light: #020508;
+  --text-light-soft: #06090b;
+  --text-light-mute: #0a0f12;
+
+  --primary-light: #33a7d1;
+  --secondary-light: #928ee6;
+  --accent-light: #895dda;
+
+  --background-dark: #010304;
+  --background-dark-soft: #07090a;
+  --background-dark-mute: #0d0f10;
+
+  --text-dark: #f7fafd;
+  --text-dark-soft: #f3f6f9;
+  --text-dark-mute: #eff2f5;
+  
+  --primary-dark: #2ea2cc;
+  --secondary-dark: #1d1971;
+  --accent-dark: #5125a2;
+  
+  /* --vt-c-indigo: #2c3e50; */
+
+  /* --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+
+  --vt-c-text-light-1: var(--vt-c-black);
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64); */
+}
+
+/* semantic color variables for this project */
+:root {
+  --color-background: var(--background-light);
+  --color-background-soft: var(--background-light-soft);
+  --color-background-mute: var(--background-light-mute);
+
+  --color-heading: var(--text-light-mute);
+  --color-text: var(--text-light);
+  --invert-color-text: var(--background-light);
+
+  --section-gap: 160px;
+
+  --primary: var(--primary-light);
+  --secondary: var(--secondary-light);
+  --accent: var(--accent-light);
+
+}
+
+.invert {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--background-dark);
+    --color-background-soft: var(--background-dark-soft);
+    --color-background-mute: var(--background-dark-mute);
+
+    --color-heading: var(--text-dark-mute);
+    --color-text: var(--text-dark);
+    --invert-color-text: var(--background-dark);
+
+    --primary: var(--primary-dark);
+    --secondary: var(--secondary-dark);
+    --accent: var(--accent-dark);
+  }
+
+  .invert {
+    background-color: var(--background-dark);
+    color: var(--text-dark);
+  }
+}
+
+:root {
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  /* set font families */
+  font-family:
+    "tekturregular",
+    /* Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen, */
+    Ubuntu,
+    /* Cantarell,
+    'Fira Sans', */
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  font-size: 16pt;
+  font-optical-sizing: auto;
+  font-weight: normal;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+

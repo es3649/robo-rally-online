@@ -6,8 +6,8 @@ const c_cs = useConnectionStore()
 </script>
 
 <template>
-    <span v-if="c_cs.connected">🟢</span>
-    <span v-else>🔴</span>
+    <span v-if="c_cs.connected">🟢&nbsp;OK</span>
+    <span v-else>🔴&nbsp;Err</span>
 </template>
 
 <style scoped>

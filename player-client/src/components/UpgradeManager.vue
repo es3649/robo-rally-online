@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { GamePhase } from '@/shared/models/game_data';
-import { useGameStateStore } from '@/stores/client_game_state';
+import { GameWindows, useGameStateStore } from '@/stores/client_game_state';
 
 const c_gs = useGameStateStore()
 
 function finished() {
     c_gs.phase = GamePhase.Programming
+    c_gs.game_display = GameWindows.DEFAULT
 }
 
 </script>
@@ -18,7 +19,7 @@ function finished() {
             <button @click="c_gs.draw_upgrade" 
             :disabled="c_gs.energy < 1"
             :title="c_gs.energy < 1 ? 'Insufficient energy' : undefined"
-            >Draw Upgrade (1 Energy)</button>
+            >Draw Upgrade (1 ⚡️)</button>
             <h3>Upgrade Hand</h3>
             <p>Not Implemented</p>
             <button @click="finished()">Continue</button>

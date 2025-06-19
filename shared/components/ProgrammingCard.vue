@@ -74,8 +74,7 @@ defineProps<{
 </template>
 
 <style scoped>
-main {
-  align-items: center;
-  justify-content: center;
+svg {
+  margin: auto;
 }
 </style>

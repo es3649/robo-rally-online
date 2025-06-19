@@ -1,0 +1,22 @@
+:root {
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
+.card {
+  width: 11vh;
+  height: 11vh;
+}
+
+.programming-card {
+  border: 0.5rem solid var(--color-border);
+  border-radius: 1rem;
+}
+
+.programming-card:hover {
+  border-color: var(--color-border-hover);
+}

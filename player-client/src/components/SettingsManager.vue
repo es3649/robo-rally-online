@@ -8,15 +8,15 @@ const c_cs = useConnectionStore()
 
 <template>
     <main>
-        <h2>Settings WIP</h2>
-        <p>Session ID: {{ c_cs.id }}</p>
+        <h2>Settings</h2>
+        <p>Session ID: <span class="text-primary text-smaller">{{ c_cs.id ? c_cs.id : "<none>" }}</span></p>
         <p>Connection Status: <span v-if="c_cs.connected" class="connected">Connected</span>
             <span v-else class="disconnected">
                 <button @click="c_cs.connect()">Reconnect</button>
             </span>
         </p>
         <h3>Credits</h3>
-        <p>Development by: Eric Steadman.
+        <p class="text-smaller">Development by: Eric Steadman.
             Game Design: Richard Garfield and Renegade Game Studios.
             This project is not affiliated with nor endorsed by Richard Garfield nor Renegade Game Studios.
         </p>
@@ -27,11 +27,8 @@ const c_cs = useConnectionStore()
 .connected {
     color: darkgreen;
 }
+
 .disconnected {
-    color: darkred;
-}
-.disconnected button {
-    background-color: darkgrey;
-    color: inherit;
+    color: var(--invert-color-text);
 }
 </style>

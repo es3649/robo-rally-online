@@ -27,6 +27,11 @@ function close() {
                 Their current checkpoint count is displayed next to the flag icon (🏁).
                 The player's energy total is displayed next to the lightning symbol (⚡️).
             </p>
+            <p>
+                A list of recent actions taken by players is also displayed in a scrolling box, with the most recent events appearing at the top.
+                This list will also include effects imposed on players by the board, or by their opponents.
+                This action view also appears on the main screen during the activation phase.
+            </p>
         </div>
         <div v-else-if="c_gs.game_display == GameWindows.SETTINGS">
             <p>
@@ -70,3 +75,10 @@ function close() {
         </div>
     </div>
 </template>
+
+<style scoped>
+button {
+    position: sticky;
+    top: 0px;
+}
+</style>

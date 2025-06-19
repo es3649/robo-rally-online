@@ -37,6 +37,9 @@ playwright-report/
 logoist/
 **/*.logoist
 
+# Misc font files
+shared/styles/fonts/
+
 # KiCad schematic backups
 schematics/pcb/pcb-schematics-backups
 
