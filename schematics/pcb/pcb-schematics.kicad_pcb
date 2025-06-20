@@ -7,6 +7,13 @@
 		(legacy_teardrops no)
 	)
 	(paper "A4")
+	(title_block
+		(title "Core Circuit")
+		(date "2025-04-19")
+		(rev "1")
+		(company "Renegade Labs, INC")
+		(comment 1 "San Diego, CA")
+	)
 	(layers
 		(0 "F.Cu" signal)
 		(1 "In1.Cu" power)

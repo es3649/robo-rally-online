@@ -7,9 +7,8 @@ body {
   margin: 0%;
   color: var(--color-text);
   background: var(--color-background);
-  /* background: slategray; */
-  /* background-image: url("@/assets/tread-plate-tile.svg"); */
-  /* background-repeat: repeat; */
+  /* background-image: url("./tread-plate-tile.svg"); */
+  background-repeat: repeat;
 }
 
 @media (hover: hover) {
@@ -32,25 +31,6 @@ body {
   font-weight: normal;
 }
 
-button {
-  padding: .5rem;
-  border-radius: .25rem;
-  border-color: var(--secondary);
-  background-color: var(--primary);
-  color: var(--invert-color-text);
-}
-
-button:active {
-  background-color: var(--accent);
-  color: var(--color-text)
-}
-
-@media screen and (min-width: 720px) {
-  button:hover {
-    border-color: var(--accent);
-  }
-}
-
 .flex-rows {
     display: flex;
     flex-wrap: wrap;
@@ -62,49 +42,4 @@ button:active {
     flex-direction: column;
 }
 
-.popup-fullscreen {
-  position: absolute;
-  top: 0px;
-  left: 0px;
-  border: 1vw solid var(--accent);
-  border-radius: 4vw;
-  margin: 4vw;
-  padding: 5vw;
-  width: 90vw;
-  height: calc(100vh - 10vw);
-  box-shadow: 0px 0px 5vw var(--accent);
-  background-color: var(--color-background);
-  z-index: 1000;
-}
 
-.right-tray {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  margin-top: 4vh;
-  margin-bottom: 4vh;
-  padding: 3vh;
-  width: 90vw;
-  height: calc(92vh - 2vw);
-  box-shadow: -2px 0px 5vw var(--accent);
-  border: 1vw solid var(--accent);
-  border-right: none;
-  border-top-left-radius: 4vh;
-  border-bottom-left-radius: 4vh;
-  background-color: var(--color-background);
-  z-index: 500;
-  overflow: scroll;
-  font-size: smaller;
-}
-
-.text-primary {
-  color: var(--primary);
-}
-
-.text-smaller {
-  font-size: .8rem;
-}
-
-.gridded {
-    display: grid;
-}

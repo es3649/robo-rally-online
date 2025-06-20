@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { defineConfig, searchForWorkspaceRoot } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import VueDevTools from 'vite-plugin-vue-devtools'
@@ -15,6 +15,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  },
+  server: {
+    fs: {
+      allow: [
+        searchForWorkspaceRoot(process.cwd()),
+        '../shared'
+      ]
     }
   }
 })

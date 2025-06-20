@@ -10,10 +10,10 @@
   font-family: 'tekturregular';
   src: url('/src/assets/styles/shared/fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff2') format('woff2'),
         url('/src/assets/styles/shared/fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff') format('woff'),
-        url('/src/assets/styles/shared/fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype'),
+        /* url('/src/assets/styles/shared/fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype'), */
         url('./fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff2') format('woff2'),
-        url('./fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff') format('woff'),
-        url('./fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype');
+        url('./fonts/Tektur/tektur-variablefont_wdthwght-webfont.woff') format('woff');
+        /* url('./fonts/Tektur/Tektur-VariableFont_wdth\,wght.ttf'), format('truetype'); */
   font-weight: normal;
   font-style: normal;
 }
@@ -72,6 +72,9 @@
   --primary: var(--primary-light);
   --secondary: var(--secondary-light);
   --accent: var(--accent-light);
+  --invert-primary: var(--primary-dark);
+  --invert-secondary: var(--secondary-dark);
+  --invert-accent: var(--accent-dark);
 
 }
 
@@ -93,6 +96,9 @@
     --primary: var(--primary-dark);
     --secondary: var(--secondary-dark);
     --accent: var(--accent-dark);
+    --invert-primary: var(--primary-light);
+    --invert-secondary: var(--secondary-light);
+    --invert-accent: var(--accent-light);
   }
 
   .invert {
@@ -130,5 +136,3 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-

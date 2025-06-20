@@ -42,35 +42,8 @@ function show_settings() {
     c_gs.game_display = GameWindows.SETTINGS
 }
 
-function programming() {
-  c_gs.programming_enabled = true
-  c_gs.phase = GamePhase.Programming
-}
-
-function upgrade() {
-  c_gs.phase = GamePhase.Upgrade
-}
-
-function activation() {
-  c_gs.phase = GamePhase.Activation
-}
-
-function show_help() {
-    c_gs.help_open = true
-}
-
-function get_input() {
-    c_gs.request = {
-        prompt: "Choose one of these bodacious options",
-        options: [
-            "Battleship",
-            "Clue",
-            "Electric Football",
-            "Twister"
-        ],
-        expiration: 30
-    }
-    c_gs.game_display = GameWindows.DEFAULT
+function clear() {
+    c_gs.clear_registers()
 }
 
 function selection_made(selection:string) {
@@ -92,44 +65,43 @@ function selection_made(selection:string) {
             <img class="ico" :class="{active: c_gs.game_display==GameWindows.SETTINGS}" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/>
         </div>
         <div class="body-content">
-            <button @click="upgrade">Upgrade</button>
-            <button @click="programming">Programming</button>
-            <button @click="activation">Activation</button>
-            <div class="control">
-                <button @click="c_gs.next_phase()">Next Phase (in {{ c_gs.phase }})</button>
-                <button @click="c_gs.new_action()">New action</button>
-                <button @click="show_help()">Show help</button>
-                <button @click="get_input">Get Input</button>
-            </div>
             <div v-if="c_gs.game_display == GameWindows.DEFAULT">
                 <div v-if="c_gs.has_request" class="popup-fullscreen">
                     <GetInput :request="(c_gs.request as PendingActionChoice)" @selected="selection_made"/>
                 </div>
 
-                <div v-if="c_gs.phase == GamePhase.Activation">
-                    <GameEvents :events="c_gs.action_log" :max_events="10" />
-                </div>
                 <!-- list upgrades -->
                 <div v-if="c_gs.phase == GamePhase.Upgrade">
                     <UpgradeManager />
                 </div>
-                <div v-else class="gridded programming-grid">
-                    <!-- programming registers -->
-                    <RegisterArray :disabled="!c_gs.programming_enabled"/>
-                    <div v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled">
-                        <!-- cards -->
-                        <ProgrammingHand />
+                <div v-else>
+                    <div class="gridded programming-grid">
+                        <!-- programming registers -->
+                        <RegisterArray class="reorder" :class="{'active-cards': c_gs.programming_enabled}"
+                            :disabled="!c_gs.programming_enabled"/>
+                        <div class="grid-2">
+                            <!-- cards -->
+                            <ProgrammingHand class="active-cards" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled"/>
+                            <GameEvents v-else :events="c_gs.action_log" :max_events="10" class="scroll-box events"/>
+                        </div>
                     </div>
-                    <label for="shutdown">Shutdown</label>
-                    <input id="shutdown" type="checkbox" v-model="shutdown">
-                    <button :disabled="anyRegisterEmpty(c_gs.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
+                    <div class="gridded control-grid" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled">
+                        <button :disabled="anyRegisterEmpty(c_gs.registers)" @click="finish">{{ shutdown ? "Shutdown" : "Complete" }}</button>
+                        <button @click="clear">Clear</button>
+                        <div class="text-center">
+                            <input id="shutdown" type="checkbox" v-model="shutdown">
+                            <label for="shutdown">Shutdown</label>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div v-else-if="c_gs.game_display == GameWindows.UPGRADE">
                 <UpgradeManager />
             </div>
             <div v-else-if="c_gs.game_display == GameWindows.PLAYER_INFO">
+                <h2>Opponents</h2>
                 <OpponentView />
+                <h2>Events</h2>
                 <GameEvents :events="c_gs.action_log" :max_events="10" />
             </div>
             <div v-else-if="c_gs.game_display == GameWindows.SETTINGS">
@@ -143,6 +115,7 @@ function selection_made(selection:string) {
 <style scoped>
 main {
     width: 100vw;
+    height: 100vh;
 }
 .ico {
     width: 100%;
@@ -183,7 +156,8 @@ main {
     position: sticky;
     top: 0px;
     grid-template-columns: repeat(4, 1fr);
-    box-shadow: 0px 2px 5px var(--color-background-soft);
+    z-index: 100;
+    /* box-shadow: 0px 2px 5px var(--color-background-soft); */
 }
 
 .tracker {
@@ -199,7 +173,8 @@ main {
 }
 
 .programming-grid {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .5em;
 }
 
 .info-tray {
@@ -207,5 +182,21 @@ main {
     padding: 1%;
 }
 
+.reorder {
+    order: 1;
+    grid-column: -1;
+}
 
+.events {
+    height: calc(5 * (var(--card-dim) + 2* var(--card-margin)))
+}
+
+.control-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: .5rem;
+}
+
+/* .control-grid * {
+    margin: .25rem;
+} */
 </style>

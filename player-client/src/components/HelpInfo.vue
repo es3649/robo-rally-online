@@ -11,7 +11,7 @@ function close() {
 
 <template>
     <div>
-        <button @click="close">Close</button>
+        <button class="close" @click="close">Close</button>
         <div v-if="c_gs.game_display == GameWindows.UPGRADE">
             <p>Upgrades are a cool feature that are not implemented.</p>
             <p>
@@ -75,10 +75,3 @@ function close() {
         </div>
     </div>
 </template>
-
-<style scoped>
-button {
-    position: sticky;
-    top: 0px;
-}
-</style>

@@ -35,7 +35,7 @@ function time_up() {
     <form @submit.prevent="make_selection">
         <h3>Make a selection:</h3>
         <p>{{ request.prompt }}</p>
-        <ul>
+        <ul class="no-marker">
             <li v-for="option of request.options">
                 <input type="radio" :value="option" v-model="selected" name="selection">
                 <label :for="option">{{ option }}</label>

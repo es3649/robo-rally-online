@@ -159,6 +159,16 @@ export const useGameStateStore = defineStore({
                 })
             })
         },
+        clear_registers(): void {
+            this.registers.forEach((register: ProgrammingCardSlot[]): void => {
+                register.forEach((card: ProgrammingCardSlot): void => {
+                    if (card !== undefined) {
+                        this.programming_hand.push(card)
+                    }
+                })
+            })
+            this.registers = newRegisterArray()
+        },
         clearProgrammingHand(): void {
             this.programming_hand = []
         },

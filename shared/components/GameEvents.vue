@@ -5,32 +5,21 @@ import GameEvent from "./GameEvent.vue"
 
 const props = defineProps<{
     events: GameAction[],
-    max_events: number
+    max_events: number,
 }>()
 
 </script>
 
 <template>
-    <ul>
-        <li v-for="event of props.events.slice(-max_events).reverse()">
-            <GameEvent :event="event" />
-        </li>
-    </ul>
+    <div class="gridded event-grid">
+        <GameEvent v-for="event of props.events.slice(-max_events).reverse()" :event="event" />
+    </div>
 </template>
 
 <style scoped>
-/* fill all the space that the holder gets, then scroll the overflow */
-ul {
-    height: 40vh;
-    overflow: hidden;
-    /* set text wrapping */
+.event-grid {
+    grid-template-columns: 1fr;
+    gap: var(--card-margin);
+    margin-top: var(--card-margin);
 }
-
-ul:hover, ul:focus, ul:active {
-    overflow: auto;
-}
-
-/* ul::-webkit-scrollbar {
-    display: none;
-} */
 </style>

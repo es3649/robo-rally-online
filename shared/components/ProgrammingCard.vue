@@ -72,9 +72,3 @@ defineProps<{
     </svg>
   </main>
 </template>
-
-<style scoped>
-svg {
-  margin: auto;
-}
-</style>

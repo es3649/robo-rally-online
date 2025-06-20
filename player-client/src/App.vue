@@ -63,11 +63,91 @@ function setupSessionID() {
 
 function lobby() {
   c_gs.phase = GamePhase.Lobby
+  c_gs.all_characters = [
+    {
+      name:"Sample",
+      id:"test123",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    },{
+      name:"Sample 2",
+      id:"test234",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    },{
+      name:"Sample 3",
+      id:"test2345",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    },{
+      name:"Sample 4",
+      id:"test2346",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    },{
+      name:"Sample 5",
+      id:"test2347",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    },{
+      name:"Sample 6",
+      id:"test2348",
+      "sprite_small":"/src/assets/robot_race1.jpg",
+      "sprite_large":"#",
+      "color":{
+          "border_color":"#a55",
+          "fill_color":"#faa"
+      },
+      "bluetooth_id":"blootoototoototoototh"
+    }
+  ]
+  c_gs.available_characters.add('test123')
+  c_gs.character = undefined
   router.replace('/lobby')
+}
+
+function lobby2() {
+  c_gs.character = {
+    name:"Sample",
+    id:"test123",
+    "sprite_small":"/src/assets/robot_race1.jpg",
+    "sprite_large":"/src/assets/robot_fighter.jpg",
+    "color":{
+        "border_color":"#a55",
+        "fill_color":"#faa"
+    },
+    "bluetooth_id":"blootoototoototoototh"
+  }
 }
 
 function game() {
   router.replace('/game')
+  c_gs.phase = GamePhase.Upgrade
 }
 
 // this needs to be called early on
@@ -81,6 +161,7 @@ setupSessionID()
       <header>
         <div class="inline-buttons">
           <button @click="lobby">Lobby</button>
+          <button @click="lobby2">Lobby 2</button>
           <button @click="game">Game</button>
         </div>
       </header>

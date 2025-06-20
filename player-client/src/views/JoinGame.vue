@@ -37,18 +37,24 @@ async function join() {
 
 <template>
   <main>
-    <h2>Join Game</h2>
+    <h2 class="text-center">Join Game</h2>
     <div v-if="error" class="error banner">
       <p>{{ c_cs.join_req.response }}</p>
     </div>
-    <form v-if="!loading" @submit.prevent="join()">
-      <label for="player_name">Player Name</label>
-      <input id="player_name" type="text" placeholder="name" maxlength="15" v-model="player_name" required> <br/>
-      <p>{{ player_name.length }}/15</p>
-      <input type="submit">
+    <form class="text-center" v-if="!loading" @submit.prevent="join()">
+      <label for="player_name" class="space-after">Player Name</label>
+      <input id="player_name" class="space-after" type="text" placeholder="name" maxlength="15" v-model="player_name" required>
+      <span class="text-half-size">{{ player_name.length }}/15</span>
+      <input type="submit" class="big-button">
     </form>
     <div v-if="loading">
-      <p>Joining Game</p>
+      <p class="text-center">Joining Game...</p>
     </div>
   </main>
 </template>
+
+<style lang="css" scoped>
+main {
+  margin: 0px 8px;
+}
+</style>

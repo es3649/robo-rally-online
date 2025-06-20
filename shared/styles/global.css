@@ -1,3 +1,4 @@
+/* ROOT GLOBAL STYLES */
 :root {
   box-sizing: border-box;
 }
@@ -6,17 +7,189 @@
   box-sizing: border-box;
 }
 
+/* BUTTON STYLES */
+button,
+input[type=submit] {
+  font-family: "tekturregular",
+    Ubuntu,
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;;
+  padding: .5rem;
+  border-radius: .25rem;
+  border-color: var(--secondary);
+  background-color: var(--primary);
+  color: var(--invert-color-text);
+}
+
+button:active,
+input[type=submit]:active {
+  background-color: var(--accent);
+  color: var(--color-text)
+}
+
+button:disabled,
+button:disabled:focus,
+button:disabled:active,
+input[type=input]:disabled,
+input[type=input]:disabled:focus,
+input[type=input]:disabled:active {
+  background-color: var(--primary);
+  border-color: var(--invert-secondary);
+  opacity: 70%;
+  color: var(--color-text);
+}
+
+@media screen and (min-width: 720px) {
+  button:hover,
+  input[type=submit]:hover {
+    border-color: var(--accent);
+  }
+
+  button:disabled:hover,
+  input[type=submit]:disabled:hover {
+    border-color: var(--invert-secondary);
+    /* background-color: var(--secondary); */
+    color: var(--color-text);
+  }
+}
+
+.big-button {
+  margin: 3em 10vw;
+  width: 80%;
+}
+
+/* DEFAULT IMG SIZING */
+img {
+  max-width: 100%;
+}
+
+/* STYLES FOR TEXT */
+.text-primary {
+  color: var(--primary);
+}
+
+.text-smaller {
+  font-size: .8em;
+}
+
+.text-half-size {
+  font-size: .5em;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* REUSED SPACING STYLES */
+.space-after {
+  margin-right: .5em;
+}
+
+.no-top-margin {
+  margin-top: 0px;
+}
+
+/* BOX STYLES */
+.block {
+  display: block;
+}
+
+.flex-rows {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.flex-1 {
+  flex-basis: 1;
+}
+
+/* STYLES FOR GRIDS */
+.gridded {
+  display: grid;
+}
+
+.grid-2 {
+  grid-column: 1 / span 2;
+}
+
+.grid-right {
+  justify-items: right;
+}
+
+.scroll-box {
+  overflow: scroll;
+}
+
+/* STYLES FOR COMMON FEATURES */
+.popup-fullscreen {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  border: 1vw solid var(--accent);
+  border-radius: 4vw;
+  margin: 4vw;
+  padding: 5vw;
+  width: 90vw;
+  height: calc(100vh - 10vw);
+  box-shadow: 0px 0px 5vw var(--accent);
+  background-color: var(--color-background);
+  z-index: 1000;
+}
+
+.right-tray {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  margin-top: 4vh;
+  margin-bottom: 4vh;
+  padding: 3vh;
+  width: 90vw;
+  height: calc(92vh - 2vw);
+  box-shadow: -2px 0px 5vw var(--accent);
+  border: 1vw solid var(--accent);
+  border-right: none;
+  border-top-left-radius: 4vh;
+  border-bottom-left-radius: 4vh;
+  background-color: var(--color-background);
+  z-index: 500;
+  overflow: scroll;
+  font-size: smaller;
+}
+
+.right-tray > button.close {
+  position: sticky;
+  top: 0px;
+}
+
+/* SHARED ELEMENT STYLES */
+:root {
+  --card-dim: 11vh;
+  --card-border-radius: .5rem;
+  --card-margin: 10px;
+}
 
 .card {
-  width: 11vh;
-  height: 11vh;
+  width: var(--card-dim);
+  height: var(--card-dim);
+  border: 0.125rem solid var(--primary);
+  border-radius: var(--card-border-radius);
+  /* grid-column: 1; */
+  text-align: center;
+  align-content: center;
 }
 
-.programming-card {
-  border: 0.5rem solid var(--color-border);
-  border-radius: 1rem;
+@media screen and (min-width: 720px) { 
+  .active-cards .card:hover {
+    border-color: var(--accent);
+  }
 }
 
-.programming-card:hover {
-  border-color: var(--color-border-hover);
+.no-marker {
+  list-style-type: none;
 }

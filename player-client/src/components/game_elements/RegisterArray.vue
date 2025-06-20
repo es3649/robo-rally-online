@@ -51,7 +51,7 @@ function rebalance(): void  {
 
 <template>
     <div class="register-array">
-        <div v-for="(_, idx) in c_gs.registers" class="card register">
+        <div v-for="(_, idx) in c_gs.registers" class="register">
             <draggable
                 class="drop-area"
                 :disabled="!c_gs.programming_enabled"
@@ -61,7 +61,7 @@ function rebalance(): void  {
                 item-key="id"
             >
                 <template #item="{ element: card }">
-                    <ProgrammingCard fill_color="#456" border_color="#123" :value="card.action" :size="50"></ProgrammingCard>
+                    <ProgrammingCard fill_color="#456" border_color="#123" :value="card.action" :size="70"></ProgrammingCard>
                 </template>
             </draggable>
         </div>
@@ -69,25 +69,27 @@ function rebalance(): void  {
 </template>
 
 <style scoped>
+
+
 .register-array {
     display: flex;
     flex-direction: column;
 }
 .empty-slot, .register {
-    min-width: 100px;
-    height: 11vh;
-    margin: .25rem;
+    --border: .0625rem;
+    --dim: calc(var(--border) * 2 + var(--card-dim));
+    margin: calc(var(--card-margin) - var(--border));
+    border: var(--border) solid var(--primary);
+    border-radius: var(--card-border-radius);
+    height: var(--dim);
+    width: var(--dim);
     overflow: hidden;
-    background-color: #808080;
-    border-color: #353535;
-    border-style: solid;
-    border-width: 3px;
-    border-radius: 10px;
+    background-color: var(--secondary);
 }
 
 .drop-area {
-    width: 100%;
-    height: 100%;
+    height: var(--dim);
+    width: var(--dim);
 }
 
 </style>
