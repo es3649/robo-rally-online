@@ -1,5 +1,7 @@
 # RoboRally Online
 
+editing on windows now
+
 RoboRally Online is a Typescript/robotics implementation of the RoboRally board game, by Richard Garfield and Renegade Game Studio.
 
 One day, while playing RoboRally, I thought to myself, _"How cool would it be if the robots on the board were actual robots, and I could actually program them?"_ so I decided to make it for real.
