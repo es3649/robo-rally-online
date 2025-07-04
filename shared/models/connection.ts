@@ -1,5 +1,5 @@
 import { ProgrammingCard, type GameAction, type GamePhase, type Program, type ProgrammingHand, type RegisterArray } from './game_data'
-import type { Character, CharacterID, PlayerID, PlayerStateData } from './player'
+import type { Character, CharacterID, PlayerID, PlayerStateData, WinnerData } from './player'
 import { Server2Main, Main2Server } from './events'
 
 export type BotAvailabilityUpdate = {
@@ -46,6 +46,8 @@ export interface ServerToClientEvents {
     "server:game-action": (action: GameAction) => void
     "server:update-player-states": (states: Map<PlayerID, PlayerStateData>) => void
     "server:request-input": (message: PendingActionChoice) => void
+
+    "server:game-over": (winner: WinnerData) => void
 
     "server:reset": () => void
 }

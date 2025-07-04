@@ -1,11 +1,12 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/shared/models/game_data";
 import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/shared/models/game_data";
-import type { CharacterID, Character, PlayerStateData, PlayerID } from "@/shared/models/player";
+import type { CharacterID, Character, PlayerStateData, PlayerID, WinnerData } from "@/shared/models/player";
 import { socket, TIMEOUT } from "@/socket"
 import { Client2Server, Server2Client } from "@/shared/models/events";
 import type { BotAvailabilityUpdate, PendingActionChoice, ProgrammingData } from "@/shared/models/connection";
 import { useConnectionStore } from "./client_connection";
+import router from "@/router";
 
 export enum GameWindows {
     DEFAULT,
@@ -81,7 +82,8 @@ export const useGameStateStore = defineStore({
             available_characters: new Set<CharacterID>(),
 
             game_display: GameWindows.DEFAULT,
-            help_open: false
+            help_open: false,
+            winner: undefined as (WinnerData|undefined)
         }
     },
     getters: {
@@ -283,6 +285,12 @@ export const useGameStateStore = defineStore({
 
             socket.on(Server2Client.REQUEST_INPUT, (request: ProgrammingCard.ActionChoiceData) => {
                 console.log("received input request:", request)
+            })
+
+            socket.on(Server2Client.GAME_OVER, (winner: WinnerData) => {
+                console.log("received winner data: Game Over!")
+                this.winner = winner
+                router.replace('/gg')
             })
         }
     }

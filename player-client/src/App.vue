@@ -135,19 +135,38 @@ function lobby2() {
   c_gs.character = {
     name:"Sample",
     id:"test123",
-    "sprite_small":"/src/assets/robot_race1.jpg",
-    "sprite_large":"/src/assets/robot_fighter.jpg",
-    "color":{
+    sprite_small:"/src/assets/robot_race1.jpg",
+    sprite_large:"/src/assets/robot_fighter.jpg",
+    color:{
         "border_color":"#a55",
         "fill_color":"#faa"
     },
-    "bluetooth_id":"blootoototoototoototh"
+    bluetooth_id:"blootoototoototoototh"
   }
 }
 
 function game() {
   router.replace('/game')
   c_gs.phase = GamePhase.Upgrade
+}
+
+function end() {
+  router.replace('/gg')
+  c_gs.winner = {
+    name: "ur mom",
+    character: {
+      name: "Twonko",
+      id: "twonkoid",
+      sprite_small: "/src/assets/robot_race1.jpg",
+      sprite_large: "/src/assets/robot_fighter.jpg",
+      color: {
+        border_color: "#a55",
+        fill_color: "#faa"
+      },
+      bluetooth_id: "blootoototototoototh"
+    }
+  }
+  c_gs.phase = GamePhase.Lobby
 }
 
 // this needs to be called early on
@@ -157,19 +176,22 @@ setupSessionID()
 
 <template>
   <main>
-    <div v-if="c_gs.phase == GamePhase.Lobby || c_gs.phase == GamePhase.Setup">
-      <header>
-        <div class="inline-buttons">
-          <button @click="lobby">Lobby</button>
-          <button @click="lobby2">Lobby 2</button>
-          <button @click="game">Game</button>
-        </div>
-      </header>
-      
-      <RouterView />
-    </div>
-    <div v-else>
-      <RouterView />
+    <div class="app-contents">
+      <div v-if="c_gs.phase == GamePhase.Lobby || c_gs.phase == GamePhase.Setup" class="treadplate-theme-small min-full-ht">
+        <header>
+          <div class="inline-buttons">
+            <button @click="lobby">Lobby</button>
+            <button @click="lobby2">Lobby 2</button>
+            <button @click="game">Game</button>
+            <button @click="end">End</button>
+          </div>
+        </header>
+        
+        <RouterView />
+      </div>
+      <div v-else class="min-full-ht">
+        <RouterView />
+      </div>
     </div>
   </main>
 </template>
@@ -183,4 +205,20 @@ header {
 .inline-buttons {
   display: inline;
 }
+
+.app-contents {
+  justify-self: center;
+  min-width: 100vw;
+  max-width: 1080px;
+  height: 100vh;
+  background-color: var(--color-background);
+  background-image: unset;
+}
+
+@media screen and (min-width: 1080px) {
+  .app-contents {
+    min-width: 1080px;
+  }
+}
+
 </style>

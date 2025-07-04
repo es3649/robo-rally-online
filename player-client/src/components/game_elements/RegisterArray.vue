@@ -70,11 +70,11 @@ function rebalance(): void  {
 
 <style scoped>
 
-
 .register-array {
     display: flex;
     flex-direction: column;
 }
+
 .empty-slot, .register {
     --border: .0625rem;
     --dim: calc(var(--border) * 2 + var(--card-dim));
@@ -90,6 +90,12 @@ function rebalance(): void  {
 .drop-area {
     height: var(--dim);
     width: var(--dim);
+}
+
+@media screen and (min-width: 1080px) {
+    .register-array {
+        flex-direction: row;
+    }
 }
 
 </style>

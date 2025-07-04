@@ -22,6 +22,20 @@ input[type=submit] {
   color: var(--invert-color-text);
 }
 
+button.contrast,
+input[type=submit].contrast {
+  border-color: var(--color-background);
+  border-width: 3px;
+}
+
+@media screen and (min-width: 1080px) {
+  button.contrast-small,
+  input[type=submit].contrast-small {
+    border-color: var(--color-background);
+    border-width: 3px;
+  }
+}
+
 button:active,
 input[type=submit]:active {
   background-color: var(--accent);
@@ -40,7 +54,7 @@ input[type=input]:disabled:active {
   color: var(--color-text);
 }
 
-@media screen and (min-width: 720px) {
+@media (hover: hover) {
   button:hover,
   input[type=submit]:hover {
     border-color: var(--accent);
@@ -55,7 +69,7 @@ input[type=input]:disabled:active {
 }
 
 .big-button {
-  margin: 3em 10vw;
+  margin: 3em 10%;
   width: 80%;
 }
 
@@ -71,6 +85,10 @@ img {
 
 .text-smaller {
   font-size: .8em;
+}
+
+.text-larger {
+  font-size: 1.2em;
 }
 
 .text-half-size {
@@ -94,21 +112,44 @@ img {
   margin-top: 0px;
 }
 
+.min-full-ht {
+  min-height: 100%;
+}
+
 /* BOX STYLES */
 .block {
   display: block;
 }
 
-.flex-rows {
+.flex-block {
+  display: block flex;
+}
+
+.flex {
   display: flex;
+}
+
+.flex-rows {
   flex-direction: row;
   flex-wrap: wrap;
+}
+
+.flex-columns {
+  flex-wrap: wrap;
+  flex-direction: column;
 }
 
 .flex-1 {
   flex-basis: 1;
 }
 
+.flex-horiz-center {
+  justify-content: center;
+}
+
+.flex-vert-center {
+  align-content: center;
+}
 /* STYLES FOR GRIDS */
 .gridded {
   display: grid;
@@ -118,12 +159,40 @@ img {
   grid-column: 1 / span 2;
 }
 
+.grid-2-row {
+  grid-row: auto / span 2;
+}
+
 .grid-right {
   justify-items: right;
 }
 
 .scroll-box {
   overflow: scroll;
+}
+
+@media screen and (max-width: 1079px) {
+  .gridded-small {
+    display: grid;
+  }
+
+  .grid-2-small {
+    grid-column: 1 / span 2;
+  }
+
+  .hidden-small {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1080px) {
+  .hidden-large {
+    display: none;
+  }
+
+  .inline-large {
+    display: inline;
+  }
 }
 
 /* STYLES FOR COMMON FEATURES */
@@ -167,6 +236,57 @@ img {
   top: 0px;
 }
 
+@media screen and (min-width: 1080px) {
+  .popup-fullscreen {
+    position: fixed;
+    margin: 4vw 0vw;
+    /* half the screen, less half of the width (including 5px margin) */
+    left: calc(50vw - 335px);
+    width: 680px;
+    height: initial;
+    /* min-width: 680px; */
+    min-height: 50vh;
+    border: 5px solid var(--accent);
+  }
+
+  .right-tray {
+    position: relative;
+    float: right;
+    top: unset;
+    right: unset;
+    z-index: unset;
+    max-width: 380px;
+    max-height: 75vh;
+    border-width: 5px;
+    height: unset;
+    margin-left: 8px;
+    margin-right: -8px;
+  }
+}
+
+@media screen and (min-width: 1856px) {
+  .right-tray {
+    position: absolute;
+    top: 15vh;
+    right: calc(50vw - 912px);
+    box-shadow: unset;
+    /* box-shadow: 5vw 0vw vw var(--accent),
+      0px 0vw 5vw var(--accent),
+      0px 0vw 5vw var(--accent); */
+    border-right: 5px solid var(--accent);
+    border-left: none;
+    border-top-left-radius: unset;
+    border-bottom-left-radius: unset;
+    border-top-right-radius: 4vh;
+    border-bottom-right-radius: 4vh;
+    z-index: 10;
+  }
+}
+
+.background-card {
+  background-color: color(from var(--color-background) srgb r g b / 70%);
+}
+
 /* SHARED ELEMENT STYLES */
 :root {
   --card-dim: 11vh;
@@ -184,7 +304,7 @@ img {
   align-content: center;
 }
 
-@media screen and (min-width: 720px) { 
+@media (hover: hover) {
   .active-cards .card:hover {
     border-color: var(--accent);
   }

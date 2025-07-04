@@ -53,7 +53,7 @@ function selection_made(selection:string) {
 </script>
 
 <template>
-    <main>
+    <main class="game-root">
         <div class="gridded nav">
             <CheckpointTracker class="tracker" />
             <EnergyCounter class="tracker" />
@@ -65,6 +65,7 @@ function selection_made(selection:string) {
             <img class="ico" :class="{active: c_gs.game_display==GameWindows.SETTINGS}" src="@/assets/ico/settings.svg" alt="Settings" @click="show_settings"/>
         </div>
         <div class="body-content">
+            <HelpInfo v-if="c_gs.help_open" class="right-tray"/>
             <div v-if="c_gs.game_display == GameWindows.DEFAULT">
                 <div v-if="c_gs.has_request" class="popup-fullscreen">
                     <GetInput :request="(c_gs.request as PendingActionChoice)" @selected="selection_made"/>
@@ -79,10 +80,12 @@ function selection_made(selection:string) {
                         <!-- programming registers -->
                         <RegisterArray class="reorder" :class="{'active-cards': c_gs.programming_enabled}"
                             :disabled="!c_gs.programming_enabled"/>
-                        <div class="grid-2">
                             <!-- cards -->
-                            <ProgrammingHand class="active-cards" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled"/>
-                            <GameEvents v-else :events="c_gs.action_log" :max_events="10" class="scroll-box events"/>
+                        <GameEvents :events="c_gs.action_log" :max_events="10" class="scroll-box grid-2-small grid-2-row hidden-small events"/>
+                        <ProgrammingHand class="active-cards grid-2-small" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled"/>
+                        <div v-else>
+                            <OpponentView />
+                            <GameEvents :events="c_gs.action_log" :max_events="10" class="scroll-box grid-2-small hidden-large events"/>
                         </div>
                     </div>
                     <div class="gridded control-grid" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled">
@@ -108,15 +111,14 @@ function selection_made(selection:string) {
                 <SettingsManager />
             </div>
         </div>
-        <HelpInfo v-if="c_gs.help_open" class="right-tray"/>
     </main>
 </template>
 
 <style scoped>
-main {
+.game-root {
     width: 100vw;
-    height: 100vh;
 }
+
 .ico {
     width: 100%;
     flex: 1;
@@ -130,11 +132,10 @@ main {
     z-index: 1;
 }
 
-@media screen and (min-width: 720px) {
-    /* hover supercedes active/focus, so we define this one here */
+@media screen and (hover: hover) {
+    /* hover supersedes active/focus, so we define this one here */
     .ico:hover {
         background-color: var(--secondary);
-        /* border-radius: 5px; */
     }
 }
 
@@ -143,8 +144,6 @@ main {
 .ico:active {
     border-bottom-right-radius: .5em;
     border-bottom-left-radius: .5em;
-    /* padding-top: .25rem; */
-    /* border-color: var(--primary); */
     background-color: var(--accent);
 }
 
@@ -157,19 +156,14 @@ main {
     top: 0px;
     grid-template-columns: repeat(4, 1fr);
     z-index: 100;
-    /* box-shadow: 0px 2px 5px var(--color-background-soft); */
 }
 
 .tracker {
-    /* padding-top: 1em;
-    margin-top: -1em; */
     display: inline;
     text-align: center;
     border-style: solid;
     background-color: var(--secondary);
     border-color: var(--color-background-mute);
-    /* border-bottom-right-radius: .25em;
-    border-bottom-left-radius: .25em; */
 }
 
 .programming-grid {
@@ -196,7 +190,18 @@ main {
     gap: .5rem;
 }
 
-/* .control-grid * {
-    margin: .25rem;
-} */
+@media screen and (min-width: 1080px) {
+    .game-root {
+        width: 1080px;
+    }
+
+    .programming-grid {
+        grid-template-columns: 5fr 3fr;
+    }
+
+    .reorder {
+        order: unset;
+        grid-column: unset;
+    }
+}
 </style>

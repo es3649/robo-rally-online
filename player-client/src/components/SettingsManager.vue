@@ -59,8 +59,10 @@ function get_input() {
             </span>
         </p>
         <h3>Credits</h3>
-        <p class="text-smaller">Development by: Eric Steadman.
+        <p class="text-smaller">Development: Eric Steadman.
+            <br />
             Game Design: Richard Garfield and Renegade Game Studios.
+            <br />
             This project is not affiliated with nor endorsed by Richard Garfield nor Renegade Game Studios.
         </p>
     </main>

@@ -49,6 +49,7 @@ export namespace Main2Server {
     export const UPDATE_BOT_CONNECTION = "main:update-bot-connection"
     export const UPDATE_PLAYER_STATES = "main:update-player-states"
     export const PROGRAMMING_DATA = "main:programming-data"
+    export const GAME_OVER = "main:game-over"
 }
 export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.PHASE_UPDATE |
@@ -57,19 +58,21 @@ export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.GET_INPUT |
     typeof Main2Server.UPDATE_BOT_CONNECTION |
     typeof Main2Server.UPDATE_PLAYER_STATES |
-    typeof Main2Server.PROGRAMMING_DATA
+    typeof Main2Server.PROGRAMMING_DATA |
+    typeof Main2Server.GAME_OVER
 
 // events sent to renderer
 export namespace Main2Render {
     export const PLAYER_ADDED = "main:player-added"
     export const UPDATE_BOT_ACTIVE = "main:update-bot-active"
-    export const UPDATE_BOT_CONNECTION = "main:update-bot-connection"
-    export const GAME_ACTION = "main:game-action"
+    export const UPDATE_BOT_CONNECTION = Main2Server.UPDATE_BOT_CONNECTION
+    export const GAME_ACTION = Main2Server.GAME_ACTION
     export const GAME_ERROR = "main:game-error"
     export const UPDATE_PLAYER = "main:update-player"
     export const GET_INFO_NOTIFICATION = "main:get-info-notification"
     export const READY_STATUS = "main:ready-notification"
-    export const UPDATE_PLAYER_STATE = "main:update-player-state"
+    export const UPDATE_PLAYER_STATE = Main2Server.UPDATE_PLAYER_STATES
+    export const GAME_OVER = Main2Server.GAME_OVER
 }
 export type Main2Render = typeof Main2Render.PLAYER_ADDED |
     typeof Main2Render.UPDATE_BOT_ACTIVE |
@@ -79,7 +82,8 @@ export type Main2Render = typeof Main2Render.PLAYER_ADDED |
     typeof Main2Render.UPDATE_PLAYER |
     typeof Main2Render.GET_INFO_NOTIFICATION |
     typeof Main2Render.READY_STATUS |
-    typeof Main2Render.UPDATE_PLAYER_STATE
+    typeof Main2Render.UPDATE_PLAYER_STATE |
+    typeof Main2Render.GAME_OVER
 
 /* events emitted by the server thread */
 // sent to player client
@@ -92,6 +96,7 @@ export namespace Server2Client {
     export const UPDATE_PLAYER_STATES = "server:update-player-states"
     export const REQUEST_POSITION = "server:request-position"
     export const REQUEST_INPUT = "server:request-input"
+    export const GAME_OVER = "server:game-over"
 }
 
 // sent to main thread

@@ -6,21 +6,14 @@ body {
   min-width: 100vw;
   margin: 0%;
   color: var(--color-text);
-  background: var(--color-background);
+  /* background: var(--color-background); */
   /* background-image: url("./tread-plate-tile.svg"); */
-  background-repeat: repeat;
+  /* background-repeat: repeat; */
 }
 
 @media (hover: hover) {
   a:hover {
     background-color: hsla(160, 100%, 37%, 0.2);
-  }
-}
-
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    /* place-items: center; */
   }
 }
 
@@ -31,15 +24,17 @@ body {
   font-weight: normal;
 }
 
-.flex-rows {
+@media screen and (min-width: 1080px) {
+  body {
     display: flex;
-    flex-wrap: wrap;
+    /* place-items: center; */
+  }
+  
+  img.large-sprite {
+    max-width: 600px;
+  }
 }
 
-.flex-columns {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: column;
+img.sprite {
+  max-width: 150px;
 }
-
-
