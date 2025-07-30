@@ -33,7 +33,7 @@ import router from './router';
 import { createPinia } from 'pinia';
 import { useGameDataStore } from './stores/render_game_data_store';
 import { PlayerStatusUpdate, type PlayerUpdate } from '../shared/models/connection';
-import type { PlayerID } from '../shared/models/player';
+import type { PlayerID, WinnerData } from '../shared/models/player';
 import { BOTS_MAP } from '../shared/data/robots';
 import type { PlayerStateData } from '../shared/models/player';
 import type { GameAction } from '../shared/models/game_data';
@@ -92,4 +92,10 @@ window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID, timeout?: n
     console.log("Received GetData event for:", player)
     r_gds.get_input.timeout = timeout ? timeout : 30
     r_gds.get_input.player = player
+})
+
+window.mainEventHandlerAPI.onGameOverNotification((winner: WinnerData) => {
+    console.log("Received Game Over")
+    r_gds.winner = winner
+    
 })

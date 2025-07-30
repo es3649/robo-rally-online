@@ -3,7 +3,7 @@
  * represents a state transition. The state awareness allows the class to return and the entire
  * program to go dormant while awaiting player/bluetooth input.
  */
-import { PlayerState, type PlayerID } from "../../shared/models/player"
+import { PlayerState, type Player, type PlayerID } from "../../shared/models/player"
 import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
 import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
@@ -54,6 +54,7 @@ export class GameStateManager {
     private movement_frames_position: number = 0
     private upgrade_requests = new Map<PlayerID, any>()
     private damage = new Map<PlayerID, number>()
+    private winner: undefined|Player 
     private readonly player_count: number
     private readonly player_manager: PlayerManager
     private readonly board: Board
@@ -552,7 +553,7 @@ export class GameStateManager {
         // check the end condition
         if (this.gameOver() !== undefined) {
             // return. The caller should be checking the game over condition, and we can't
-            // guarantee a return from this depth, but we need to halt
+            // guarantee a return value from this depth, but we need to halt
             return
         }
 
@@ -578,8 +579,12 @@ export class GameStateManager {
      * checks if the end condition has been met
      * @returns the id of the player who won the game
      */
-    public gameOver(): PlayerID|undefined {
+    public gameOver(): Player|undefined {
         console.log('checking win condition')
+        // if a winner has already be decided, just return it
+        if (this.winner) {
+            return this.winner
+        }
         // check the end conditions
         const last_checkpoint = this.board.getLastCheckpoint()
 
@@ -588,7 +593,13 @@ export class GameStateManager {
             // checkpoint, so there's no possibility for a tie
             if (state.checkpoints == last_checkpoint) {
                 console.log(`${actor} has won`)
-                return actor
+
+                const winner_data: Player = {
+                    name: actor,
+                    character: this.player_manager.ge
+                }
+                this.winner = winner_data
+                return winner_data
             }
         }
     }

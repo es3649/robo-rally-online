@@ -1,4 +1,4 @@
-import { type Character, type PlayerID, type PlayerStateData } from "../../shared/models/player";
+import type { Character, Player, PlayerID, PlayerStateData } from "../../shared/models/player";
 import type { BoardData } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 import { MAX_PLAYERS } from "../../main/game_manager/initializers";
@@ -74,7 +74,8 @@ export const useGameDataStore = defineStore({
                         bluetooth_id: "", 
                     }
                 }
-            }] as GameAction[]
+            }] as GameAction[],
+            winner: undefined as (Player|undefined)
         }
     },
     getters: {},

@@ -3,6 +3,10 @@
   box-sizing: border-box;
 }
 
+* {
+  scrollbar-color: rgba(60, 60, 60, .6) rgba(0, 0, 0, 0);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -168,7 +172,8 @@ img {
 }
 
 .scroll-box {
-  overflow: scroll;
+  overflow: auto;
+  scrollbar-color: inherit rgba(0, 0, 0, 0);
 }
 
 @media screen and (max-width: 1079px) {
@@ -186,6 +191,10 @@ img {
 }
 
 @media screen and (min-width: 1080px) {
+  .gridded-large {
+    display: grid;
+  }
+
   .hidden-large {
     display: none;
   }

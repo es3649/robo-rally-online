@@ -306,7 +306,21 @@ child.on('message', (message: Server2MainMessage<any>) => {
                 const did_run = game.setProgram(program_set_msg.id, program_set_msg.data.registers)
 
                 if (did_run) {
-                    startNewRound()
+                    // check the end condition
+                    const winner = game.gameOver()
+                    if (winner != undefined) {
+                        // then the game is over and a winner has been declared
+                        // notify the clients
+                        M2SSend<WinnerData>({
+                            name: Main2Server.GAME_OVER,
+                            data: winner
+                        })
+                        // notify the console
+                        sendToAllWindows<WinnerData>(Main2Render.GAME_OVER,  winner)
+                    } else {
+                        // the game goes on: invoke another round
+                        startNewRound()
+                    }
                 }
             } catch (error) {
                 console.log(error)

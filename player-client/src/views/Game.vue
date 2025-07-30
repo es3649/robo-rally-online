@@ -84,7 +84,10 @@ function selection_made(selection:string) {
                         <GameEvents :events="c_gs.action_log" :max_events="10" class="scroll-box grid-2-small grid-2-row hidden-small events"/>
                         <ProgrammingHand class="active-cards grid-2-small" v-if="c_gs.phase == GamePhase.Programming && c_gs.programming_enabled"/>
                         <div v-else>
-                            <OpponentView />
+                            <div>
+                                <h2>Opponents</h2>
+                                <OpponentView />
+                            </div>
                             <GameEvents :events="c_gs.action_log" :max_events="10" class="scroll-box grid-2-small hidden-large events"/>
                         </div>
                     </div>
@@ -101,11 +104,15 @@ function selection_made(selection:string) {
             <div v-else-if="c_gs.game_display == GameWindows.UPGRADE">
                 <UpgradeManager />
             </div>
-            <div v-else-if="c_gs.game_display == GameWindows.PLAYER_INFO">
-                <h2>Opponents</h2>
-                <OpponentView />
-                <h2>Events</h2>
-                <GameEvents :events="c_gs.action_log" :max_events="10" />
+            <div v-else-if="c_gs.game_display == GameWindows.PLAYER_INFO" class="gridded-large player-info-grid">
+                <div>
+                    <h2>Opponents</h2>
+                    <OpponentView />
+                </div>
+                <div>
+                    <h2>Events</h2>
+                    <GameEvents :events="c_gs.action_log" :max_events="10" class="scroll-box"/>
+                </div>
             </div>
             <div v-else-if="c_gs.game_display == GameWindows.SETTINGS">
                 <SettingsManager />
@@ -171,6 +178,10 @@ function selection_made(selection:string) {
     gap: .5em;
 }
 
+.player-info-grid {
+    grid-template-columns: 1fr 2fr;
+}
+
 .info-tray {
     font-size: 12pt;
     padding: 1%;
@@ -191,6 +202,10 @@ function selection_made(selection:string) {
 }
 
 @media screen and (min-width: 1080px) {
+    .body-content {
+        padding: 0px .5em;
+    }
+
     .game-root {
         width: 1080px;
     }

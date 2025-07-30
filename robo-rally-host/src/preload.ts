@@ -7,7 +7,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { BoardData } from "./main/game_manager/board";
 import { Main2Render, Render2Main } from "./shared/models/events";
-import { type Character, type PlayerID, type PlayerName, type PlayerStateData, type WinnerData } from "./shared/models/player";
+import type { Player, PlayerID, PlayerStateData } from "./shared/models/player";
 import type { PlayerUpdate } from "./shared/models/connection";
 import type { GameAction } from "./shared/models/game_data";
 
@@ -59,8 +59,8 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
             callback(id, timeout)
         })
     },
-    onGameOverNotification: (callback: (winner: WinnerData) => void) => {
-        ipcRenderer.on(Main2Render.GAME_OVER, (_event: IpcRendererEvent, winner: WinnerData) => {
+    onGameOverNotification: (callback: (winner: Player) => void) => {
+        ipcRenderer.on(Main2Render.GAME_OVER, (_event: IpcRendererEvent, winner: Player) => {
             callback(winner)
         })
     }

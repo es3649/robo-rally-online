@@ -106,8 +106,3 @@ export class PlayerState implements PlayerStateData {
         }
     }
 }
-
-export type WinnerData = {
-    name: PlayerName,
-    character: Character
-}
