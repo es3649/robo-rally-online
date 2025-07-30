@@ -593,13 +593,13 @@ export class GameStateManager {
             // checkpoint, so there's no possibility for a tie
             if (state.checkpoints == last_checkpoint) {
                 console.log(`${actor} has won`)
+                this.winner = this.player_manager.getPlayer(actor)
 
-                const winner_data: Player = {
-                    name: actor,
-                    character: this.player_manager.ge
+                if (this.winner !== undefined) {
+                    return this.winner
+                } else {
+                    console.warn("A nonexistent player has somehow won. Since we can't find them, the game goes on...")
                 }
-                this.winner = winner_data
-                return winner_data
             }
         }
     }
