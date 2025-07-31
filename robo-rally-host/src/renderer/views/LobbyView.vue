@@ -39,11 +39,13 @@ function start(): void {
         router.replace('/game')
     })
 }
+
+openLobby()
 </script>
 
 <template>
-    <main>
-        <div v-if="r_gds.setup_status == SetupPhase.Lobby">
+    <main class="gridded lobby-grid">
+        <div>
 
             <p>Join IP: <span>{{ r_cs.ip }}</span></p>
             <div v-if="r_cs.ip">
@@ -60,10 +62,15 @@ function start(): void {
                 </ul>
             </div>
 
-            <table>
+            <p>Board: {{ r_gds.board_name }}</p>
+            <!-- <button v-if="r_gds.setup_status != SetupPhase.Lobby" @click="openLobby">Start Lobby</button> -->
+        </div>
+        
+        <div>
+            <table class="block">
                 <tr>
-                    <th>Player</th>
-                    <th>Character</th>
+                    <th class="table-column-50">Player</th>
+                    <th class="table-column-50">Character</th>
                 </tr>
                 <tr v-for="[player_id, name] of r_gds.players" :key="player_id">
                     <td>{{ name }}</td>
@@ -71,8 +78,8 @@ function start(): void {
                 </tr>
             </table>
 
-            <div v-if="r_gds.to_dos.size > 0">
-                <h4>The following must be addressed before beginning the game</h4>
+            <div v-if="r_gds.to_dos.size > 0" class="text-smaller">
+                <p>The following must be addressed before beginning the game</p>
                 <ul v-for="[player, actions] in r_gds.to_dos" :key="player">
                     <!-- <td>{{ player }}:</td> -->
                     <li v-for="line in actions">{{ line }}</li>
@@ -88,11 +95,6 @@ function start(): void {
             - have a button to open the lobby to players, and display local IP address
             - display which players have joined, which bot they have selected, and whether the bot is online yet
             - button to start the game -->
-            
-            
-            
-        <p>Board: {{ r_gds.board_name }}</p>
-        <button v-if="r_gds.setup_status != SetupPhase.Lobby" @click="openLobby">Start Lobby</button>
     </main>
 </template>
 
@@ -101,5 +103,9 @@ svg path {
     transform: scale(5.0);
     -ms-transform: scale(5.0);
     -webkit-transform: scale(5.0);
+}
+
+.lobby-grid {
+    grid-template-columns: 1fr 1fr;
 }
 </style>

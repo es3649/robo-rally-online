@@ -33,10 +33,10 @@ import router from './router';
 import { createPinia } from 'pinia';
 import { useGameDataStore } from './stores/render_game_data_store';
 import { PlayerStatusUpdate, type PlayerUpdate } from '../shared/models/connection';
-import type { PlayerID, WinnerData } from '../shared/models/player';
+import type { Player, PlayerID } from '../shared/models/player';
 import { BOTS_MAP } from '../shared/data/robots';
 import type { PlayerStateData } from '../shared/models/player';
-import type { GameAction } from '../shared/models/game_data';
+import type { GameAction, GamePhase } from '../shared/models/game_data';
 
 // create and mount the Vue app
 const app = createApp(App)
@@ -94,8 +94,12 @@ window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID, timeout?: n
     r_gds.get_input.player = player
 })
 
-window.mainEventHandlerAPI.onGameOverNotification((winner: WinnerData) => {
+window.mainEventHandlerAPI.onUpdateGamePhase((phase: GamePhase) => {
+    console.log("Received game phase:", phase)
+    r_gds.game_phase = phase
+})
+
+window.mainEventHandlerAPI.onGameOverNotification((winner: Player) => {
     console.log("Received Game Over")
     r_gds.winner = winner
-    
 })

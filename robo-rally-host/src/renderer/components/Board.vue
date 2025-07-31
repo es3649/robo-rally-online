@@ -20,7 +20,7 @@ const props = defineProps<{
         <div v-else class="board">
             <div v-for="(col, x) of board.spaces" class="col">
                 <div v-for="(space, y) of col.slice().reverse()">
-                    <BoardTile :tile="space" class="tile" :dim="20" :boundary="getWalls(board, {x:x,y:board.y_dim-1-y})"/>
+                    <BoardTile :tile="space" :dim="20" :boundary="getWalls(board, {x:x,y:board.y_dim-1-y})"/>
                     <!-- <p>space</p> -->
                 </div>
             </div>
@@ -35,8 +35,4 @@ const props = defineProps<{
     position: relative;
     /* overflow: scroll; */
 }
-/* .tile {
-    height: 50px;
-    width: 50px;
-} */
 </style>

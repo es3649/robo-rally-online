@@ -25,8 +25,8 @@ export const useConnectionsStore = defineStore({
             // TODO we also need to advance the phase
             return window.mainAPI.startGame()
         },
-        connectRobot(id: CharacterID) {
-            window.mainAPI.connectRobot(id)
+        async connectRobot(id: CharacterID): Promise<boolean> {
+            return window.mainAPI.connectRobot(id)
         }
     }
 })

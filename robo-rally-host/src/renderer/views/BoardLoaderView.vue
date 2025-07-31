@@ -8,7 +8,6 @@ import { BoardData } from '../../main/game_manager/board';
 const r_gds = useGameDataStore()
 const board_name = ref('')
 const board: Ref<BoardData|undefined> = ref(undefined)
-const add = ref(true)
 const load_error = ref(false)
 
 if (r_gds.loadable_boards.length === 0) {
@@ -38,21 +37,31 @@ function finish() {
 </script>
 
 <template>
-    <main>
-        <div v-if="add">
-            <select id="board_select" v-model="board_name">
-                <option value="" default disabled>Choose a Board</option>
-                <option value="_serial" disabled>From Serial</option>
-                <option v-if="!r_gds.loadable_boards" disabled>Loading...</option>
-                <option v-for="b of r_gds.loadable_boards" :value="b">{{ b }}</option>
-            </select>
+    <main class="gridded boardloader-grid">
+        <div class="flex flex-horiz-center flex-columns">
+            <div>
+                <select id="board_select" v-model="board_name">
+                    <option value="" default disabled>Choose a Board</option>
+                    <option value="_serial" disabled>From Serial</option>
+                    <option v-if="!r_gds.loadable_boards" disabled>Loading...</option>
+                    <option v-for="b of r_gds.loadable_boards" :value="b">{{ b }}</option>
+                </select>
+            </div>
+            <button @click="load" :disabled="!board_name">Load Selected</button>
+            <div v-if="load_error" class="error"><p>Failed to load requested board</p></div>
         </div>
-        <button @click="load" :disabled="!board_name">Load Selected</button>
-        <div v-if="load_error" class="error"><p>Failed to load requested board</p></div>
         <!-- position buttons above, below, L, and R of the guy to extend the board
          re-evaluate the board data type before writing extend method
           -->
-        <BoardComponent :editable="true" :board="board"/>
-        <button @click="finish">Finish</button>
+        <div class="flex flex-horiz-center flex-vert-center flex-columns">
+            <BoardComponent :editable="true" :board="board"/>
+            <button :disabled="board === undefined" @click="finish">Finish</button>
+        </div>
     </main>
 </template>
+
+<style lang="css" scoped>
+.boardloader-grid {
+    grid-template-columns: 1fr 2fr;
+}
+</style>

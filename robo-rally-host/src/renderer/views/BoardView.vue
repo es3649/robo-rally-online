@@ -9,6 +9,9 @@ const r_gds = useGameDataStore()
 
 <template>
     <h1>Board Settings</h1>
-    <button @click="router.back()">&lt;&nbsp;Back</button>
     <BoardComponent :editable="r_gds.setup_status==SetupPhase.BoardSetup" :board="r_gds.board" />
+    <p v-if="r_gds.board !== undefined">Board: {{ r_gds.board_name }}</p>
+    <div v-else>    
+        <button @click="router.push('/board-loader')">Select Board</button>
+    </div>
 </template>

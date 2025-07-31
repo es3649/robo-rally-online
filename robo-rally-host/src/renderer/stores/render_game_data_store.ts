@@ -1,9 +1,9 @@
-import type { Character, Player, PlayerID, PlayerStateData } from "../../shared/models/player";
+import type { CharacterID, Character, Player, PlayerID, PlayerStateData } from "../../shared/models/player";
 import type { BoardData } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 import { MAX_PLAYERS } from "../../main/game_manager/initializers";
 import type { GameAction } from "../../shared/models/game_data";
-import { ProgrammingCard } from "../../shared/models/game_data";
+import { GamePhase, ProgrammingCard } from "../../shared/models/game_data";
 
 export enum SetupPhase {
     PreSetup,
@@ -17,12 +17,14 @@ export const useGameDataStore = defineStore({
     state() {
         return {
             setup_status: SetupPhase.PreSetup,
+            game_phase: GamePhase.Setup,
             board: undefined as BoardData|undefined,
             board_name: undefined as string|undefined,
             loadable_boards: [] as string[],
             players: new Map<PlayerID, string>(),
             characters: new Map<PlayerID, Character>(),
             player_states: new Map<PlayerID, PlayerStateData>(),
+            bot_connections: new Map<CharacterID, boolean>(),
             to_dos: new Map<PlayerID, string[]>(),
             get_input: {
                 player: undefined as PlayerID|undefined,
@@ -169,6 +171,19 @@ export const useGameDataStore = defineStore({
         },
         setPlayerData(id: PlayerID, update: PlayerStateData): void {
             this.player_states.set(id, update)
+        },
+        unsetGetInput() {
+            this.get_input = {
+                player: undefined,
+                timeout: 0
+            }
+        },
+        getBotConnectionStatuses() {
+            window.mainAPI.getBotStatus().then((value: Map<CharacterID, boolean>) => {
+                this.bot_connections = value
+            }).catch((reason: any) => {
+                console.error("Failed to get bot connections", reason)
+            })
         }
     }
 })

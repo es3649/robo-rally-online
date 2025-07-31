@@ -7,9 +7,9 @@ const props = defineProps<{
 </script>
 
 <template>
-    {{ state.priority }}:&nbsp;{{ state.name }}&nbsp;{{ state.active ? "🟢" : "🔴" }}
+    {{ state.priority }}:&nbsp;{{ state.name }}
     <br />
-    🏁:&nbsp;{{ state.checkpoints }}&nbsp;⚡️:&nbsp;{{ state.energy }}
+    {{ state.active ? "🟢" : "🔴" }}&nbsp;🏁:&nbsp;{{ state.checkpoints }}&nbsp;⚡️:&nbsp;{{ state.energy }}
     <!-- <h4>{{ state.name }} ({{ state.active ? "Active" : "Shutdown" }})</h4>
     <table>
         <tr>
