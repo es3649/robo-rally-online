@@ -1,6 +1,5 @@
 import { GameInitializer } from "../main/game_manager/initializers"
-import { senderMaker, type ClientToServerEvents, type PendingActionChoice, type ProgrammingData, type ServerToClientEvents, type SocketData } from "../shared/models/connection"
-import type { Server2Main } from "../shared/models/events"
+import { senderMaker, type ClientToServerEvents, type PendingActionChoice, type ProgrammingData, type Server2MainMessage, type ServerToClientEvents, type SocketData } from "../shared/models/connection"
 import { GamePhase } from "../shared/models/game_data"
 import type { PlayerID, PlayerStateData } from "../shared/models/player"
 import type { EventsMap } from "node_modules/socket.io/dist/typed-events"
@@ -11,7 +10,7 @@ export declare type RRSocketServer = Server<ClientToServerEvents, ServerToClient
 export declare type RRSocketConnection = Socket<ClientToServerEvents, ServerToClientEvents, EventsMap, SocketData>
 
 // create a sender wrapper for server to main communications
-export const S2MSend = senderMaker<Server2Main>(process)
+export const S2MSend = senderMaker<Server2MainMessage>(process)
 
 // this connections map will hold all the socket connections in case we need to
 // send a message to a particular user

@@ -7,11 +7,11 @@ import { listBoards, loadFromJson } from './main/game_manager/board_loader';
 import * as url from 'node:url'
 import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './shared/models/events';
-import { PlayerStatusUpdate, senderMaker, type PlayerUpdate, type ProgrammingData, type Sender, type Server2MainMessage } from './shared/models/connection';
+import { PlayerStatusUpdate, senderMaker, type Main2ServerMessage, type PlayerUpdate, type ProgrammingData, type S2MAddPlayerMessage, type S2MProgramSetMessage, type S2MSelectBotMessage, type Sender, type Server2MainMessage } from './shared/models/connection';
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import type { PlayerStateData, PlayerID } from './shared/models/player';
+import type { PlayerStateData, PlayerID, Player } from './shared/models/player';
 import { GamePhase, newRegisterArray, ProgrammingCard, type GameAction, type Program } from './shared/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
@@ -42,7 +42,7 @@ const child = fork.fork(modulePath, [], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
 
-const M2SSend = senderMaker<Main2Server>(process)
+const M2SSend = senderMaker<Main2ServerMessage>(process)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -80,8 +80,14 @@ const createWindow = (): BrowserWindow => {
  * register the ICP listeners. This is where calls from the renderer will come in
  */
 function registerIPCListeners() {
-    ipcMain.on(Render2Main.BLE_CONNECT, (event: Electron.IpcMainEvent, name: string) => {
+    ipcMain.handle(Render2Main.BLE_CONNECT, (event: Electron.IpcMainInvokeEvent, name: string): boolean => {
         // BluetoothManager.getInstance().connectRobot(name)
+        console.log(`plz connect the robot called ${name}`)
+        return true
+    })
+
+    ipcMain.on(Render2Main.GET_BOT_STATUS, (event: Electron.IpcMainEvent) => {
+        console.log("Figure out how to get bluetooth connection statuses")
     })
 
     ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
@@ -114,7 +120,7 @@ function registerIPCListeners() {
 
     ipcMain.on(Render2Main.RESET, () => {
         // tell the server to reset
-        M2SSend<never>({name: Main2Server.RESET})
+        M2SSend({name: Main2Server.RESET})
         // create a new game object
         game = undefined
         game_initializer = new GameInitializer()
@@ -128,7 +134,7 @@ function registerIPCListeners() {
         }
 
         // notify the server that we are starting
-        M2SSend<GamePhase>({
+        M2SSend({
             name: Main2Server.PHASE_UPDATE,
             data: GamePhase.Setup
         })
@@ -144,7 +150,7 @@ function registerIPCListeners() {
             console.error("failed to get first player")
             return false
         }
-        M2SSend<never>({
+        M2SSend({
             name: Main2Server.REQUEST_POSITION,
             id: player
         })
@@ -210,17 +216,17 @@ app.on('activate', () => {
 });
 
 class ServerRenderNotifier implements Notifier {
-    private m2s_sender: Sender<Main2Server>
+    private m2s_sender: Sender<Main2ServerMessage>
     private render_sender: <T>(channel: Main2Render, data: T) => void
 
-    constructor(m2s_sender: Sender<Main2Server>, render_sender: <T>(channel: Main2Render, data: T) => void) {
+    constructor(m2s_sender: Sender<Main2ServerMessage>, render_sender: <T>(channel: Main2Render, data: T) => void) {
         this.m2s_sender = m2s_sender
         this.render_sender = render_sender
     }
 
     gameAction(action: GameAction): void {
         // tell the server to send the game action notification
-        this.m2s_sender<GameAction>({
+        this.m2s_sender({
             name: Main2Server.GAME_ACTION,
             data: action
         })
@@ -230,7 +236,7 @@ class ServerRenderNotifier implements Notifier {
 
     getInput(player: PlayerID, request: ProgrammingCard.ActionChoiceData): void {
         // send the full request to the server to be forwarded to the player
-        this.m2s_sender<ProgrammingCard.ActionChoiceData>({
+        this.m2s_sender({
             name: Main2Server.GET_INPUT,
             id: player,
             data: request
@@ -238,6 +244,15 @@ class ServerRenderNotifier implements Notifier {
 
         // send a short notification to the renderer that input is required
         this.render_sender<PlayerID>(Main2Render.GET_INFO_NOTIFICATION, player)
+    }
+
+    beginActivation(): void {
+        // notify the players and the renderer that activation is beginning
+        sendToAllWindows<GamePhase>(Main2Render.UPDATE_GAME_PHASE, GamePhase.Activation)
+        M2SSend({
+            name: Main2Server.PHASE_UPDATE,
+            data: GamePhase.Activation
+        })
     }
 }
 
@@ -251,16 +266,17 @@ function startNewRound() {
     }
     const states = game.getPlayerStates()
     // get the player data and broadcast it
-    M2SSend<Map<PlayerID, PlayerStateData>>({
+    M2SSend({
         name: Main2Server.UPDATE_PLAYER_STATES,
         data: states
     })
     
     // go to the upgrade phase
-    M2SSend<GamePhase>({
+    M2SSend({
         name: Main2Server.PHASE_UPDATE,
         data: GamePhase.Upgrade
     })
+    sendToAllWindows<GamePhase>(Main2Render.UPDATE_GAME_PHASE, GamePhase.Upgrade)
     // from here, players should be able to advance to programming on their own
     // once all programs are submitted, the game state will fire independently
 
@@ -279,7 +295,7 @@ function startNewRound() {
         })
     }
 
-    M2SSend<Map<PlayerID,ProgrammingData>>({
+    M2SSend({
         name: Main2Server.PROGRAMMING_DATA,
         data: programming_data
     })
@@ -287,10 +303,10 @@ function startNewRound() {
 
 // initialize game server (incl board)
 // begin robot connections
-child.on('message', (message: Server2MainMessage<any>) => {
+child.on('message', (message: Server2MainMessage) => {
     switch (message.name) {
         case Server2Main.PROGRAM_SET:
-            const program_set_msg = message.data as Server2MainMessage<Program>
+            const program_set_msg = message as S2MProgramSetMessage
             if (game === undefined) {
                 console.error("tried to set program before game was ready")
                 break
@@ -311,12 +327,12 @@ child.on('message', (message: Server2MainMessage<any>) => {
                     if (winner != undefined) {
                         // then the game is over and a winner has been declared
                         // notify the clients
-                        M2SSend<WinnerData>({
+                        M2SSend({
                             name: Main2Server.GAME_OVER,
                             data: winner
                         })
                         // notify the console
-                        sendToAllWindows<WinnerData>(Main2Render.GAME_OVER,  winner)
+                        sendToAllWindows<Player>(Main2Render.GAME_OVER,  winner)
                     } else {
                         // the game goes on: invoke another round
                         startNewRound()
@@ -328,7 +344,7 @@ child.on('message', (message: Server2MainMessage<any>) => {
             break
         case Server2Main.ADD_PLAYER:
             console.log("Recv'd add-player command:", message)
-            const add_player_msg = message as Server2MainMessage<string>
+            const add_player_msg = message as S2MAddPlayerMessage
             if (add_player_msg.id === undefined) {
                 console.error("Failed to add player when ID was not provided")
                 break
@@ -362,7 +378,7 @@ child.on('message', (message: Server2MainMessage<any>) => {
             console.error('tried to add player after game was started')
             break
         case Server2Main.SELECT_BOT:
-            const select_bot_msg = message as Server2MainMessage<string>
+            const select_bot_msg = message as S2MSelectBotMessage
             if (select_bot_msg.id === undefined) {
                 console.error("Failed to select character when ID was not provided")
                 break
@@ -394,7 +410,7 @@ child.on('message', (message: Server2MainMessage<any>) => {
             character_initializer.readPlayerPosition()
             const next = character_initializer.nextPlayer()
             if (next !== undefined) {
-                M2SSend<never>({
+                M2SSend({
                     name: Main2Server.REQUEST_POSITION,
                     id: next
                 })

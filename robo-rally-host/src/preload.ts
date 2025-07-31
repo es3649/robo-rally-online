@@ -7,13 +7,14 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { BoardData } from "./main/game_manager/board";
 import { Main2Render, Render2Main } from "./shared/models/events";
-import type { Player, PlayerID, PlayerStateData } from "./shared/models/player";
+import type { CharacterID, Player, PlayerID, PlayerStateData } from "./shared/models/player";
 import type { PlayerUpdate } from "./shared/models/connection";
-import type { GameAction } from "./shared/models/game_data";
+import type { GameAction, GamePhase } from "./shared/models/game_data";
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
-    connectRobot: (name: string): void => ipcRenderer.send(Render2Main.BLE_CONNECT, name),
+    connectRobot: (name: string): Promise<boolean> => ipcRenderer.invoke(Render2Main.BLE_CONNECT, name),
+    getBotStatuses: (): Promise<Map<CharacterID, boolean>> => ipcRenderer.invoke(Render2Main.GET_BOT_STATUS),
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke(Render2Main.GET_IP),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke(Render2Main.BOARD.LIST_BOARDS),
     loadBoard: (name: string): Promise<BoardData|undefined> => ipcRenderer.invoke(Render2Main.BOARD.LOAD_BOARD, name),
@@ -57,6 +58,11 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
     onGetInputNotification: (callback: (player: PlayerID, timeout?: number) => void) => {
         ipcRenderer.on(Main2Render.GET_INFO_NOTIFICATION, (_event: IpcRendererEvent, id: PlayerID, timeout?: number) => {
             callback(id, timeout)
+        })
+    },
+    onUpdateGameState: (callback: (phase: GamePhase) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_GAME_PHASE, (_event: IpcRendererEvent, phase: GamePhase) => {
+            callback(phase)
         })
     },
     onGameOverNotification: (callback: (winner: Player) => void) => {

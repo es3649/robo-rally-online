@@ -72,6 +72,7 @@ export namespace Main2Render {
     export const GET_INFO_NOTIFICATION = "main:get-info-notification"
     export const READY_STATUS = "main:ready-notification"
     export const UPDATE_PLAYER_STATE = Main2Server.UPDATE_PLAYER_STATES
+    export const UPDATE_GAME_PHASE = "main:update-game-state"
     export const GAME_OVER = Main2Server.GAME_OVER
 }
 export type Main2Render = typeof Main2Render.PLAYER_ADDED |
@@ -83,6 +84,7 @@ export type Main2Render = typeof Main2Render.PLAYER_ADDED |
     typeof Main2Render.GET_INFO_NOTIFICATION |
     typeof Main2Render.READY_STATUS |
     typeof Main2Render.UPDATE_PLAYER_STATE |
+    typeof Main2Render.UPDATE_GAME_PHASE |
     typeof Main2Render.GAME_OVER
 
 /* events emitted by the server thread */
@@ -126,6 +128,7 @@ export type Server2Main = typeof Server2Main.ADD_PLAYER |
 /* events emitted by the renderer */
 export namespace Render2Main {
     export const BLE_CONNECT = "render:ble-connect"
+    export const GET_BOT_STATUS = "render:get-bot-status"
     export const GET_IP = "render:get-ip"
     export const RESET = "render:reset"
     export const START_GAME = "render:start-game"

@@ -1,4 +1,4 @@
-import { type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
+import { type M2SGameActionMessage, type M2SGetInputMessage, type M2SPhaseUpdateMessage, type M2SProgrammingDataMessage, type M2SRequestPositionMessage, type M2SUpdatePlayerStatesMessage, type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
 import { Server2Client } from "../shared/models/events";
 import { GamePhase, ProgrammingCard, type GameAction } from "../shared/models/game_data";
 import { connections, store, type RRSocketServer } from "./data";
@@ -10,7 +10,7 @@ import type { PlayerID, PlayerState } from "../shared/models/player";
  * @param io the socket server object
  * @param message the message object to handle
  */
-export function gameActionHandle(io: RRSocketServer, message: Main2ServerMessage<GameAction>): void {
+export function gameActionHandle(io: RRSocketServer, message: M2SGameActionMessage): void {
     if (message.data === undefined) {
         console.warn("Received empty game action")
         return
@@ -25,7 +25,7 @@ export function gameActionHandle(io: RRSocketServer, message: Main2ServerMessage
  * @param io the socket server object
  * @param message the message received
  */
-export function phaseUpdateHandle(io: RRSocketServer, message: Main2ServerMessage<GamePhase>): void {
+export function phaseUpdateHandle(io: RRSocketServer, message: M2SPhaseUpdateMessage): void {
     let phase = message.data
     if (phase === undefined) {
         console.warn("Received phase update with no phase, updating manually")
@@ -65,7 +65,7 @@ export function resetHandle(io: RRSocketServer): void {
  * appropriate player
  * @param message the message from main
  */
-export function getInputHandle(message: Main2ServerMessage<ProgrammingCard.ActionChoiceData>): void {
+export function getInputHandle(message: M2SGetInputMessage): void {
     console.log("recv'd new GetInput event")
     if (message.id === undefined) {
         console.error("Received malformed event data")
@@ -82,7 +82,7 @@ export function getInputHandle(message: Main2ServerMessage<ProgrammingCard.Actio
  * handles a request position event. It forwards the event to the correct player
  * @param message the message from main
  */
-export function requestPositionHandle(message: Main2ServerMessage<never>): void {
+export function requestPositionHandle(message: M2SRequestPositionMessage): void {
     if (message.id === undefined) {
         console.warn("Empty PlayerID on position request")
         return
@@ -95,7 +95,7 @@ export function requestPositionHandle(message: Main2ServerMessage<never>): void 
  * data to the connected clients
  * @param message the message from main
  */
-export function updatePlayerStatesHandle(message: Main2ServerMessage<Map<PlayerID, PlayerState>>): void {
+export function updatePlayerStatesHandle(message: M2SUpdatePlayerStatesMessage): void {
     // save the player data for faster distribution later
     store.player_data = message.data as Map<PlayerID, PlayerState>
     // emit the player_data summaries to each player
@@ -109,7 +109,7 @@ export function updatePlayerStatesHandle(message: Main2ServerMessage<Map<PlayerI
  * fetch this information when they are ready for programming
  * @param message the message from main
  */
-export function programmingDataHandle(message: Main2ServerMessage<Map<PlayerID, ProgrammingData>>): void {
+export function programmingDataHandle(message: M2SProgrammingDataMessage): void {
     console.log("received programming data")
     const programming_data = message.data as Map<PlayerID, ProgrammingData>
     if (programming_data === undefined) {

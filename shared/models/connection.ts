@@ -1,5 +1,5 @@
 import { ProgrammingCard, type GameAction, type GamePhase, type Program, type ProgrammingHand, type RegisterArray } from './game_data'
-import type { Character, CharacterID, PlayerID, PlayerStateData, WinnerData } from './player'
+import type { Character, CharacterID, Player, PlayerID, PlayerStateData } from './player'
 import { Server2Main, Main2Server } from './events'
 
 export type BotAvailabilityUpdate = {
@@ -47,7 +47,7 @@ export interface ServerToClientEvents {
     "server:update-player-states": (states: Map<PlayerID, PlayerStateData>) => void
     "server:request-input": (message: PendingActionChoice) => void
 
-    "server:game-over": (winner: WinnerData) => void
+    "server:game-over": (winner: Player) => void
 
     "server:reset": () => void
 }
@@ -97,22 +97,54 @@ export interface SocketData {
  * @template T the type of the message, should be a string
  * @template S the type of the data to be sent in the message
  */
-export type Message<T, S> = {
+type Message<T, S> = {
     name: T,
     id?: string,
     data?: S
 }
 
+// The specific message types that main sends to the server
+export declare type M2SResetMessage = Message<typeof Main2Server.RESET, never>
+export declare type M2SRequestPositionMessage = Message<typeof Main2Server.REQUEST_POSITION, never>
+export declare type M2SPhaseUpdateMessage = Message<typeof Main2Server.PHASE_UPDATE, GamePhase>
+export declare type M2SUpdatePlayerStatesMessage = Message<typeof Main2Server.UPDATE_PLAYER_STATES, Map<PlayerID, PlayerStateData>>
+export declare type M2SProgrammingDataMessage = Message<typeof Main2Server.PROGRAMMING_DATA, Map<PlayerID, ProgrammingData>>
+export declare type M2SGameActionMessage = Message<typeof Main2Server.GAME_ACTION, GameAction>
+export declare type M2SGetInputMessage = Message<typeof Main2Server.GET_INPUT, ProgrammingCard.ActionChoiceData>
+export declare type M2SGameOverMessage = Message<typeof Main2Server.GAME_OVER, Player>
+
+// the specific types of messages the server sends to main
+export declare type S2MPlayerDisconnectedMessage = Message<typeof Server2Main.PLAYER_DISCONNECTED, PlayerUpdate|undefined>
+export declare type S2MAddPlayerMessage = Message<typeof Server2Main.ADD_PLAYER, string>
+export declare type S2MSelectBotMessage = Message<typeof Server2Main.SELECT_BOT, string>
+export declare type S2MProgramSetMessage = Message<typeof Server2Main.PROGRAM_SET, Program>
+export declare type S2MConfirmPositionMessage = Message<typeof Server2Main.CONFIRM_POSITION, never>
+
 // specific instances of Message for messages sent between Main and Server
-export type Main2ServerMessage<T> = Message<Main2Server, T>
-export type Server2MainMessage<T> = Message<Server2Main, T>
+// restrict the types to the message/data-type pairs we will be expecting
+export type Main2ServerMessage =
+    M2SResetMessage |
+    M2SRequestPositionMessage |
+    M2SPhaseUpdateMessage |
+    M2SUpdatePlayerStatesMessage |
+    M2SProgrammingDataMessage |
+    M2SGameActionMessage |
+    M2SGetInputMessage |
+    M2SGameOverMessage
+export type Server2MainMessage =
+    S2MPlayerDisconnectedMessage |
+    S2MAddPlayerMessage |
+    S2MSelectBotMessage |
+    S2MProgramSetMessage |
+    S2MConfirmPositionMessage
+
 
 /**
  * An alias for a templated message sender function
  * @template T the type of the message to be send, should be a string
  */
 export type Sender<T> = {
-    <S>(message: Message<T, S>,
+    (message: T,
         sendHandle?: any,
         options?: { keepOpen?: boolean | undefined} | undefined,
         callback?: ((error: Error | null) => void ) | undefined
@@ -132,7 +164,7 @@ export interface Sendable {
  * @param process the process that messages can be sent on
  * @returns a template function with the same signature as process.send or childProcess.send
  */
-export function senderMaker<T>(process: Sendable): Sender<T> {
+export function senderMaker<T extends Main2ServerMessage|Server2MainMessage>(process: Sendable): Sender<T> {
     /**
      * a wrapper for process.send, or fork.ChildProcess.send, since the former could
      * technically be undefined
@@ -143,7 +175,7 @@ export function senderMaker<T>(process: Sendable): Sender<T> {
      * @param callback see docs for process.send
      * @returns see docs for process.send (false if process.send is undefined)
      */
-    function sender<S>(message: Message<T, S>,
+    function sender<T>(message: T,
         sendHandle?: any,
         options?: { keepOpen?: boolean | undefined} | undefined,
         callback?: ((error: Error | null) => void ) | undefined

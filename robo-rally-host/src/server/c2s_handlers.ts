@@ -18,7 +18,7 @@ export function makeDisconnectHandle(socket: RRSocketConnection): () => void {
         // remove the user from the connections
         connections.delete(socket.data.id)
         // notify the main that the player has disconnected
-        S2MSend<never>({
+        S2MSend({
             name: Server2Main.PLAYER_DISCONNECTED,
             id: socket.data.id
         })
@@ -29,7 +29,7 @@ export function makeDisconnectHandle(socket: RRSocketConnection): () => void {
             // remove the user
             connections.delete(socket.data.id)
             // request that main remove the player from the game
-            S2MSend<PlayerUpdate>({
+            S2MSend({
                 name: Server2Main.PLAYER_DISCONNECTED,
                 id: socket.data.id,
                 data: {
@@ -60,7 +60,7 @@ export function makeJoinGameHandle(socket: RRSocketConnection): (name: string, c
             
             if (ok) {
                 // notify the main process
-                S2MSend<string>({
+                S2MSend({
                     name: Server2Main.ADD_PLAYER,
                     id: socket.data.id,
                     data: name
@@ -167,7 +167,7 @@ export function makeSelectBotHandle(io: RRSocketServer, socket: RRSocketConnecti
             // broadcast to other clients that that character is no longer available
             io.emit(Server2Client.BOT_SELECTED, update)
             // notify the main thread that the character was selected
-            S2MSend<string>({
+            S2MSend({
                 name:Server2Main.SELECT_BOT,
                 id: socket.data.id,
                 data: bot_id
@@ -184,7 +184,7 @@ export function makeSelectBotHandle(io: RRSocketServer, socket: RRSocketConnecti
  */
 export function makeProgramSubmitHandle(socket: RRSocketConnection): (program: Program) => void {
     const handle = (program: Program): void => {
-        S2MSend<Program>({
+        S2MSend({
             name: Server2Main.PROGRAM_SET,
             id: socket.id,
             data: program
@@ -233,7 +233,7 @@ export function makeGetProgrammingDataHandle(socket: RRSocketConnection): (callb
  * the player sending this event actually has an outstanding event
  */
 export function confirmPositionHandle(): void {
-    S2MSend<never>({
+    S2MSend({
         name: Server2Main.CONFIRM_POSITION
     })
 }

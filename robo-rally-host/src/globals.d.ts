@@ -1,11 +1,13 @@
 import type { BoardData } from "./main/game_manager/board"
 import type { PlayerUpdate } from "./main/models/connection"
 import type { Character, PlayerID, PlayerStateBrief } from "./main/models/player"
+import type { GamePhase } from "./shared/models/game_data"
 
 declare global {
     interface Window {
         mainAPI: {
-            connectRobot: (name: string) => void
+            connectRobot: (name: string) => Promise<boolean>
+            getBotStatus: () => Promise<Map<CharacterID, boolean>>
             getIP: () => Promise<string|undefined>
             listBoards: () => Promise<string[]>
             loadBoard: (name: string) => Promise<BoardData>
@@ -20,6 +22,8 @@ declare global {
             onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateBrief) => void) => void
             onGameAction: (callback: (action: GameAction) => void) => void
             onGetInputNotification: (callback: (player: PlayerID) => void) => void
+            onUpdateGamePhase: (callback: (phase: GamePhase) => void) => void
+            onGameOverNotification: (callback: (winner: Player) => void) => void
         },
     }
 

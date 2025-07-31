@@ -10,7 +10,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "test": "jest"
+    "test": "jest --silent",
+    "test-loud": "jest"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.4.0",

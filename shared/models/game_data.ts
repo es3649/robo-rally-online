@@ -16,6 +16,24 @@ export enum GamePhase {
     Activation = 2,
     Finished = 3
 }
+export namespace GamePhase {
+    export function toString(phase: GamePhase): string {
+        switch (phase) {
+            case GamePhase.Lobby:
+                return "Lobby"
+            case GamePhase.Setup:
+                return "Setup"
+            case GamePhase.Upgrade:
+                return "Upgrade"
+            case GamePhase.Programming:
+                return "Programming"
+            case GamePhase.Activation:
+                return "Activation"
+            case GamePhase.Finished:
+                return "Finished"
+        }
+    }
+}
 
 export namespace ProgrammingCard {
     export const left = "left"

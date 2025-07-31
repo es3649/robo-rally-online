@@ -1,6 +1,5 @@
 import { expect, jest, test } from '@jest/globals'
 import { GameStateManager, Notifier } from "../src/main/game_manager/game_state"
-import { senderMaker } from "../src/shared/models/connection"
 import { ActionFrame, BotMovement, BotState, MovementExecutor } from '../src/main/game_manager/executor'
 import { PlayerID } from '../src/shared/models/player'
 import { BotInitializer, GameInitializer } from '../src/main/game_manager/initializers'
@@ -25,6 +24,9 @@ const notifier: Notifier = {
     getInput(player, request) {
         return
     },
+    beginActivation() {
+        return
+    }
 } 
 
 declare type ExecutorCallState = {
@@ -696,7 +698,7 @@ test('GameState.setProgram (Movements, gears, conveyor1s, Haywire, haywire-again
     expect(mock_executor.calls[32].set_action_calls.get('miles1234').end_state).toBe(BotState.DEFAULT)
 
     // checkpoints and rich wins
-    expect(gm.gameOver()).toBe('wotc1234')
+    expect(gm.gameOver().id).toBe('wotc1234')
 })
 
 // other tests:

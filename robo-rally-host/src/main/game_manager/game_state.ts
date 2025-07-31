@@ -29,6 +29,7 @@ enum TurnPhase {
 export interface Notifier {
     gameAction(action: GameAction): void
     getInput(player: PlayerID, request: ProgrammingCard.ActionChoice): void
+    beginActivation(): void
 }
 
 /**
@@ -86,6 +87,7 @@ export class GameStateManager {
         const ready = this.player_manager.setProgram(player_id, program)
         if (ready) {
             console.log("All programs received, beginning execution")
+            this.notifier.beginActivation()
             // unlatch the movements for actors which are shutdown
             // these actions will have been set on setShutdown before programs are submitted
             this.movement_executor.unlatchActions()

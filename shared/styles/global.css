@@ -107,6 +107,15 @@ img {
   text-align: right;
 }
 
+/* STYLES FOR TABLES */
+tr {
+  display: block;
+}
+
+.table-column-50 {
+  width: 50%;
+}
+
 /* REUSED SPACING STYLES */
 .space-after {
   margin-right: .5em;
@@ -154,6 +163,7 @@ img {
 .flex-vert-center {
   align-content: center;
 }
+
 /* STYLES FOR GRIDS */
 .gridded {
   display: grid;

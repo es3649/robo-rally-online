@@ -179,6 +179,15 @@ export class PlayerManager {
     }
 
     /**
+     * gets a player object from the manager
+     * @param name the name of the player to get
+     * @returns that player object if found, else undefined
+     */
+    public getPlayer(name: string): Player|undefined {
+        return this.players.get(name)
+    }
+
+    /**
      * implements a mapping of priority values to player IDs
      * @param priority the priority of the player to get
      * @returns the id of the player at that priority
