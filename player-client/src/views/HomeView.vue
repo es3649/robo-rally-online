@@ -12,10 +12,10 @@ function join() {
     <div class="welcome-logo background-card">
       <p class="text-center before-logo">Welcome to</p>
       <!-- <h1 class="text-center">RoboRally</h1> -->
-      <img src="@/assets/rrlogofinal.png" alt="RoboRally logo from Renegade Studios">
+      <img src="@/shared/assets/rrlogofinal.png" alt="RoboRally logo from Renegade Studios">
       <p class="text-center after-logo">Online</p>
     </div>
-    <img class="cover-image" src="@/assets/robot_race2.jpg" alt="Image of a racing robot with sparks flying" />
+    <img class="cover-image" src="@/shared/assets/robot_race2.jpg" alt="Image of a racing robot with sparks flying" />
     <button class="block big-button contrast-small" @click="join()">Join Game</button>
   </main>
 </template>
@@ -23,7 +23,7 @@ function join() {
 <style scoped>
 /* main { */
   /* margin: 8px; */
-  /* background-image: url("@/assets/styles/tread-plate-tile.svg"); */
+  /* background-image: url("@/shared/assets/styles/tread-plate-tile.svg"); */
   /* background-repeat: repeat; */
 /* } */
 

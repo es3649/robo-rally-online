@@ -22,7 +22,7 @@ const c_gs = useGameStateStore()
                 <h1>Game Over</h1>
                 <h2>No Contest!</h2>
             </div>
-            <img class="large-sprite margin-above" src="@/assets/rrlogofinal.png" alt="RoboRally logo">
+            <img class="large-sprite margin-above" src="@/shared/assets/rrlogofinal.png" alt="RoboRally logo">
         </div>
         <p class="background-card">Reset the game on the console</p>
     </div>
