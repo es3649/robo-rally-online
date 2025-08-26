@@ -26,6 +26,29 @@ It requires root privileges by default, so you will either need to run as root (
 
 where `__USERID__` is replaces with the ID of the user which will be running the electron app.
 
+### Port Access
+
+The application hosts a webserver on the device.
+Clients will try to access the server on port 80 (or 443 if I ever set up SSL, which I probably should).
+
+To fix this, we ust host on 8199, and require a port forwarding on the host device to route traffic from 80 (or 443) to 8199.
+
+On Linux, these can be set up using the `iptables` tool.
+Start by enabling ip forwarding by adding this line to `/etc/sysctl.conf`
+```
+net.ipv4.ip_forward=1
+```
+then apply the changes with
+```bash
+sudo sysctl -p
+```
+Finally, apply the port forwarding rule by running
+```bash
+sudo iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8199
+```
+
+If the `PORT` environment variable is set, then that port will be preferred over the process default of 8199.
+
 ### NodeJS
 
 ## Hardware

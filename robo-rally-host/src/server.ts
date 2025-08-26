@@ -2,21 +2,16 @@ console.log('running server.js')
 import express, { type Express } from 'express'
 import { createServer } from 'http'
 import { randomUUID } from 'crypto'
-import { Server, Socket } from 'socket.io'
-import { GamePhase, newRegisterArray, ProgrammingCard, type GameAction, type Program, type RegisterArray } from "./shared/models/game_data"
-import { Client2Server, Default, Server2Main, Main2Server, Server2Client } from './shared/models/events'
-import { PlayerStatusUpdate, type PlayerUpdate, senderMaker } from './shared/models/connection'
-import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage, PendingActionChoice, ProgrammingData } from './shared/models/connection'
+import { Server } from 'socket.io'
+import { Client2Server, Default, Main2Server } from './shared/models/events'
+import type { ClientToServerEvents, ServerToClientEvents, SocketData, Main2ServerMessage, PendingActionChoice, ProgrammingData, M2SRequestPositionMessage } from './shared/models/connection'
 import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
-import { GameInitializer } from './main/game_manager/initializers'
-import type { PlayerID, Character, PlayerState, CharacterID, PlayerStateData } from './shared/models/player'
-import { BOTS } from './shared/data/robots'
 import { gameActionHandle, getInputHandle, phaseUpdateHandle, programmingDataHandle, requestPositionHandle, resetHandle, updatePlayerStatesHandle } from './server/m2s_handlers'
 import { connections } from './server/data'
 import { confirmPositionHandle, getPlayerStatesHandle, listAvailableBotsHandle, listBotsHandle, makeDisconnectHandle, makeGetIDHandle, makeGetProgrammingDataHandle, makeJoinGameHandle, makeProgramSubmitHandle, makeSelectBotHandle, makeUseIDHandle } from './server/c2s_handlers'
 
 export const app: Express = express()
-const port = process.env.PORT || 80
+const port = process.env.PORT || 8199
 const server = createServer(app)
 // we may need to reset the path here
 // https://socket.io/docs/v4/server-options/#path
@@ -74,7 +69,7 @@ io.on(Default.CONNECTION, (socket) => {
 })
 
 // determine which message was received, send it back
-process.on('message', (message: Main2ServerMessage<any>) => {
+process.on('message', (message: Main2ServerMessage) => {
     console.log("Received message:", message.name)
     switch (message.name) {
         case Main2Server.GAME_ACTION:
@@ -90,7 +85,7 @@ process.on('message', (message: Main2ServerMessage<any>) => {
             getInputHandle(message)
             break
         case Main2Server.REQUEST_POSITION:
-            requestPositionHandle(message as Main2ServerMessage<never>)
+            requestPositionHandle(message as M2SRequestPositionMessage)
             break
         case Main2Server.UPDATE_PLAYER_STATES:
             updatePlayerStatesHandle(message)
