@@ -3,7 +3,7 @@ import type { BoardData } from "../../main/game_manager/board";
 import { defineStore } from "pinia";
 import { MAX_PLAYERS } from "../../main/game_manager/initializers";
 import type { GameAction } from "../../shared/models/game_data";
-import { GamePhase, ProgrammingCard } from "../../shared/models/game_data";
+import { BoardElement, GamePhase, ProgrammingCard } from "../../shared/models/game_data";
 
 export enum SetupPhase {
     PreSetup,
@@ -18,6 +18,8 @@ export const useGameDataStore = defineStore({
         return {
             setup_status: SetupPhase.PreSetup,
             game_phase: GamePhase.Setup,
+            register: 1,
+            board_element: BoardElement.Players,
             board: undefined as BoardData|undefined,
             board_name: undefined as string|undefined,
             loadable_boards: [] as string[],
@@ -162,6 +164,11 @@ export const useGameDataStore = defineStore({
             }
             this.characters.delete(player_id)
         },
+        /**
+         * set a list of TO DOs received from the server on the state. This is used by the renderer
+         * when it receives an event from main
+         * @param to_dos the list of TO DOs
+         */
         setToDos(to_dos: Map<PlayerID, string[]>): void {
             if (this.setup_status === SetupPhase.Done) {
                 console.warn("Tried to add a player after the game has started")
@@ -169,15 +176,27 @@ export const useGameDataStore = defineStore({
             }
             this.to_dos = to_dos
         },
+        /**
+         * updates player data. It is invoked by the renderer to modify the game state on updates
+         * from main
+         * @param id the id of the player to set data for
+         * @param update the data update to apply
+         */
         setPlayerData(id: PlayerID, update: PlayerStateData): void {
             this.player_states.set(id, update)
         },
+        /**
+         * unset any get input data. This should cancel timeouts, or at least hide them
+         */
         unsetGetInput() {
             this.get_input = {
                 player: undefined,
                 timeout: 0
             }
         },
+        /**
+         * request an update of the bot connection statuses from main
+         */
         getBotConnectionStatuses() {
             window.mainAPI.getBotStatus().then((value: Map<CharacterID, boolean>) => {
                 this.bot_connections = value

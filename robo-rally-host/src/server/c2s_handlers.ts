@@ -110,7 +110,7 @@ export function makeUseIDHandle(socket: RRSocketConnection): (id: PlayerID, call
             }
 
             // emit game data to this player. They likely lost it
-            socket.emit(Server2Client.PHASE_UPDATE, store.cur_phase)
+            socket.emit(Server2Client.UPDATE_PHASE, store.cur_phase)
             socket.emit(Server2Client.UPDATE_PLAYER_STATES, store.player_data)
 
             // check if there is a pending request for this player, if so, then they have likely

@@ -11,8 +11,8 @@ import { PlayerStatusUpdate, senderMaker, type Main2ServerMessage, type PlayerUp
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import type { PlayerStateData, PlayerID, Player } from './shared/models/player';
-import { GamePhase, newRegisterArray, ProgrammingCard, type GameAction, type Program } from './shared/models/game_data';
+import type { PlayerID, Player } from './shared/models/player';
+import { BoardElement, GamePhase, newRegisterArray, ProgrammingCard, type GameAction } from './shared/models/game_data';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
@@ -80,10 +80,10 @@ const createWindow = (): BrowserWindow => {
  * register the ICP listeners. This is where calls from the renderer will come in
  */
 function registerIPCListeners() {
-    ipcMain.handle(Render2Main.BLE_CONNECT, (event: Electron.IpcMainInvokeEvent, name: string): boolean => {
+    ipcMain.handle(Render2Main.BLE_CONNECT, async (event: Electron.IpcMainInvokeEvent, name: string): Promise<boolean> => {
         // BluetoothManager.getInstance().connectRobot(name)
         console.log(`plz connect the robot called ${name}`)
-        return true
+        return await BluetoothManager.getInstance().connectRobot(name)
     })
 
     ipcMain.on(Render2Main.GET_BOT_STATUS, (event: Electron.IpcMainEvent) => {
@@ -135,7 +135,7 @@ function registerIPCListeners() {
 
         // notify the server that we are starting
         M2SSend({
-            name: Main2Server.PHASE_UPDATE,
+            name: Main2Server.UPDATE_PHASE,
             data: GamePhase.Setup
         })
 
@@ -157,6 +157,10 @@ function registerIPCListeners() {
         sendToAllWindows(Main2Render.GET_INFO_NOTIFICATION, player)
 
         return true
+    })
+
+    ipcMain.handle(Render2Main.GET_BOT_STATUS, () => {
+        return BluetoothManager.getInstance().getConnectionStatuses()
     })
     
     // ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
@@ -248,11 +252,27 @@ class ServerRenderNotifier implements Notifier {
 
     beginActivation(): void {
         // notify the players and the renderer that activation is beginning
-        sendToAllWindows<GamePhase>(Main2Render.UPDATE_GAME_PHASE, GamePhase.Activation)
-        M2SSend({
-            name: Main2Server.PHASE_UPDATE,
+        this.render_sender(Main2Render.UPDATE_PHASE, GamePhase.Activation)
+        this.m2s_sender({
+            name: Main2Server.UPDATE_PHASE,
             data: GamePhase.Activation
         })
+    }
+
+    updateRegister(register: number) {
+        this.m2s_sender({
+            name: Main2Server.UPDATE_REGISTER,
+            data: register
+        })
+        this.render_sender<number>(Main2Render.UPDATE_REGISTER, register)
+    }
+
+    updateBoardElement(element: BoardElement) {
+        this.m2s_sender({
+            name: Main2Server.UPDATE_BOARD_ELEMENT,
+            data: element
+        })
+        this.render_sender(Main2Render.UPDATE_BOARD_ELEMENT, element)
     }
 }
 
@@ -273,10 +293,10 @@ function startNewRound() {
     
     // go to the upgrade phase
     M2SSend({
-        name: Main2Server.PHASE_UPDATE,
+        name: Main2Server.UPDATE_PHASE,
         data: GamePhase.Upgrade
     })
-    sendToAllWindows<GamePhase>(Main2Render.UPDATE_GAME_PHASE, GamePhase.Upgrade)
+    sendToAllWindows<GamePhase>(Main2Render.UPDATE_PHASE, GamePhase.Upgrade)
     // from here, players should be able to advance to programming on their own
     // once all programs are submitted, the game state will fire independently
 

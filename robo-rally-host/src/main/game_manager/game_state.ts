@@ -8,7 +8,7 @@ import type { Board, LaserPosition } from "./board"
 import { PlayerManager } from "./player_manager"
 import { MovementArrayWithResults, MovementFrame, MovementMapBuilder, MovementStatus, type OrientedPosition } from "./move_processors"
 import { isRotation, Orientation, type Movement } from "../../shared/models/movement"
-import type { GameAction, ProgrammingCard, ProgrammingHand, RegisterArray } from "../../shared/models/game_data"
+import type { BoardElement, GameAction, ProgrammingCard, ProgrammingHand, RegisterArray } from "../../shared/models/game_data"
 import type { BotInitializer, GameInitializer } from "./initializers"
 import { ActionFrame, BotMovement, BotState, type MovementExecutor } from "./executor"
 
@@ -30,6 +30,8 @@ export interface Notifier {
     gameAction(action: GameAction): void
     getInput(player: PlayerID, request: ProgrammingCard.ActionChoice): void
     beginActivation(): void
+    updateRegister(register: number): void
+    updateBoardElement(element: BoardElement): void
 }
 
 /**

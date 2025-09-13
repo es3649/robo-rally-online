@@ -75,7 +75,7 @@ process.on('message', (message: Main2ServerMessage) => {
         case Main2Server.GAME_ACTION:
             gameActionHandle(io, message)
             break
-        case Main2Server.PHASE_UPDATE:
+        case Main2Server.UPDATE_PHASE:
             phaseUpdateHandle(io, message)
             break
         case Main2Server.RESET:

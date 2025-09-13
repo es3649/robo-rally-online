@@ -3,7 +3,7 @@ import { useGameDataStore } from '../stores/render_game_data_store';
 import PlayerDataBrief from '../../shared/components/PlayerDataBrief.vue';
 import GameEvents from '../../shared/components/GameEvents.vue';
 import GetInput from '../components/GetInput.vue';
-import { GamePhase } from '../../shared/models/game_data';
+import { BoardElement, GamePhase } from '../../shared/models/game_data';
 
 const r_gds = useGameDataStore()
 console.log("loading GameView")
@@ -55,6 +55,10 @@ function get_input() {
     <main>
         <div class="left">
             <p>Phase: {{ GamePhase.toString(r_gds.game_phase) }}</p>
+            <div v-if="r_gds.game_phase === GamePhase.Activation">
+                <p>Register: {{ r_gds.register }}</p>
+                <p>Now activating: {{ BoardElement.toString(r_gds.board_element) }}</p>
+            </div>
             <!-- Player info, incl names, checkpoints, a sprite of their bot,
             power status, etc -->
             <ul>

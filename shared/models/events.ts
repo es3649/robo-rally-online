@@ -42,7 +42,9 @@ export type Client2Server = typeof Client2Server.JOIN_GAME |
 // events sent back to server 
 export namespace Main2Server {
     export const GAME_ACTION = "main:game-action"
-    export const PHASE_UPDATE = "main:phase-update"
+    export const UPDATE_PHASE = "main:update-phase"
+    export const UPDATE_REGISTER = "main:update-register"
+    export const UPDATE_BOARD_ELEMENT = "main:update-board-element"
     export const RESET = "main:reset"
     export const REQUEST_POSITION = "main:request-position"
     export const GET_INPUT = "main:get-input"
@@ -52,7 +54,9 @@ export namespace Main2Server {
     export const GAME_OVER = "main:game-over"
 }
 export type Main2Server = typeof Main2Server.GAME_ACTION |
-    typeof Main2Server.PHASE_UPDATE |
+    typeof Main2Server.UPDATE_PHASE |
+    typeof Main2Server.UPDATE_REGISTER |
+    typeof Main2Server.UPDATE_BOARD_ELEMENT |
     typeof Main2Server.RESET |
     typeof Main2Server.REQUEST_POSITION |
     typeof Main2Server.GET_INPUT |
@@ -71,8 +75,10 @@ export namespace Main2Render {
     export const UPDATE_PLAYER = "main:update-player"
     export const GET_INFO_NOTIFICATION = "main:get-info-notification"
     export const READY_STATUS = "main:ready-notification"
-    export const UPDATE_PLAYER_STATE = Main2Server.UPDATE_PLAYER_STATES
-    export const UPDATE_GAME_PHASE = "main:update-game-state"
+    export const UPDATE_PLAYER_STATES = Main2Server.UPDATE_PLAYER_STATES
+    export const UPDATE_PHASE = Main2Server.UPDATE_PHASE
+    export const UPDATE_REGISTER = Main2Server.UPDATE_REGISTER
+    export const UPDATE_BOARD_ELEMENT = Main2Server.UPDATE_BOARD_ELEMENT
     export const GAME_OVER = Main2Server.GAME_OVER
 }
 export type Main2Render = typeof Main2Render.PLAYER_ADDED |
@@ -83,14 +89,18 @@ export type Main2Render = typeof Main2Render.PLAYER_ADDED |
     typeof Main2Render.UPDATE_PLAYER |
     typeof Main2Render.GET_INFO_NOTIFICATION |
     typeof Main2Render.READY_STATUS |
-    typeof Main2Render.UPDATE_PLAYER_STATE |
-    typeof Main2Render.UPDATE_GAME_PHASE |
+    typeof Main2Render.UPDATE_PLAYER_STATES |
+    typeof Main2Render.UPDATE_PHASE |
+    typeof Main2Server.UPDATE_REGISTER |
+    typeof Main2Server.UPDATE_BOARD_ELEMENT |
     typeof Main2Render.GAME_OVER
 
 /* events emitted by the server thread */
 // sent to player client
 export namespace Server2Client {
-    export const PHASE_UPDATE = "server:phase-update"
+    export const UPDATE_PHASE = "server:update-phase"
+    export const UPDATE_REGISTER = "server:update-register"
+    export const UPDATE_BOARD_ELEMENT = "server:update-board-element"
     export const GAME_ACTION = "server:game-action"
     export const BOT_SELECTED = "server:bot-selected"
     export const BOT_LIST = "server:bot-list"

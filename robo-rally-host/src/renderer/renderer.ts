@@ -36,7 +36,7 @@ import { PlayerStatusUpdate, type PlayerUpdate } from '../shared/models/connecti
 import type { Player, PlayerID } from '../shared/models/player';
 import { BOTS_MAP } from '../shared/data/robots';
 import type { PlayerStateData } from '../shared/models/player';
-import type { GameAction, GamePhase } from '../shared/models/game_data';
+import { BoardElement, GamePhase, type GameAction } from '../shared/models/game_data';
 
 // create and mount the Vue app
 const app = createApp(App)
@@ -96,7 +96,21 @@ window.mainEventHandlerAPI.onGetInputNotification((player: PlayerID, timeout?: n
 
 window.mainEventHandlerAPI.onUpdateGamePhase((phase: GamePhase) => {
     console.log("Received game phase:", phase)
+    if (phase === GamePhase.Activation) {
+        r_gds.register = 0
+        r_gds.board_element = BoardElement.Players
+    }
     r_gds.game_phase = phase
+})
+
+window.mainEventHandlerAPI.onUpdateRegister((register: number) => {
+    console.log("Received register update", register)
+    r_gds.register = register
+})
+
+window.mainEventHandlerAPI.onUpdateBoardElement((element: BoardElement) => {
+    console.log("Received board element:", BoardElement.toString(element))
+    r_gds.board_element = element
 })
 
 window.mainEventHandlerAPI.onGameOverNotification((winner: Player) => {

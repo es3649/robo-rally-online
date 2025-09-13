@@ -1,4 +1,4 @@
-import { ProgrammingCard, type GameAction, type GamePhase, type Program, type ProgrammingHand, type RegisterArray } from './game_data'
+import { BoardElement, ProgrammingCard, type GameAction, type GamePhase, type Program, type ProgrammingHand, type RegisterArray } from './game_data'
 import type { Character, CharacterID, Player, PlayerID, PlayerStateData } from './player'
 import { Server2Main, Main2Server } from './events'
 
@@ -42,7 +42,9 @@ export interface ServerToClientEvents {
     "server:bot-list": (bots: Character[]) => void
     
     // game events
-    "server:phase-update": (phase:GamePhase) => void
+    "server:update-phase": (phase:GamePhase) => void
+    "server:update-register": (register:number) => void
+    "server:update-board-element": (element:BoardElement) => void
     "server:game-action": (action: GameAction) => void
     "server:update-player-states": (states: Map<PlayerID, PlayerStateData>) => void
     "server:request-input": (message: PendingActionChoice) => void
@@ -106,12 +108,14 @@ type Message<T, S> = {
 // The specific message types that main sends to the server
 export declare type M2SResetMessage = Message<typeof Main2Server.RESET, never>
 export declare type M2SRequestPositionMessage = Message<typeof Main2Server.REQUEST_POSITION, never>
-export declare type M2SPhaseUpdateMessage = Message<typeof Main2Server.PHASE_UPDATE, GamePhase>
+export declare type M2SPhaseUpdateMessage = Message<typeof Main2Server.UPDATE_PHASE, GamePhase>
 export declare type M2SUpdatePlayerStatesMessage = Message<typeof Main2Server.UPDATE_PLAYER_STATES, Map<PlayerID, PlayerStateData>>
 export declare type M2SProgrammingDataMessage = Message<typeof Main2Server.PROGRAMMING_DATA, Map<PlayerID, ProgrammingData>>
 export declare type M2SGameActionMessage = Message<typeof Main2Server.GAME_ACTION, GameAction>
 export declare type M2SGetInputMessage = Message<typeof Main2Server.GET_INPUT, ProgrammingCard.ActionChoiceData>
 export declare type M2SGameOverMessage = Message<typeof Main2Server.GAME_OVER, Player>
+export declare type M2SUpdateRegister = Message<typeof Main2Server.UPDATE_REGISTER, number>
+export declare type M2SUpdateBoardElement = Message<typeof Main2Server.UPDATE_BOARD_ELEMENT, BoardElement>
 
 // the specific types of messages the server sends to main
 export declare type S2MPlayerDisconnectedMessage = Message<typeof Server2Main.PLAYER_DISCONNECTED, PlayerUpdate|undefined>
@@ -130,7 +134,9 @@ export type Main2ServerMessage =
     M2SProgrammingDataMessage |
     M2SGameActionMessage |
     M2SGetInputMessage |
-    M2SGameOverMessage
+    M2SGameOverMessage |
+    M2SUpdateRegister |
+    M2SUpdateBoardElement
 export type Server2MainMessage =
     S2MPlayerDisconnectedMessage |
     S2MAddPlayerMessage |

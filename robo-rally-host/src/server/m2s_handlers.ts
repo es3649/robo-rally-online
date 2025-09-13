@@ -46,7 +46,7 @@ export function phaseUpdateHandle(io: RRSocketServer, message: M2SPhaseUpdateMes
                 break
         }
     }
-    io.emit(Server2Client.PHASE_UPDATE, phase)
+    io.emit(Server2Client.UPDATE_PHASE, phase)
     store.cur_phase = phase
 }
 

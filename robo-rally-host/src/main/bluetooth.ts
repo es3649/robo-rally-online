@@ -48,9 +48,9 @@ export class BluetoothManager implements MovementExecutor {
 
     private destroyer: (() => void)|undefined
     private adapter: Adapter|undefined
-    private connections = new Map<PlayerID, Device>()
+    private connections = new Map<CharacterID, Device>()
     private discovering = false
-    private actions_set = new Set<PlayerID>()
+    private actions_set = new Set<CharacterID>()
     // ensure this is in the range [1,255]. 0 is reserved so the drivers have a default which will
     // never appear, and we always want to be able to store it in a uint8;
     private last_idempotency_code: number = 1
@@ -71,6 +71,23 @@ export class BluetoothManager implements MovementExecutor {
         bluetooth.defaultAdapter().then((value: Adapter) => {
             this.adapter = value
         })
+    }
+
+    /**
+     * 
+     * Returns a mapping of Device IDs to a boolean indicating whether that device is paired or
+     * not. If some devices which are not in use may not have an entry
+     * @returns a mapping of device IDs to paring status
+     */
+    async getConnectionStatuses(): Promise<Map<CharacterID, boolean>> {
+        const ret = new Map<CharacterID, boolean>()
+
+        for (const [_, device] of this.connections) {
+            const paired = await device.isPaired()
+            ret.set(await device.getAddress(), !!paired)
+        }
+
+        return ret
     }
 
     /**
@@ -98,9 +115,9 @@ export class BluetoothManager implements MovementExecutor {
     * @param name the name/ID of the bot to connect to
     * @returns true if the bot is connected
     */
-    async connectRobot(player_id: PlayerID, bot_id: CharacterID): Promise<boolean> {
+    async connectRobot(bot_id: CharacterID): Promise<boolean> {
         // try to establish a connection
-        console.log(`Attempting bluetooth connection to ${name}`)
+        console.log(`Attempting bluetooth connection to ${bot_id}`)
         if (this.adapter == undefined || !this.discovering) {
             return false
         }
@@ -111,10 +128,10 @@ export class BluetoothManager implements MovementExecutor {
             await device.connect()
             
             // save the device internally
-            this.connections.set(player_id, device)
+            this.connections.set(bot_id, device)
 
             // set the initial state
-            this.setMode(player_id, BotState.SHUTDOWN)
+            this.setMode(bot_id, BotState.SHUTDOWN)
         } catch (error) {
             console.error(error)
             return false
@@ -125,11 +142,11 @@ export class BluetoothManager implements MovementExecutor {
 
     /**
      * helper method to get the Gatt Service from the device stores on the connection manager
-     * @param player_id the id of the player to get the gatt service for
+     * @param bot_id the id of the player to get the gatt service for
      * @returns the GattService for this player's BLE connection
      */
-    private async getService(player_id: PlayerID): Promise<GattService|undefined> {
-        const device = this.connections.get(player_id)
+    private async getService(bot_id: CharacterID): Promise<GattService|undefined> {
+        const device = this.connections.get(bot_id)
         if (device === undefined) {
             return undefined
         }
@@ -143,8 +160,8 @@ export class BluetoothManager implements MovementExecutor {
      * @param botID the id of the bot to send the command to
      * @param movement the movements the bot should perform
      */
-    async setAction(player_id: PlayerID, action: ActionFrame): Promise<void> {
-        console.log(`sending movement to ${player_id}`)
+    async setAction(bot_id: CharacterID, action: ActionFrame): Promise<void> {
+        console.log(`sending movement to ${bot_id}`)
 
         // check which attributes are set on the given ActionFrame
         if (ActionFrame.isEmpty(action)) {
@@ -153,10 +170,10 @@ export class BluetoothManager implements MovementExecutor {
         }
 
         // add that this player has an action set
-        this.actions_set.add(player_id)
+        this.actions_set.add(bot_id)
 
         // get the service
-        const service = await this.getService(player_id)
+        const service = await this.getService(bot_id)
         if (service === undefined) {
             // TODO error handling, is the character disconnected?
             return
@@ -169,7 +186,7 @@ export class BluetoothManager implements MovementExecutor {
         }
 
         if (action.end_state !== undefined) {
-            await this.setMode(player_id, action.end_state, service)
+            await this.setMode(bot_id, action.end_state, service)
         }
         
         // always write the movement in case it is now undefined (meaning no movement), but wasn't
@@ -210,15 +227,15 @@ export class BluetoothManager implements MovementExecutor {
     /**
      * starts receiving notifications from the bot with RFIDs read. This will continue, and the call back will be called
      * on any value change until stopPositionNotifications is called
-     * @param player_id the id of the player we will watch for positions on
+     * @param bot_id the id of the player we will watch for positions on
      * @param callback the function we will call when the position value changes
      */
-    private async startPositionNotifications(player_id: CharacterID, callback: (buffer: Buffer) => void): Promise<void> {
-        console.log(`starting spawn location notifications for ${player_id}`)
+    private async startPositionNotifications(bot_id: CharacterID, callback: (buffer: Buffer) => void): Promise<void> {
+        console.log(`starting spawn location notifications for ${bot_id}`)
 
-        const service = await this.getService(player_id)
+        const service = await this.getService(bot_id)
         if (service === undefined) {
-            console.warn(`TODO: better error handling: failed to get service for ${player_id}`)
+            console.warn(`TODO: better error handling: failed to get service for ${bot_id}`)
             return
         }
         
@@ -227,7 +244,7 @@ export class BluetoothManager implements MovementExecutor {
         characteristic.on('valuechanged', callback)
 
         // set the state to RFID read so that these values start getting read
-        this.setMode(player_id, BotState.GET_POSITION, service)
+        this.setMode(bot_id, BotState.GET_POSITION, service)
     }
 
     /**
@@ -253,39 +270,39 @@ export class BluetoothManager implements MovementExecutor {
      * gets the the position of an actor. In this case, it wraps the callback, making calls to start
      * and stopPositionNotifications, forwarding all notifications through the callback. Once the
      * callback indicates that the position is acceptable, we stop notifications
-     * @param player_id the id of the player to get the position of
+     * @param bot_id the id of the player to get the position of
      * @param callback the callback function for setting the position. It should return true if the
      * position given is acceptable and no more positions are needed
      */
-    async getPosition(player_id: PlayerID, callback: (position_id: string) => void): Promise<void> {
+    async getPosition(bot_id: CharacterID, callback: (position_id: string) => void): Promise<void> {
         const callback_wrapper = (data_buffer: Buffer): void => {
             const decoder = new TextDecoder('UTF-8')
             callback(decoder.decode(data_buffer))
         }
 
-        this.startPositionNotifications(player_id, callback_wrapper)
+        this.startPositionNotifications(bot_id, callback_wrapper)
     }
 
     /**
      * wraps stopPositionNotifications, provided to implement MovementExecutor
-     * @param player_id the id of the player whose position is now set, and no longer needs to
+     * @param bot_id the id of the player whose position is now set, and no longer needs to
      * receive position updates
      */
-    async positionSet(player_id: PlayerID): Promise<void> {
-        await this.stopPositionNotifications(player_id)
+    async positionSet(bot_id: CharacterID): Promise<void> {
+        await this.stopPositionNotifications(bot_id)
     }
 
     /**
      * sets the BLE characteristic for the bot state to the specified value for the specified player's bot
-     * @param player_id the id of the player whose bot will have the state set
+     * @param bot_id the id of the player whose bot will have the state set
      * @param mode the state to set
      */
-    async setMode(player_id: PlayerID, mode: BotState, service?: GattService): Promise<void> {
+    async setMode(bot_id: CharacterID, mode: BotState, service?: GattService): Promise<void> {
         if (service === undefined) {
-            service = await this.getService(player_id)
+            service = await this.getService(bot_id)
         }
         if (service === undefined) { // still...
-            console.warn(`TODO: failed to get service for ${player_id}`)
+            console.warn(`TODO: failed to get service for ${bot_id}`)
             return
         }
         const characteristic = await service.getCharacteristic(STATE_CHARACTERISTIC)
@@ -315,7 +332,7 @@ export class BluetoothBotInitializer implements BotInitializer {
     public async connectCurrent(): Promise<void> {
         const cur = this.priority_list[this.connecting]
         // make sure a Bluetooth connection is established
-        if (!await BluetoothManager.getInstance().connectRobot(cur.id, cur.character.id)) {
+        if (!await BluetoothManager.getInstance().connectRobot(cur.character.id)) {
             throw new Error(`Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
         }
         

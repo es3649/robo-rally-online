@@ -9,7 +9,7 @@ import type { BoardData } from "./main/game_manager/board";
 import { Main2Render, Render2Main } from "./shared/models/events";
 import type { CharacterID, Player, PlayerID, PlayerStateData } from "./shared/models/player";
 import type { PlayerUpdate } from "./shared/models/connection";
-import type { GameAction, GamePhase } from "./shared/models/game_data";
+import { BoardElement, type GameAction, type GamePhase } from "./shared/models/game_data";
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
@@ -46,7 +46,7 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
         })
     },
     onPlayerDataUpdated: (callback: (id: PlayerID, update: PlayerStateData) => void) => {
-        ipcRenderer.on(Main2Render.UPDATE_PLAYER_STATE, (_event: IpcRendererEvent, id: PlayerID, update: PlayerStateData) => {
+        ipcRenderer.on(Main2Render.UPDATE_PLAYER_STATES, (_event: IpcRendererEvent, id: PlayerID, update: PlayerStateData) => {
             callback(id, update)
         })
     },
@@ -60,9 +60,19 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
             callback(id, timeout)
         })
     },
-    onUpdateGameState: (callback: (phase: GamePhase) => void) => {
-        ipcRenderer.on(Main2Render.UPDATE_GAME_PHASE, (_event: IpcRendererEvent, phase: GamePhase) => {
+    onUpdateGamePhase: (callback: (phase: GamePhase) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_PHASE, (_event: IpcRendererEvent, phase: GamePhase) => {
             callback(phase)
+        })
+    },
+    onUpdateRegister: (callback: (register: number) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_REGISTER, (_event: IpcRendererEvent, register: number) => {
+            callback(register)
+        })
+    },
+    onUpdateBoardElement: (callback: (element: BoardElement) => void) => {
+        ipcRenderer.on(Main2Render.UPDATE_BOARD_ELEMENT, (_event: IpcRendererEvent, element: BoardElement) => {
+            callback(element)
         })
     },
     onGameOverNotification: (callback: (winner: Player) => void) => {

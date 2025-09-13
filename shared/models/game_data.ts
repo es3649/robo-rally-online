@@ -35,6 +35,48 @@ export namespace GamePhase {
     }
 }
 
+export enum BoardElement {
+    Players,
+    Conveyor2,
+    Conveyor,
+    Pusher,
+    Gear,
+    BoardLaser,
+    RobotLaser,
+    Battery,
+    Checkpoint
+}
+export namespace BoardElement {
+    /**
+     * Stringified the name of the board element. It is set up return the element in the plural, so that
+     * something like "Now activating: <board element>" makes sense
+     * @param element the element to stringify
+     * @returns the stringified name of the board element
+     */
+    export function toString(element: BoardElement): string {
+        switch (element) {
+            case BoardElement.Players:
+                return "Player Movements"
+            case BoardElement.Conveyor2:
+                return "Fast Conveyors"
+            case BoardElement.Conveyor:
+                return "Conveyors"
+            case BoardElement.Pusher:
+                return "Pushers"
+            case BoardElement.Gear:
+                return "Gears"
+            case BoardElement.BoardLaser:
+                return "Board Lasers"
+            case BoardElement.RobotLaser:
+                return "Robot Lasers"
+            case BoardElement.Battery:
+                return "Batteries"
+            case BoardElement.Checkpoint:
+                return "Checkpoints"
+        }
+    }
+}
+
 export namespace ProgrammingCard {
     export const left = "left"
     export const right = "right"

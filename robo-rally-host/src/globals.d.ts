@@ -1,7 +1,7 @@
 import type { BoardData } from "./main/game_manager/board"
 import type { PlayerUpdate } from "./main/models/connection"
 import type { Character, PlayerID, PlayerStateBrief } from "./main/models/player"
-import type { GamePhase } from "./shared/models/game_data"
+import type { BoardElement, GamePhase } from "./shared/models/game_data"
 
 declare global {
     interface Window {
@@ -23,6 +23,8 @@ declare global {
             onGameAction: (callback: (action: GameAction) => void) => void
             onGetInputNotification: (callback: (player: PlayerID) => void) => void
             onUpdateGamePhase: (callback: (phase: GamePhase) => void) => void
+            onUpdateRegister: (callback: (register: number) => void) => void
+            onUpdateBoardElement: (callback: (element: BoardElement) => void) => void
             onGameOverNotification: (callback: (winner: Player) => void) => void
         },
     }
