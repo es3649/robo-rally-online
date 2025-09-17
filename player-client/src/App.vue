@@ -154,6 +154,7 @@ function end() {
   router.replace('/gg')
   c_gs.winner = {
     name: "ur mom",
+    id: "hlg1t34vae-2443-1234-3334-asdfghjkl",
     character: {
       name: "Twonko",
       id: "twonkoid",

@@ -250,7 +250,7 @@ export const useGameStateStore = defineStore({
             })
         },
         bindEvents() {
-            socket.on(Server2Client.PHASE_UPDATE, (phase: GamePhase) => {
+            socket.on(Server2Client.UPDATE_PHASE, (phase: GamePhase) => {
                 this.phase = phase
                 this.next_phase()
             })
