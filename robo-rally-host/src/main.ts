@@ -11,8 +11,9 @@ import { PlayerStatusUpdate, senderMaker, type Main2ServerMessage, type PlayerUp
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
 import { GameStateManager, type Notifier } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
-import type { PlayerID, Player } from './shared/models/player';
+import type { PlayerID, Player, CharacterID } from './shared/models/player';
 import { BoardElement, GamePhase, newRegisterArray, ProgrammingCard, type GameAction } from './shared/models/game_data';
+import { BOTS_MAP } from './shared/data/robots';
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
@@ -80,10 +81,16 @@ const createWindow = (): BrowserWindow => {
  * register the ICP listeners. This is where calls from the renderer will come in
  */
 function registerIPCListeners() {
-    ipcMain.handle(Render2Main.BLE_CONNECT, async (event: Electron.IpcMainInvokeEvent, name: string): Promise<boolean> => {
+    ipcMain.handle(Render2Main.BLE_CONNECT, async (event: Electron.IpcMainInvokeEvent, id: CharacterID): Promise<boolean> => {
         // BluetoothManager.getInstance().connectRobot(name)
         console.log(`plz connect the robot called ${name}`)
-        return await BluetoothManager.getInstance().connectRobot(name)
+
+        const character = BOTS_MAP.get(id)
+        
+        if (character !== undefined) {
+            return await BluetoothManager.getInstance().connectRobot(character)
+        }
+        return false
     })
 
     ipcMain.on(Render2Main.GET_BOT_STATUS, (event: Electron.IpcMainEvent) => {
@@ -126,7 +133,7 @@ function registerIPCListeners() {
         game_initializer = new GameInitializer()
     })
 
-    ipcMain.handle(Render2Main.START_GAME, () => {
+    ipcMain.handle(Render2Main.START_GAME, async () => {
         // make sure that we are actually allowed to start the game
         if (!game_initializer.ready()) {
             console.error("Tried to start game when initializer was not ready")
@@ -144,6 +151,8 @@ function registerIPCListeners() {
             game_initializer.getBoard(),
             Array.from(game_initializer.getPlayers().values())
         )
+
+        await character_initializer.setup()
 
         const player = character_initializer.nextPlayer()
         if (player === undefined) {
@@ -437,6 +446,9 @@ child.on('message', (message: Server2MainMessage) => {
                 sendToAllWindows(Main2Render.GET_INFO_NOTIFICATION, next)
                 return
             }
+
+            // all characters are ready, tell the initializer we're done
+            character_initializer.finished().catch((reason) => console.warn(reason))
 
             // if it's undefined, then we should be ready to start the game
             game = new GameStateManager(game_initializer,

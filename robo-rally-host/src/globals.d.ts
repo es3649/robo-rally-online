@@ -2,11 +2,12 @@ import type { BoardData } from "./main/game_manager/board"
 import type { PlayerUpdate } from "./main/models/connection"
 import type { Character, PlayerID, PlayerStateBrief } from "./main/models/player"
 import type { BoardElement, GamePhase } from "./shared/models/game_data"
+import { CharacterID } from "./shared/models/player"
 
 declare global {
     interface Window {
         mainAPI: {
-            connectRobot: (name: string) => Promise<boolean>
+            connectRobot: (id: CharacterID) => Promise<boolean>
             getBotStatus: () => Promise<Map<CharacterID, boolean>>
             getIP: () => Promise<string|undefined>
             listBoards: () => Promise<string[]>

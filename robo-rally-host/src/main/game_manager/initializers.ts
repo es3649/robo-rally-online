@@ -199,4 +199,6 @@ export interface BotInitializer {
     nextPlayer(): PlayerID|undefined
     readPlayerPosition(): Promise<void>
     getStartingPositions: () => Map<PlayerID, OrientedPosition>
+    setup: () => Promise<void>
+    finished: () => Promise<void>
 }

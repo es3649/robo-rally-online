@@ -1,5 +1,5 @@
 import { createBluetooth, type Adapter, type Device, type GattService } from "node-ble";
-import type { CharacterID, Player, PlayerID } from "../shared/models/player"
+import type { Character, CharacterID, Player, PlayerID } from "../shared/models/player"
 import { ActionFrame, BotMovement, BotState } from "./game_manager/executor";
 import type { MovementExecutor } from "./game_manager/executor";
 import type { OrientedPosition } from "./game_manager/move_processors";
@@ -65,12 +65,12 @@ export class BluetoothManager implements MovementExecutor {
      * 
      */
     async setup(): Promise<void> {
+        console.info("Setting up BluetoothManager")
         const {bluetooth, destroy} = createBluetooth()
 
         this.destroyer = destroy
-        bluetooth.defaultAdapter().then((value: Adapter) => {
-            this.adapter = value
-        })
+        this.adapter = await bluetooth.defaultAdapter()
+        console.info("BluetoothManager set up")
     }
 
     /**
@@ -115,23 +115,28 @@ export class BluetoothManager implements MovementExecutor {
     * @param name the name/ID of the bot to connect to
     * @returns true if the bot is connected
     */
-    async connectRobot(bot_id: CharacterID): Promise<boolean> {
+    async connectRobot(bot: Character): Promise<boolean> {
         // try to establish a connection
-        console.log(`Attempting bluetooth connection to ${bot_id}`)
-        if (this.adapter == undefined || !this.discovering) {
+        console.log(`Attempting bluetooth connection to ${bot.name}`)
+        if (this.adapter == undefined) {
+            console.log("adapter is undefined")
+            return false
+        }
+        if (!this.discovering) {
+            console.log("can't connect while not discovering!")
             return false
         }
     
         // try to connect to the device
         try {
-            const device = await this.adapter.waitDevice(bot_id, TIMEOUT)
+            const device = await this.adapter.waitDevice(bot.bluetooth_id, TIMEOUT)
             await device.connect()
             
             // save the device internally
-            this.connections.set(bot_id, device)
+            this.connections.set(bot.id, device)
 
             // set the initial state
-            this.setMode(bot_id, BotState.SHUTDOWN)
+            this.setMode(bot.id, BotState.SHUTDOWN)
         } catch (error) {
             console.error(error)
             return false
@@ -332,12 +337,29 @@ export class BluetoothBotInitializer implements BotInitializer {
     public async connectCurrent(): Promise<void> {
         const cur = this.priority_list[this.connecting]
         // make sure a Bluetooth connection is established
-        if (!await BluetoothManager.getInstance().connectRobot(cur.character.id)) {
+        if (!await BluetoothManager.getInstance().connectRobot(cur.character)) {
             throw new Error(`Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
         }
         
         // notify the player that their bot is ready to place
         // TODO
+    }
+
+    /**
+     * Gets the bluetooth aparattuses set up so that we are ready to establish
+     * connections
+     */
+    public async setup(): Promise<void>{
+        await BluetoothManager.getInstance().setup()
+        await BluetoothManager.getInstance().startDiscovering()
+    }
+
+    /**
+     * note that the software is finished setting up new bluetooth connections,
+     * takes the system out of discovery mode
+     */
+    public async finished(): Promise<void> {
+        await BluetoothManager.getInstance().stopDiscovering()
     }
 
     /**
@@ -348,7 +370,7 @@ export class BluetoothBotInitializer implements BotInitializer {
      */
     public nextPlayer(): PlayerID | undefined {
         if (this.connecting < this.priority_list.length) {
-            const cur = this.priority_list[this.connecting].id
+            const cur = this.priority_list[this.connecting].character.id
             this.connectCurrent().then(() => {
                 BluetoothManager.getInstance().getPosition(cur, (position_id: string) => {
                     // look up the position on the board

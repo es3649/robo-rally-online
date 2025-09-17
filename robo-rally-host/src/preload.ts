@@ -13,7 +13,7 @@ import { BoardElement, type GameAction, type GamePhase } from "./shared/models/g
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
-    connectRobot: (name: string): Promise<boolean> => ipcRenderer.invoke(Render2Main.BLE_CONNECT, name),
+    connectRobot: (id: CharacterID): Promise<boolean> => ipcRenderer.invoke(Render2Main.BLE_CONNECT, name),
     getBotStatuses: (): Promise<Map<CharacterID, boolean>> => ipcRenderer.invoke(Render2Main.GET_BOT_STATUS),
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke(Render2Main.GET_IP),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke(Render2Main.BOARD.LIST_BOARDS),

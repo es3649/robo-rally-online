@@ -1,5 +1,6 @@
 console.log('running server.js')
 import express, { type Express } from 'express'
+import fs from 'fs'
 import { createServer } from 'http'
 import { randomUUID } from 'crypto'
 import { Server } from 'socket.io'
@@ -9,6 +10,7 @@ import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
 import { gameActionHandle, getInputHandle, phaseUpdateHandle, programmingDataHandle, requestPositionHandle, resetHandle, updatePlayerStatesHandle } from './server/m2s_handlers'
 import { connections } from './server/data'
 import { confirmPositionHandle, getPlayerStatesHandle, listAvailableBotsHandle, listBotsHandle, makeDisconnectHandle, makeGetIDHandle, makeGetProgrammingDataHandle, makeJoinGameHandle, makeProgramSubmitHandle, makeSelectBotHandle, makeUseIDHandle } from './server/c2s_handlers'
+import { fstat } from 'fs'
 
 export const app: Express = express()
 const port = process.env.PORT || 8199
@@ -22,10 +24,14 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, EventsMap, Soc
     }
 })
 
+// check that our assets exists
+if (!fs.existsSync('assets/public_html/index.html')) {
+    console.error("No files to serve in assets/public_html")
+    throw new Error("Missing files to serve")
+}
+
 // add a file handler at the root
 app.use(express.static('assets/public_html'))
-
-
 
 // handle the connection event
 io.on(Default.CONNECTION, (socket) => {
