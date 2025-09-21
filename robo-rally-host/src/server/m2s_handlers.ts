@@ -1,4 +1,4 @@
-import { type M2SGameActionMessage, type M2SGetInputMessage, type M2SPhaseUpdateMessage, type M2SProgrammingDataMessage, type M2SRequestPositionMessage, type M2SUpdatePlayerStatesMessage, type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
+import { type M2SGameActionMessage, type M2SGetInputMessage, type M2SPhaseUpdateMessage, type M2SProgrammingDataMessage, type M2SRemovePlayer as M2SRemovePlayerMessage, type M2SRequestPositionMessage, type M2SUpdatePlayerStatesMessage, type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
 import { Server2Client } from "../shared/models/events";
 import { GamePhase, ProgrammingCard, type GameAction } from "../shared/models/game_data";
 import { connections, store, type RRSocketServer } from "./data";
@@ -119,4 +119,33 @@ export function programmingDataHandle(message: M2SProgrammingDataMessage): void 
 
     // just hold onto this until the clients ask for it
     store.programming_data = programming_data
+}
+
+/**
+ * remove the player fro the game. If they are connected, send them a removal notice
+ * If the player had a character assigned, release that character and make it available for other
+ * players to choose
+ * @param player_id the id of the player to remove
+ */
+export function removePlayer(io: RRSocketServer, message: M2SRemovePlayerMessage): void {
+    console.log("received remove-player request")
+    // the ID shouldn't be defined, if it is then log a warning or something
+    if (message.id === undefined) {
+        console.warn('Received a remove-player message with no player id attached')
+        return
+    }
+
+    // try to remove the player
+    const update = store.initializer.removePlayer(message.id)
+    if (update.newly_available.length > 0) {
+        io.emit(Server2Client.UPDATE_AVAILABLE_BOTS, update)
+    }
+
+    // send the player a reset notice because if we're here, they've been disconnected by host
+    const sock = connections.get(message.id)
+    if (sock === undefined) {
+        console.log("no socket found for removed player")
+        return
+    }
+    sock.emit(Server2Client.RESET)
 }

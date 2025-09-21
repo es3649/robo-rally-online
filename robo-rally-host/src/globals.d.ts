@@ -16,6 +16,7 @@ declare global {
             startGame: () => Promise<boolean>
             reset: () => void
             getToDos: () => Promise<Map<PlayerID, string[]>>
+            removePlayer: (player_id: PlayerID) => Promise<boolean>
         },
         mainEventHandlerAPI: {
             onPlayerUpdate: (callback: (update: PlayerUpdate) => void) => void

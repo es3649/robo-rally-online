@@ -38,7 +38,7 @@ export interface ServerToClientEvents {
     // withAck: (d:string, callback: (e:number) => void) => void
 
     // lobby events
-    "server:bot-selected": (update:BotAvailabilityUpdate) => void
+    "server:update-available-bots": (update:BotAvailabilityUpdate) => void
     "server:bot-list": (bots: Character[]) => void
     
     // game events
@@ -116,6 +116,7 @@ export declare type M2SGetInputMessage = Message<typeof Main2Server.GET_INPUT, P
 export declare type M2SGameOverMessage = Message<typeof Main2Server.GAME_OVER, Player>
 export declare type M2SUpdateRegister = Message<typeof Main2Server.UPDATE_REGISTER, number>
 export declare type M2SUpdateBoardElement = Message<typeof Main2Server.UPDATE_BOARD_ELEMENT, BoardElement>
+export declare type M2SRemovePlayer = Message<typeof Main2Server.REMOVE_PLAYER, never>
 
 // the specific types of messages the server sends to main
 export declare type S2MPlayerDisconnectedMessage = Message<typeof Server2Main.PLAYER_DISCONNECTED, PlayerUpdate|undefined>
@@ -136,7 +137,8 @@ export type Main2ServerMessage =
     M2SGetInputMessage |
     M2SGameOverMessage |
     M2SUpdateRegister |
-    M2SUpdateBoardElement
+    M2SUpdateBoardElement | 
+    M2SRemovePlayer
 export type Server2MainMessage =
     S2MPlayerDisconnectedMessage |
     S2MAddPlayerMessage |

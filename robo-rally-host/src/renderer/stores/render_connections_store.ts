@@ -27,6 +27,9 @@ export const useConnectionsStore = defineStore({
         },
         async connectRobot(id: CharacterID): Promise<boolean> {
             return window.mainAPI.connectRobot(id)
+        },
+        async removePlayer(player_id: PlayerID): Promise<boolean> {
+           return window.mainAPI.removePlayer(player_id)
         }
     }
 })

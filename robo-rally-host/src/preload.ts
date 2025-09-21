@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('mainAPI', {
     startGame: (): Promise<boolean> => ipcRenderer.invoke(Render2Main.START_GAME),
     getToDos: (): Promise<Map<PlayerID, string[]>> => ipcRenderer.invoke(Render2Main.GET_READY_STATUS),
     // loadSerial: (): void => ipcRenderer.send('render:boards:load-serial'),
+    removePlayer: (player_id: PlayerID): Promise<boolean> => ipcRenderer.invoke(Render2Main.REMOVE_PLAYER, player_id),
 
     reset: (): void => ipcRenderer.send(Render2Main.RESET),
 

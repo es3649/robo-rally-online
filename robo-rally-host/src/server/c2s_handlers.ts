@@ -165,7 +165,7 @@ export function makeSelectBotHandle(io: RRSocketServer, socket: RRSocketConnecti
         // notify the main thread
         if (ok) {
             // broadcast to other clients that that character is no longer available
-            io.emit(Server2Client.BOT_SELECTED, update)
+            io.emit(Server2Client.UPDATE_AVAILABLE_BOTS, update)
             // notify the main thread that the character was selected
             S2MSend({
                 name:Server2Main.SELECT_BOT,

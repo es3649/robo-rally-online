@@ -259,7 +259,7 @@ export const useGameStateStore = defineStore({
                 this.action_log.push(action)
             })
 
-            socket.on(Server2Client.BOT_SELECTED, (update: BotAvailabilityUpdate) => {
+            socket.on(Server2Client.UPDATE_AVAILABLE_BOTS, (update: BotAvailabilityUpdate) => {
                 console.log("Recv'd bot availability update", update)
                 for (const available of update.newly_available) {
                     this.available_characters.add(available)
@@ -273,6 +273,28 @@ export const useGameStateStore = defineStore({
 
             socket.on(Server2Client.RESET, () => {
                 console.log('reset')
+                switch (this.phase) {
+                    case GamePhase.Lobby:
+                    case GamePhase.Setup:
+                        // the game hasn't started, so we simply return to start
+                        // reset in-game data
+                        alert("Connection has been reset by host.")
+                        this.phase = GamePhase.Setup
+                        router.replace('/')
+                        break
+                    case GamePhase.Upgrade:
+                    case GamePhase.Programming:
+                    case GamePhase.Activation:
+                        // the game is currently in progress, not sure what to do here
+                        console.error("Reset behavior mid-game isn't defined yet")
+                        break
+                    case GamePhase.Finished:
+                        // the game is over, we can return to join
+                        console.error("Reset at game end is not yet implemented")
+                        break
+                    default:
+                        console.error(`Unknown game phase: ${this.phase}`)
+                }
             })
 
             socket.on(Server2Client.UPDATE_PLAYER_STATES, (states: Map<PlayerID, PlayerStateData>) => {

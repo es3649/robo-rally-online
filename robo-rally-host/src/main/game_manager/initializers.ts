@@ -77,6 +77,39 @@ export class GameInitializer {
     }
 
     /**
+     * removes the player from the object, and computes the updates in bots given that the player
+     * is removed
+     * @param player_id the id of the player to remove
+     * @returns an availability update of the change in bots, in case the player had a bot
+     */
+    removePlayer(player_id: PlayerID): BotAvailabilityUpdate {
+        // return object
+        const update: BotAvailabilityUpdate = {
+            newly_available: [],
+            newly_unavailable: []
+        }
+
+        // try to get the player
+        const partial = this.players.get(player_id)
+        if (partial === undefined) {
+            // player didn't exist
+            return update
+        }
+        // delete the player from the list
+        this.players.delete(player_id)
+
+        if (partial.character === undefined) {
+            // no character was selected. We're done here
+            return update
+        }
+
+        // remove the character and update the availability
+        this.characters_used.delete(partial.character.id)
+        update.newly_available.push(partial.character.id)
+        return update
+    }
+
+    /**
      * gets the sub-array of the constant BOTS array which have not yet been selected by any
      * player
      * @returns the list of known characters which are not currently in use

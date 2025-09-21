@@ -77,6 +77,10 @@ input[type=input]:disabled:active {
   width: 80%;
 }
 
+button.cancel {
+  background-color: orangered;
+}
+
 /* DEFAULT IMG SIZING */
 img {
   max-width: 100%;

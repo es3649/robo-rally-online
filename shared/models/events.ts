@@ -52,6 +52,7 @@ export namespace Main2Server {
     export const UPDATE_PLAYER_STATES = "main:update-player-states"
     export const PROGRAMMING_DATA = "main:programming-data"
     export const GAME_OVER = "main:game-over"
+    export const REMOVE_PLAYER = "main:remove-player"
 }
 export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.UPDATE_PHASE |
@@ -63,7 +64,8 @@ export type Main2Server = typeof Main2Server.GAME_ACTION |
     typeof Main2Server.UPDATE_BOT_CONNECTION |
     typeof Main2Server.UPDATE_PLAYER_STATES |
     typeof Main2Server.PROGRAMMING_DATA |
-    typeof Main2Server.GAME_OVER
+    typeof Main2Server.GAME_OVER |
+    typeof Main2Server.REMOVE_PLAYER
 
 // events sent to renderer
 export namespace Main2Render {
@@ -102,7 +104,7 @@ export namespace Server2Client {
     export const UPDATE_REGISTER = "server:update-register"
     export const UPDATE_BOARD_ELEMENT = "server:update-board-element"
     export const GAME_ACTION = "server:game-action"
-    export const BOT_SELECTED = "server:bot-selected"
+    export const UPDATE_AVAILABLE_BOTS = "server:update-available-bots"
     export const BOT_LIST = "server:bot-list"
     export const RESET = "server:reset"
     export const UPDATE_PLAYER_STATES = "server:update-player-states"
@@ -143,6 +145,7 @@ export namespace Render2Main {
     export const RESET = "render:reset"
     export const START_GAME = "render:start-game"
     export const GET_READY_STATUS = "render:get-ready-status"
+    export const REMOVE_PLAYER = "render:remove-player"
     export namespace BOARD {
         export const LIST_BOARDS = "render:board:list-boards"
         export const LOAD_BOARD = "render:board:load-board"

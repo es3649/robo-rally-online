@@ -43,7 +43,7 @@ const child = fork.fork(modulePath, [], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
 
-const M2SSend = senderMaker<Main2ServerMessage>(process)
+const M2SSend = senderMaker<Main2ServerMessage>(child)
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -81,7 +81,7 @@ const createWindow = (): BrowserWindow => {
  * register the ICP listeners. This is where calls from the renderer will come in
  */
 function registerIPCListeners() {
-    ipcMain.handle(Render2Main.BLE_CONNECT, async (event: Electron.IpcMainInvokeEvent, id: CharacterID): Promise<boolean> => {
+    ipcMain.handle(Render2Main.BLE_CONNECT, async (_: Electron.IpcMainInvokeEvent, id: CharacterID): Promise<boolean> => {
         // BluetoothManager.getInstance().connectRobot(name)
         console.log(`plz connect the robot called ${name}`)
 
@@ -93,7 +93,7 @@ function registerIPCListeners() {
         return false
     })
 
-    ipcMain.on(Render2Main.GET_BOT_STATUS, (event: Electron.IpcMainEvent) => {
+    ipcMain.on(Render2Main.GET_BOT_STATUS, (_: Electron.IpcMainEvent) => {
         console.log("Figure out how to get bluetooth connection statuses")
     })
 
@@ -170,6 +170,21 @@ function registerIPCListeners() {
 
     ipcMain.handle(Render2Main.GET_BOT_STATUS, () => {
         return BluetoothManager.getInstance().getConnectionStatuses()
+    })
+
+    ipcMain.handle(Render2Main.REMOVE_PLAYER, (_: Electron.IpcMainInvokeEvent, player_id: PlayerID): boolean => {
+        try {
+            console.log(`requested to remove player: ${player_id}`)
+            game_initializer.removePlayer(player_id)
+            M2SSend({
+                name: Main2Server.REMOVE_PLAYER,
+                id: player_id
+            })
+        } catch (err) {
+            console.error("failed to remove player", err)
+            return false
+        }
+        return true
     })
     
     // ipcMain.on(Render2Main.BOARD.LOAD_SERIAL, (_: Electron.IpcMainEvent): void => {
