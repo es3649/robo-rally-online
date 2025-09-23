@@ -62,13 +62,12 @@ export class GameStateManager {
     private readonly player_manager: PlayerManager
     private readonly board: Board
     private readonly movement_executor: MovementExecutor
-    private readonly notifier: Notifier
+    private notifiers: Notifier[] = []
     // private game_manager: GameManager
 
     public constructor(player_initializer: GameInitializer,
             bot_initializer: BotInitializer,
-            executor: MovementExecutor,
-            notifier: Notifier) {
+            executor: MovementExecutor) {
         // this.game_manager = new GameManager()
         this.player_count = player_initializer.players.size
         // set up the player manager
@@ -77,7 +76,16 @@ export class GameStateManager {
         
         this.board = player_initializer.getBoard()
         this.movement_executor = executor
-        this.notifier = notifier
+        this.notifiers = []
+    }
+
+    /**
+     * adds a notifier to the list of notifiers. It essentially serves as an event hook for the
+     * events that the notifier implements
+     * @param notifier the notifier to add
+     */
+    public addNotifier(notifier: Notifier) {
+        this.notifiers.push(notifier)
     }
 
     /**
@@ -89,7 +97,7 @@ export class GameStateManager {
         const ready = this.player_manager.setProgram(player_id, program)
         if (ready) {
             console.log("All programs received, beginning execution")
-            this.notifier.beginActivation()
+            this.notifiers.forEach((n) => n.beginActivation())
             // unlatch the movements for actors which are shutdown
             // these actions will have been set on setShutdown before programs are submitted
             this.movement_executor.unlatchActions()

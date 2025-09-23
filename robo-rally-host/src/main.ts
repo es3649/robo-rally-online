@@ -9,11 +9,12 @@ import { Board, type BoardData } from './main/game_manager/board';
 import { Main2Render, Main2Server, Render2Main, Server2Main } from './shared/models/events';
 import { PlayerStatusUpdate, senderMaker, type Main2ServerMessage, type PlayerUpdate, type ProgrammingData, type S2MAddPlayerMessage, type S2MProgramSetMessage, type S2MSelectBotMessage, type Sender, type Server2MainMessage } from './shared/models/connection';
 import { BluetoothBotInitializer, BluetoothManager } from './main/bluetooth';
-import { GameStateManager, type Notifier } from './main/game_manager/game_state';
+import { GameStateManager } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
 import type { PlayerID, Player, CharacterID } from './shared/models/player';
-import { BoardElement, GamePhase, newRegisterArray, ProgrammingCard, type GameAction } from './shared/models/game_data';
+import { GamePhase, newRegisterArray } from './shared/models/game_data';
 import { BOTS_MAP } from './shared/data/robots';
+import { ServerNotifier, RenderNotifier } from './main/notifiers'
 
 // TODO we might consider moving this functionality to a separate class
 const windows = new Map<number, BrowserWindow>()
@@ -243,63 +244,6 @@ app.on('activate', () => {
     }
 });
 
-class ServerRenderNotifier implements Notifier {
-    private m2s_sender: Sender<Main2ServerMessage>
-    private render_sender: <T>(channel: Main2Render, data: T) => void
-
-    constructor(m2s_sender: Sender<Main2ServerMessage>, render_sender: <T>(channel: Main2Render, data: T) => void) {
-        this.m2s_sender = m2s_sender
-        this.render_sender = render_sender
-    }
-
-    gameAction(action: GameAction): void {
-        // tell the server to send the game action notification
-        this.m2s_sender({
-            name: Main2Server.GAME_ACTION,
-            data: action
-        })
-        // send to the render as well
-        this.render_sender<GameAction>(Main2Render.GAME_ACTION, action)
-    }
-
-    getInput(player: PlayerID, request: ProgrammingCard.ActionChoiceData): void {
-        // send the full request to the server to be forwarded to the player
-        this.m2s_sender({
-            name: Main2Server.GET_INPUT,
-            id: player,
-            data: request
-        })
-
-        // send a short notification to the renderer that input is required
-        this.render_sender<PlayerID>(Main2Render.GET_INFO_NOTIFICATION, player)
-    }
-
-    beginActivation(): void {
-        // notify the players and the renderer that activation is beginning
-        this.render_sender(Main2Render.UPDATE_PHASE, GamePhase.Activation)
-        this.m2s_sender({
-            name: Main2Server.UPDATE_PHASE,
-            data: GamePhase.Activation
-        })
-    }
-
-    updateRegister(register: number) {
-        this.m2s_sender({
-            name: Main2Server.UPDATE_REGISTER,
-            data: register
-        })
-        this.render_sender<number>(Main2Render.UPDATE_REGISTER, register)
-    }
-
-    updateBoardElement(element: BoardElement) {
-        this.m2s_sender({
-            name: Main2Server.UPDATE_BOARD_ELEMENT,
-            data: element
-        })
-        this.render_sender(Main2Render.UPDATE_BOARD_ELEMENT, element)
-    }
-}
-
 /**
  * perform all the updates related to starting a new round
  */
@@ -468,9 +412,11 @@ child.on('message', (message: Server2MainMessage) => {
             // if it's undefined, then we should be ready to start the game
             game = new GameStateManager(game_initializer,
                 character_initializer,
-                BluetoothManager.getInstance(),
-                new ServerRenderNotifier(M2SSend, sendToAllWindows)
+                BluetoothManager.getInstance()
             )
+
+            game.addNotifier(new ServerNotifier(child.send))
+            game.addNotifier(new RenderNotifier(sendToAllWindows))
 
             // TODO issue 3 upgrade cards to each player
             
