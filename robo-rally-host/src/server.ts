@@ -10,6 +10,7 @@ import type { EventsMap } from 'node_modules/socket.io/dist/typed-events'
 import * as m2s from './server/m2s_handlers'
 import { connections } from './server/data'
 import * as c2s from './server/c2s_handlers'
+import path from 'path'
 
 export const app: Express = express()
 const port = process.env.PORT || 8199
@@ -31,6 +32,9 @@ if (!fs.existsSync('assets/public_html/index.html')) {
 
 // add a file handler at the root
 app.use(express.static('assets/public_html'))
+app.get('/*', (_, res) => {
+    res.redirect('/')
+});
 
 // handle the connection event
 io.on(Default.CONNECTION, (socket) => {

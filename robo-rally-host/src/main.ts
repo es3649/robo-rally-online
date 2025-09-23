@@ -192,13 +192,6 @@ function registerIPCListeners() {
     //     console.log('loading board from serial port')
     //     console.warn('NOT IMPLEMENTED')
     // })
-    // ipcMain.on(Render2Main.BOARD.ROTATE)
-    // ipcMain.handle(Render2Main.BOARD.EXTEND)
-    // ipcMain.on(Render2Main.BOARD.READY)
-    // ipcMain.on(Render2Main.BOARD.TOGGLE_CHECKPOINT)
-    // ipcMain.on(Render2Main.BOARD.TOGGLE_RESPAWN)
-    // ipcMain.on(Render2Main.BOARD.ROTATE_RESPAWN)
-
 }
 
 /**

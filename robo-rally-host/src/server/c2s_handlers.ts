@@ -1,6 +1,6 @@
 import { Server2Client, Server2Main } from "../shared/models/events"
 import { connections, S2MSend, store, type RRSocketConnection, type RRSocketServer } from "./data"
-import { PlayerStatusUpdate, type PlayerUpdate, type ProgrammingData } from "../shared/models/connection"
+import { PlayerStatusUpdate, type ProgrammingData } from "../shared/models/connection"
 import type { Character, CharacterID, PlayerID, PlayerStateData } from "../shared/models/player"
 import { BOTS } from "../shared/data/robots"
 import { newRegisterArray, type Program } from "../shared/models/game_data"
@@ -110,8 +110,12 @@ export function makeUseIDHandle(socket: RRSocketConnection): (id: PlayerID, call
             }
 
             // emit game data to this player. They likely lost it
-            socket.emit(Server2Client.UPDATE_PHASE, store.cur_phase)
+            const player_data = store.initializer.players.get(id)
+            if (player_data !== undefined) {
+                socket.emit(Server2Client.PLAYER_DATA, player_data)
+            }
             socket.emit(Server2Client.UPDATE_PLAYER_STATES, store.player_data)
+            socket.emit(Server2Client.UPDATE_PHASE, store.cur_phase)
 
             // check if there is a pending request for this player, if so, then they have likely
             // lost this information if they are requesting an existing ID; send a new notification

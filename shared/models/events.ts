@@ -108,6 +108,7 @@ export namespace Server2Client {
     export const BOT_LIST = "server:bot-list"
     export const RESET = "server:reset"
     export const UPDATE_PLAYER_STATES = "server:update-player-states"
+    export const PLAYER_DATA = "server:player-data"
     export const REQUEST_POSITION = "server:request-position"
     export const REQUEST_INPUT = "server:request-input"
     export const GAME_OVER = "server:game-over"
@@ -150,11 +151,5 @@ export namespace Render2Main {
         export const LIST_BOARDS = "render:board:list-boards"
         export const LOAD_BOARD = "render:board:load-board"
         export const LOAD_SERIAL = "render:board:load-serial"
-        // export const ROTATE = "render:board:rotate"
-        // export const EXTEND = "render:board:extend"
-        // export const READY = "render:board:ready"
-        // export const TOGGLE_CHECKPOINT = "render:board:toggle-checkpoint"
-        // export const TOGGLE_RESPAWN = "render:board:toggle-respawn"
-        // export const ROTATE_RESPAWN = "render:board:rotate-respawn"
     }
 }

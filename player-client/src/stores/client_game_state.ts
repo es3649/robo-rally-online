@@ -1,7 +1,7 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
-import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray, PROGRAMMING_HAND_SIZE } from "@/shared/models/game_data";
+import { GamePhase, ProgrammingCard, newStandardDeck, newRegisterArray } from "@/shared/models/game_data";
 import type { UpgradeCard, GameAction, ProgrammingCardSlot } from "@/shared/models/game_data";
-import type { CharacterID, Character, PlayerStateData, PlayerID, Player } from "@/shared/models/player";
+import type { CharacterID, Character, PlayerStateData, PlayerID, Player, PartialPlayer } from "@/shared/models/player";
 import { socket, TIMEOUT } from "@/socket"
 import { Client2Server, Server2Client } from "@/shared/models/events";
 import type { BotAvailabilityUpdate, PendingActionChoice, ProgrammingData } from "@/shared/models/connection";
@@ -142,6 +142,7 @@ export const useGameStateStore = defineStore({
         // },
         next_phase() {
             console.log("We don't do that here")
+            console.warn('this might be deprecated. Check the caller')
         },
         /**
          * polls the server for the new hand of cards and new registers
@@ -299,6 +300,20 @@ export const useGameStateStore = defineStore({
 
             socket.on(Server2Client.UPDATE_PLAYER_STATES, (states: Map<PlayerID, PlayerStateData>) => {
                 this.processPlayerStates(states)
+            })
+
+            socket.on(Server2Client.PLAYER_DATA, (player_data: PartialPlayer) => {
+                if (player_data.character !== undefined) {
+                    // navigate to the character selection stage of the lobby
+                    this.character = player_data.character
+                    if (this.phase != GamePhase.Lobby) {
+                        router.replace('/game')
+                    }
+                }
+                
+                // the character is undefined, we need to select a character, so we should be in
+                // the lobby, and if not will need to go there anyway
+                router.replace('/lobby')
             })
 
             socket.on(Server2Client.GAME_ACTION, (action: GameAction) => {
