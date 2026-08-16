@@ -13,7 +13,7 @@ import { BoardElement, type GameAction, type GamePhase } from "./shared/models/g
 
 // load up ipc APIs
 contextBridge.exposeInMainWorld('mainAPI', {
-    connectRobot: (id: CharacterID): Promise<boolean> => ipcRenderer.invoke(Render2Main.BLE_CONNECT, name),
+    connectRobot: (id: CharacterID): Promise<boolean> => ipcRenderer.invoke(Render2Main.BLE_CONNECT, id),
     getBotStatuses: (): Promise<Map<CharacterID, boolean>> => ipcRenderer.invoke(Render2Main.GET_BOT_STATUS),
     getIP: (): Promise<string|undefined> => ipcRenderer.invoke(Render2Main.GET_IP),
     listBoards: (): Promise<string[]> => ipcRenderer.invoke(Render2Main.BOARD.LIST_BOARDS),
@@ -79,6 +79,11 @@ contextBridge.exposeInMainWorld('mainEventHandlerAPI', {
     onGameOverNotification: (callback: (winner: Player) => void) => {
         ipcRenderer.on(Main2Render.GAME_OVER, (_event: IpcRendererEvent, winner: Player) => {
             callback(winner)
+        })
+    },
+    onGameError: (callback: (message: string) => void) => {
+        ipcRenderer.on(Main2Render.GAME_ERROR, (_event: IpcRendererEvent, message: string) => {
+            callback(message)
         })
     }
 })

@@ -117,3 +117,8 @@ window.mainEventHandlerAPI.onGameOverNotification((winner: Player) => {
     console.log("Received Game Over")
     r_gds.winner = winner
 })
+
+window.mainEventHandlerAPI.onGameError((message: string) => {
+    console.log("Received error message from main")
+    r_gds.errors.push(message)
+})

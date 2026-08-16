@@ -177,7 +177,7 @@ export function senderMaker<T extends Main2ServerMessage|Server2MainMessage>(pro
     /**
      * a wrapper for process.send, or fork.ChildProcess.send, since the former could
      * technically be undefined
-     * @template S the type of the data to be sent in the message
+     * @template T the type of the data to be sent in the message
      * @param message the message to be sent. It takes a specific form per the parametrization
      * @param sendHandle see docs for process.send
      * @param options see docs for process.send

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue';
 import { useConnectionsStore } from '../stores/render_connections_store'
 import router from '../router';
 import qrcodegen from 'nayuki-qr-code-generator';
 import { toSvgString } from '../qr';
 import { SetupPhase, useGameDataStore } from '../stores/render_game_data_store';
-import { PlayerID } from '../../shared/models/player';
+import { type PlayerID } from '../../shared/models/player';
 
 const r_cs = useConnectionsStore()
 const r_gds = useGameDataStore()

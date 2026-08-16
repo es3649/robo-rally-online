@@ -8,7 +8,7 @@ declare global {
     interface Window {
         mainAPI: {
             connectRobot: (id: CharacterID) => Promise<boolean>
-            getBotStatus: () => Promise<Map<CharacterID, boolean>>
+            getBotStatuses: () => Promise<Map<CharacterID, boolean>>
             getIP: () => Promise<string|undefined>
             listBoards: () => Promise<string[]>
             loadBoard: (name: string) => Promise<BoardData>
@@ -28,6 +28,7 @@ declare global {
             onUpdateRegister: (callback: (register: number) => void) => void
             onUpdateBoardElement: (callback: (element: BoardElement) => void) => void
             onGameOverNotification: (callback: (winner: Player) => void) => void
+            onGameError: (callback: (error: string) => void) => void
         },
     }
 

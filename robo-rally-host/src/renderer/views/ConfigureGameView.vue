@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue';
+import { type Ref, ref } from 'vue';
 import { useGameDataStore } from '../stores/render_game_data_store';
 import BoardComponent from '../components/Board.vue'
 import router from '../router';
-import { BoardData } from '../../main/game_manager/board';
+import { type BoardData } from '../../main/game_manager/board';
 
 const r_gds = useGameDataStore()
 const board_name = ref('')

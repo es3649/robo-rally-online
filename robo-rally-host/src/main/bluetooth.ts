@@ -4,7 +4,7 @@ import { ActionFrame, BotMovement, BotState } from "./game_manager/executor";
 import type { MovementExecutor } from "./game_manager/executor";
 import type { OrientedPosition } from "./game_manager/move_processors";
 import type { BotInitializer } from "./game_manager/initializers";
-import type { Board } from "./game_manager/board";
+import { Board } from "./game_manager/board";
 import { DualKeyMap } from "./game_manager/graph";
 
 /** a timeout value (ms) */
@@ -18,6 +18,8 @@ const RFID_CHARACTERISTIC               = "346642f1-0005-49fc-a6a6-8a782eb06f26"
 
 export class BluetoothManager implements MovementExecutor {
     private static instance: BluetoothManager|undefined
+    // each try has a pretty generous timeout window. Increase this if the timeout drops
+    private static readonly CONNECTION_RETRIES = 1
 
     /**
      * gets the instance, creating one if one does not already exist
@@ -49,6 +51,7 @@ export class BluetoothManager implements MovementExecutor {
     private destroyer: (() => void)|undefined
     private adapter: Adapter|undefined
     private connections = new Map<CharacterID, Device>()
+    private attempting_connections = new Map<CharacterID, boolean>()
     private discovering = false
     private actions_set = new Set<CharacterID>()
     // ensure this is in the range [1,255]. 0 is reserved so the drivers have a default which will
@@ -65,12 +68,20 @@ export class BluetoothManager implements MovementExecutor {
      * 
      */
     async setup(): Promise<void> {
-        console.info("Setting up BluetoothManager")
+        console.info("[BluetoothManager]: Setting up")
         const {bluetooth, destroy} = createBluetooth()
 
         this.destroyer = destroy
         this.adapter = await bluetooth.defaultAdapter()
-        console.info("BluetoothManager set up")
+        console.info("[BluetoothManager]: setup complete")
+    }
+
+    /**
+     * isDiscovering just returns the value of this.discovering
+     * @returns true if the manager is open for discovering
+     */
+    isDiscovering(): boolean {
+        return this.discovering
     }
 
     /**
@@ -82,9 +93,10 @@ export class BluetoothManager implements MovementExecutor {
     async getConnectionStatuses(): Promise<Map<CharacterID, boolean>> {
         const ret = new Map<CharacterID, boolean>()
 
-        for (const [_, device] of this.connections) {
-            const paired = await device.isPaired()
-            ret.set(await device.getAddress(), !!paired)
+        for (const [character_id, device] of this.connections) {
+            const connected = await device.isConnected()
+            // ret.set((await device.getAddress()).toUpperCase(), !!connected)
+            ret.set(character_id, !!connected)
         }
 
         return ret
@@ -115,21 +127,38 @@ export class BluetoothManager implements MovementExecutor {
     * @param name the name/ID of the bot to connect to
     * @returns true if the bot is connected
     */
-    async connectRobot(bot: Character): Promise<boolean> {
+    async connectRobot(bot: Character, retries:number=0): Promise<boolean> {
+        // check if the bot is already connected. If retries is > 0, then don't check
+        if (this.connections.has(bot.id)
+            && await this.connections.get(bot.id)?.isConnected()) {
+            // if so, do nothing else
+            return true
+        }
+
+        // check if a connection attempt is in progress. If retries is > 0, then don't check
+        if (retries === 0
+            && this.attempting_connections.has(bot.id) 
+            && this.attempting_connections.get(bot.id)) {
+            return true
+        }
+
         // try to establish a connection
-        console.log(`Attempting bluetooth connection to ${bot.name}`)
+        console.log(`[BluetoothManager]: Attempting bluetooth connection to ${bot.name}`)
         if (this.adapter == undefined) {
-            console.log("adapter is undefined")
+            console.log("[BluetoothManager]: adapter is undefined")
             return false
         }
         if (!this.discovering) {
-            console.log("can't connect while not discovering!")
+            console.log("[BluetoothManager]: can't connect while not discovering!")
             return false
         }
     
         // try to connect to the device
+        this.attempting_connections.set(bot.id, true)
         try {
             const device = await this.adapter.waitDevice(bot.bluetooth_id, TIMEOUT)
+
+            // otherwise, connect the device
             await device.connect()
             
             // save the device internally
@@ -139,7 +168,12 @@ export class BluetoothManager implements MovementExecutor {
             this.setMode(bot.id, BotState.SHUTDOWN)
         } catch (error) {
             console.error(error)
+            if (retries < BluetoothManager.CONNECTION_RETRIES) {
+                return this.connectRobot(bot, retries + 1)
+            }
             return false
+        } finally {
+            this.attempting_connections.set(bot.id, false)
         }
 
         return true
@@ -157,7 +191,13 @@ export class BluetoothManager implements MovementExecutor {
         }
 
         const gatt = await device.gatt()
-        return await gatt.getPrimaryService(SERVICE_ID)
+        console.log(await gatt.services())
+        try {
+            return await gatt.getPrimaryService(SERVICE_ID)
+        } catch (error) {
+            console.error(`[BluetoothManager]: Failed to get gatt service: ${SERVICE_ID}`, error)
+            return undefined
+        }
     }
 
     /**
@@ -166,7 +206,7 @@ export class BluetoothManager implements MovementExecutor {
      * @param movement the movements the bot should perform
      */
     async setAction(bot_id: CharacterID, action: ActionFrame): Promise<void> {
-        console.log(`sending movement to ${bot_id}`)
+        console.log(`[BluetoothManager]: sending movement to ${bot_id}`)
 
         // check which attributes are set on the given ActionFrame
         if (ActionFrame.isEmpty(action)) {
@@ -185,7 +225,7 @@ export class BluetoothManager implements MovementExecutor {
         }
 
         if (action.pre_action !== undefined) {
-            console.log(`execution for pre-action is not implemented: ${action.pre_action}`)
+            console.log(`[BluetoothManager]: execution for pre-action is not implemented: ${action.pre_action}`)
             // const action_characteristic = await service.getCharacteristic(SOUND_CHARACTERISTIC)
             // await action_characteristic.writeValue(Buffer.from(action.pre_action))
         }
@@ -206,7 +246,7 @@ export class BluetoothManager implements MovementExecutor {
         // we will use idempotency codes on a broadcasting channel. When this value is changed,
         // we will have the GattClient read their movement values and execute them once, then
         // wait for a new status change.
-        console.log('unlatching movements')
+        console.log('[BluetoothManager]: unlatching movements')
         if (this.last_idempotency_code >= 255) {
             // never set the code to be 0. 0 is reserved for a default value in the drivers so that
             // any initial value will still trigger a change
@@ -219,7 +259,7 @@ export class BluetoothManager implements MovementExecutor {
 
             const service = await this.getService(player)
             if (service === undefined) {
-                console.error("Failed to get service for", player)
+                console.error("[BluetoothManager]: Failed to get service for", player)
                 continue
             }
             const idempotency_characteristic = await service.getCharacteristic(IDEMPOTENCY_CHARACTERISTIC)
@@ -236,7 +276,7 @@ export class BluetoothManager implements MovementExecutor {
      * @param callback the function we will call when the position value changes
      */
     private async startPositionNotifications(bot_id: CharacterID, callback: (buffer: Buffer) => void): Promise<void> {
-        console.log(`starting spawn location notifications for ${bot_id}`)
+        console.log(`[BluetoothManager]: starting spawn location notifications for ${bot_id}`)
 
         const service = await this.getService(bot_id)
         if (service === undefined) {
@@ -338,7 +378,8 @@ export class BluetoothBotInitializer implements BotInitializer {
         const cur = this.priority_list[this.connecting]
         // make sure a Bluetooth connection is established
         if (!await BluetoothManager.getInstance().connectRobot(cur.character)) {
-            throw new Error(`Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
+            throw new Error(`
+                Failed to establish Bluetooth connection with: ${cur.name}'s bot`)
         }
         
         // notify the player that their bot is ready to place
@@ -352,6 +393,11 @@ export class BluetoothBotInitializer implements BotInitializer {
     public async setup(): Promise<void>{
         await BluetoothManager.getInstance().setup()
         await BluetoothManager.getInstance().startDiscovering()
+
+        // begin connecting bots, but don't block
+        for (const bot of this.priority_list) {
+            BluetoothManager.getInstance().connectRobot(bot.character).catch()
+        }
     }
 
     /**
@@ -369,7 +415,9 @@ export class BluetoothBotInitializer implements BotInitializer {
      * @returns the id of the next player
      */
     public nextPlayer(): PlayerID | undefined {
+        // check if we are finished yet
         if (this.connecting < this.priority_list.length) {
+            // get the id of the next bot that we need to get a position for
             const cur = this.priority_list[this.connecting].character.id
             this.connectCurrent().then(() => {
                 BluetoothManager.getInstance().getPosition(cur, (position_id: string) => {

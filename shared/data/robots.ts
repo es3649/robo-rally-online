@@ -26,7 +26,7 @@ export namespace Robots {
         sprite_large: "#",
         color: Color.RED,
         // this is the MAC address of my blue board
-        bluetooth_id: "3e:da:6a:9f:e9:89"
+        bluetooth_id: "3E:DA:6A:9F:E9:89"
     }
     
     export const Bladestorm: Character = {
@@ -54,7 +54,7 @@ export namespace Robots {
         sprite_large: "#",
         color: Color.GREEN,
         // this is the MAC address of my teal board
-        bluetooth_id: "51:6c:07:a1:69:b1"
+        bluetooth_id: "51:6C:07:A1:69:B1"
     }
     
     export const Thor: Character = {
