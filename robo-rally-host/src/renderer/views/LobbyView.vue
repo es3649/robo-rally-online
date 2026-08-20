@@ -69,7 +69,7 @@ openLobby()
             <div v-if="r_cs.ip">
                 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" :view-box="r_gds.qr.view_box" stroke="none">
                     <!-- <rect width="100%" height="100%" fill="#ffffff"/> -->
-                    <path :d="r_gds.qr.svg_path" fill="#ebebeb" />
+                    <path :d="r_gds.qr.svg_path" fill="var(--color-text)" />
                 </svg>
             </div>
             <div v-else>
@@ -93,7 +93,7 @@ openLobby()
                 </tr>
                 <tr v-for="[player_id, name] of r_gds.players" :key="player_id">
                     <td>{{ name }}</td>
-                    <td>{{ r_gds.characters.has(player_id) ? r_gds.characters.get(player_id).name : "[No character selected]" }}</td>
+                    <td>{{ r_gds.characters.has(player_id) ? r_gds.characters.get(player_id)?.name : "[No character selected]" }}</td>
                     <td><button class="cancel" @click="removePlayer(player_id)">X</button></td>
                 </tr>
             </table>
