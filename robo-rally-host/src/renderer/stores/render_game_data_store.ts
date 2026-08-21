@@ -28,6 +28,7 @@ export const useGameDataStore = defineStore({
             player_states: new Map<PlayerID, PlayerStateData>(),
             bot_connections: new Map<CharacterID, boolean>(),
             to_dos: new Map<PlayerID, string[]>(),
+            errors: [] as string[],
             get_input: {
                 player: undefined as PlayerID|undefined,
                 timeout: 0
@@ -198,7 +199,8 @@ export const useGameDataStore = defineStore({
          * request an update of the bot connection statuses from main
          */
         getBotConnectionStatuses() {
-            window.mainAPI.getBotStatus().then((value: Map<CharacterID, boolean>) => {
+            window.mainAPI.getBotStatuses().then((value: Map<CharacterID, boolean>) => {
+                console.log('BT statuses:', value)
                 this.bot_connections = value
             }).catch((reason: any) => {
                 console.error("Failed to get bot connections", reason)

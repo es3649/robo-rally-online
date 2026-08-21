@@ -13,7 +13,7 @@ import { GameStateManager } from './main/game_manager/game_state';
 import { GameInitializer, type BotInitializer } from './main/game_manager/initializers';
 import type { PlayerID, Player, CharacterID } from './shared/models/player';
 import { GamePhase, newRegisterArray } from './shared/models/game_data';
-import { BOTS_MAP } from './shared/data/robots';
+import { BOTS, BOTS_MAP } from './shared/data/robots';
 import { ServerNotifier, RenderNotifier } from './main/notifiers'
 
 // TODO we might consider moving this functionality to a separate class
@@ -43,6 +43,10 @@ console.log('starting utility process')
 const child = fork.fork(modulePath, [], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc']
 })
+
+BluetoothManager.getInstance().setup()
+    .then(() => {console.log('[main]: BluetoothManager is set up')})
+    .catch((error) => {console.error('[main]: Failed to set up BluetoothManager! (probably fatal)', error)})
 
 const M2SSend = senderMaker<Main2ServerMessage>(child)
 
@@ -84,7 +88,7 @@ const createWindow = (): BrowserWindow => {
 function registerIPCListeners() {
     ipcMain.handle(Render2Main.BLE_CONNECT, async (_: Electron.IpcMainInvokeEvent, id: CharacterID): Promise<boolean> => {
         // BluetoothManager.getInstance().connectRobot(name)
-        console.log(`plz connect the robot called ${name}`)
+        console.log(`plz connect the robot with id ${id}`)
 
         const character = BOTS_MAP.get(id)
         
@@ -94,12 +98,27 @@ function registerIPCListeners() {
         return false
     })
 
-    ipcMain.on(Render2Main.GET_BOT_STATUS, (_: Electron.IpcMainEvent) => {
-        console.log("Figure out how to get bluetooth connection statuses")
+    ipcMain.handle(Render2Main.GET_BOT_STATUS, async () => {
+        return BluetoothManager.getInstance().getConnectionStatuses()
+        // const bt_statuses = await BluetoothManager.getInstance().getConnectionStatuses()
+        // const bot_statuses = new Map<CharacterID, boolean>()
+        // for (const character of BOTS) {
+        //     // apparently the library stores device IDs in upper case
+        //     if (bt_statuses.has(character.bluetooth_id.toUpperCase())) {
+        //         bot_statuses.set(character.id, bt_statuses.get(character.bluetooth_id) || false)
+        //     }
+        // }
+        // return bot_statuses
     })
 
     ipcMain.handle(Render2Main.GET_IP, (): string|undefined => {
-        return networkInterfaces()['en0']?.filter(el => el.family === 'IPv4')[0].address
+        const nis = networkInterfaces()
+        if ('en0' in nis) {
+            return nis['en0']?.filter(el => el.family === 'IPv4')[0].address
+        }
+        if ('wlan0' in nis) {
+            return nis['wlan0']?.filter(el => el.family === 'IPv4')[0].address
+        }
     })
 
     ipcMain.handle(Render2Main.BOARD.LIST_BOARDS, listBoards)
@@ -167,10 +186,6 @@ function registerIPCListeners() {
         sendToAllWindows(Main2Render.GET_INFO_NOTIFICATION, player)
 
         return true
-    })
-
-    ipcMain.handle(Render2Main.GET_BOT_STATUS, () => {
-        return BluetoothManager.getInstance().getConnectionStatuses()
     })
 
     ipcMain.handle(Render2Main.REMOVE_PLAYER, (_: Electron.IpcMainInvokeEvent, player_id: PlayerID): boolean => {
@@ -371,6 +386,9 @@ child.on('message', (message: Server2MainMessage) => {
             if (game === undefined) {
                 try {
                     game_initializer.setCharacter(select_bot_msg.id, select_bot_msg.data)
+                    if (select_bot_msg.data === undefined) {
+                        return
+                    }
                     sendToAllWindows<PlayerUpdate>(Main2Render.UPDATE_PLAYER, {
                         id: select_bot_msg.id,
                         character: select_bot_msg.data
@@ -379,7 +397,33 @@ child.on('message', (message: Server2MainMessage) => {
                     sendToAllWindows<Map<PlayerID,string[]>>(Main2Render.READY_STATUS, game_initializer.todo())
                 } catch (error) {
                     console.error(error)
+                    break
                 }
+
+                const robot = BOTS_MAP.get(select_bot_msg.data)
+                if (robot === undefined) {
+                    console.warn('Somehow the character ID went missing...')
+                    break
+                }
+
+                const bm = BluetoothManager.getInstance()
+                const then_func = (connected:boolean) => {
+                    if (!connected) {
+                        sendToAllWindows<string>(Main2Render.GAME_ERROR, `Failed to connect to ${select_bot_msg.data}. (Is it powered on?)`)
+                    }
+                }
+                const catch_func = (reason: any) => {
+                    console.error("Error while estabishing bluetooth connection", reason)
+                }
+                if (!bm.isDiscovering()) {
+                    bm.startDiscovering().then((_) => {
+                        // attempt to connect it (async) right away bc why not?
+                        bm.connectRobot(robot).then(then_func)
+                    }).catch(catch_func)
+                } else {
+                    bm.connectRobot(robot).then(then_func).catch(catch_func)
+                }
+                
                 break
             }
             console.error('tried to select bot after game was started')

@@ -1,6 +1,6 @@
 import { type M2SGameActionMessage, type M2SGetInputMessage, type M2SPhaseUpdateMessage, type M2SProgrammingDataMessage, type M2SRemovePlayer as M2SRemovePlayerMessage, type M2SRequestPositionMessage, type M2SUpdatePlayerStatesMessage, type Main2ServerMessage, type ProgrammingData } from "../shared/models/connection";
 import { Server2Client } from "../shared/models/events";
-import { GamePhase, ProgrammingCard, type GameAction } from "../shared/models/game_data";
+import { GamePhase } from "../shared/models/game_data";
 import { connections, store, type RRSocketServer } from "./data";
 import { GameInitializer } from "../main/game_manager/initializers";
 import type { PlayerID, PlayerState } from "../shared/models/player";

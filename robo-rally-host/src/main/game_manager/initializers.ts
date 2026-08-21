@@ -1,7 +1,7 @@
 import type { Character, CharacterID, PartialPlayer, Player, PlayerID } from "../../shared/models/player"
 import type { Board } from "./board"
 import type { OrientedPosition } from "./move_processors"
-import { BOTS } from "../../shared/data/robots"
+import { BOTS, BOTS_MAP } from "../../shared/data/robots"
 import type { BotAvailabilityUpdate } from "../../shared/models/connection"
 
 export const MAX_PLAYERS = 6
@@ -142,20 +142,19 @@ export class GameInitializer {
             return result
         }
 
-        for (const robot of BOTS) {
-            if (robot.id === character_id) {
-                // if this player already has a character set
-                if (player.character !== undefined) {
-                    result.newly_available.push(player.character.id)
-                    // unset their old character
-                    this.characters_used.delete(player.character.id)
-                }
-                // set the character, and mark it as set
-                player.character = robot
-                this.characters_used.add(character_id)
-                result.newly_unavailable.push(character_id)
-                return result
+        if (BOTS_MAP.has(character_id)) {
+            const robot = BOTS_MAP.get(character_id)
+            // if this player already has a character set
+            if (player.character !== undefined) {
+                result.newly_available.push(player.character.id)
+                // unset their old character
+                this.characters_used.delete(player.character.id)
             }
+            // set the character, and mark it as set
+            player.character = robot
+            this.characters_used.add(character_id)
+            result.newly_unavailable.push(character_id)
+            return result
         }
 
         console.warn("Unknown bot ID:", character_id)

@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from "vue-router";
 import HomeView from "./views/HomeView.vue";
 import LobbyView from "./views/LobbyView.vue";
-import BoardLoaderView from "./views/BoardLoaderView.vue";
+import ConfigureGameView from "./views/ConfigureGameView.vue";
 
 const router = createRouter({
     history: createWebHashHistory(),
@@ -17,7 +17,7 @@ const router = createRouter({
         },{
             path: '/board-loader',
             name: 'board_loader',
-            component: BoardLoaderView
+            component: ConfigureGameView
         },{
             path: '/robots',
             name: 'robots',

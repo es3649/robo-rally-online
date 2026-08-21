@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Character } from '../../shared/models/player';
+import { type Character } from '../../shared/models/player';
 const props = defineProps<{
     robot: Character
 }>()
 import { useConnectionsStore } from '../stores/render_connections_store';
+import { useGameDataStore } from '../stores/render_game_data_store';
 
 const r_cs = useConnectionsStore()
+const r_gds = useGameDataStore()
 
 const symbol = ref('bt_unk')
 let upping = true
+
+function img_from_r_gds() {
+    if (r_gds.bot_connections.get(props.robot.id)) {
+        return "bt_connected"
+    }
+    return "bt_disconnected"
+}
 
 function reconnect() {
     symbol.value = "bt_connecting0"
@@ -28,6 +37,7 @@ function reconnect() {
             }
         }
     }, 1000)
+    console.log(`Requesting reconnect for ${props.robot.id}`)
     r_cs.connectRobot(props.robot.id).then((value: boolean) => {
         clearInterval(load_img)
         symbol.value = value ? 'bt_connected' : 'bt_disconnected'
@@ -44,7 +54,7 @@ function reconnect() {
         <img :src="robot.sprite_small" class="sprite" />
         <div>
             <p>{{ robot.name }}</p>
-            <img :src="`res://icons/${symbol}.svg`"></img>
+            <img :src="`res://icons/${r_gds.bot_connections.has(props.robot.id) ? img_from_r_gds() : symbol}.svg`"></img>
             <div :style="false"></div>
             <button @click="reconnect()">Connect</button>
         </div>
